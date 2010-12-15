@@ -7,7 +7,7 @@ As for now in plans are:
 - firebird events;
 - transaction control.
 
-h2.Getting Started
+Getting Started
 
 You will need:
  NodeJS (tested with v0.3.2-pre)
