@@ -1,0 +1,7 @@
+{ "name" : "firebird"
+, "version" : "0.0.1"
+, "description" : "very basic libfbclient binding to node"
+, "author": "Denys Khanzhiyev aka XDenSer"
+, "main": "./firebird"
+, "scripts": { "install": "node-waf configure build" }
+}
