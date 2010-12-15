@@ -7,7 +7,7 @@ As for now in plans are:
 - firebird events;
 - transaction control.
 
-<h2> Getting Started </h2>
+h2.Getting Started
 
 You will need:
  NodeJS (tested with v0.3.2-pre)
@@ -17,8 +17,8 @@ You will need:
  
 Get Firebird:
  
- <i>wget http://downloads.sourceforge.net/project/firebird/firebird-linux-i386/2.5-Release/FirebirdCS-2.5.0.26074-0.i686.rpm 
- rpm -ivh FirebirdCS-2.5.0.26074-0.i686.rpm </i>
+ wget http://downloads.sourceforge.net/project/firebird/firebird-linux-i386/2.5-Release/FirebirdCS-2.5.0.26074-0.i686.rpm 
+ rpm -ivh FirebirdCS-2.5.0.26074-0.i686.rpm 
 
 Update your path: 
  export PATH=$PATH:/opt/firebird/bin
