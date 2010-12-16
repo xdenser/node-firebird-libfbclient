@@ -1,4 +1,4 @@
-import Options
+import Options, Utils
 from os import unlink, symlink, popen
 from os.path import exists 
 
@@ -26,3 +26,11 @@ def build(bld):
   obj.source = "binding.cc"
   obj.uselib = "FB"
 
+def test(tst):
+  node_binary = 'node'
+  
+  if not exists('./tools/nodeunit/bin/nodeunit'):
+    print("\033[31mNodeunit doesn't exists.\033[39m\nYou should run `git submodule update --init` before run tests.")
+    exit(1)
+  else:
+    Utils.exec_command(node_binary + ' ./tools/nodeunit/bin/nodeunit tests/def')

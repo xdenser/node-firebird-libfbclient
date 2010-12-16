@@ -1,7 +1,20 @@
 { "name" : "firebird"
 , "version" : "0.0.1"
 , "description" : "very basic libfbclient binding to node"
-, "author": "Denys Khanzhiyev aka XDenSer"
+, "author": "Denys Khanzhiyev"
 , "main": "./firebird"
 , "scripts": { "install": "node-waf configure build" }
+, "maintainers" :
+  [ { "name": "Denys Khanzhiyev"
+    , "email": "xdenser@gmail.com"
+    }
+  ]
+, "bugs" : { "web" : "http://github.com/xdenser/node-firebird-libfbclient/issues" } 
+, "licenses" : [ { "type" : "MIT" } ] 
+, "repositories" :
+  [ { "type" : "git"
+    , "url" : "http://github.com/xdenser/node-firebird-libfbclient.git"
+    }
+  ]
+
 }
