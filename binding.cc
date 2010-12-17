@@ -21,12 +21,15 @@ class Connection : public EventEmitter {
     
     t->Inherit(EventEmitter::constructor_template);
     t->InstanceTemplate()->SetInternalFieldCount(1);
-    
+    // Methods 
     NODE_SET_PROTOTYPE_METHOD(t, "connectSync", ConnectSync);
     NODE_SET_PROTOTYPE_METHOD(t, "connect", Connect);
     NODE_SET_PROTOTYPE_METHOD(t, "querySync", QuerySync);
     NODE_SET_PROTOTYPE_METHOD(t, "disconnect", Disconnect);
-    
+    // Properties
+    Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
+    //instance_t->SetAccessor("instance_accessor", InstanceAccessorCallback);
+    instance_t->SetAccessor(String::NewSymbol("connected"), ConnectedGetter);
     
     target->Set(String::NewSymbol("Connection"), t->GetFunction());  
   }
@@ -56,22 +59,23 @@ class Connection : public EventEmitter {
     dpb[i++] = len;
     strncpy(&(dpb[i]), Role, len);
     i += len;
-
+    connected = false;
     if(isc_attach_database(status, 0, Database, &(db), i, dpb)) return false;
-    
+    connected = true;
     return true;
   } 
   
   
   bool Close(){
-    
+
+    connected = false; 
     if (isc_detach_database(status, &db)) {
       db = NULL;
       return false;
     } 
-    printf("close conn\n");
     db = NULL;
     return true;
+    
   }
   
   bool process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp)
@@ -416,6 +420,14 @@ class Connection : public EventEmitter {
    
     return Undefined();
   }
+  static Handle<Value> ConnectedGetter(Local<String> property,
+                                      const AccessorInfo &info) {
+    HandleScope scope;
+    Connection *connection = ObjectWrap::Unwrap<Connection>(info.Holder());
+
+    return scope.Close(Boolean::New(connection->connected));
+  }
+
   
   static Handle<Value>
   QuerySync(const Arguments& args)
@@ -634,6 +646,7 @@ class Connection : public EventEmitter {
     db = NULL;
     trans = NULL;
     in_async = false;
+    connected = false;
 
 //    connecting_ = resetting_ = false;
 
@@ -671,7 +684,8 @@ class Connection : public EventEmitter {
   ev_io write_watcher_;
 
   ISC_STATUS_ARRAY status;
-  isc_db_handle db; 
+  isc_db_handle db;
+  bool connected; 
   isc_tr_handle trans;
   bool in_async;
   char err_message[1024];
