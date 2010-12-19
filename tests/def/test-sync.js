@@ -11,10 +11,12 @@ var
   fb_binding = require("../../build/default/binding");
 
 exports.SyncConnection = function (test) {
-  test.expect(2);
+  test.expect(3);
   var conn = new fb_binding.Connection;
   conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   test.ok(conn.connected,"Connected to database");
+  var res = conn.querySync("select * from rdb$relations");
+  test.ok(res,"Can query");
   conn.disconnect();
   test.ok(!conn.connected,"Disconnected to database");
   test.done();

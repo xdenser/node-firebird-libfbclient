@@ -17,22 +17,39 @@ class Connection;
 #define ERR_MSG(obj) \
 String::New(Connection::ErrorMessage(obj->status,obj->err_message,sizeof(obj->err_message)))
 
+#define REQ_EXT_ARG(I, VAR) \
+if (args.Length() <= (I) || !args[I]->IsExternal()) \
+return ThrowException(Exception::TypeError( \
+String::New("Argument " #I " invalid"))); \
+Local<External> VAR = Local<External>::Cast(args[I]);
+
+
 class FBResult : public EventEmitter {
 
 public:
- static Persistent<FunctionTemplate> constructor_template;
+
+// static Persistent<FunctionTemplate> constructor_template;
  
  static void
    Initialize (v8::Handle<v8::Object> target)
   {
     HandleScope scope;
+    Persistent<FunctionTemplate> constructor_template;
     
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
 
     t->Inherit(EventEmitter::constructor_template);
-    t->InstanceTemplate()->SetInternalFieldCount(1);
-    
     constructor_template = Persistent<FunctionTemplate>::New(t);
+    constructor_template->Inherit(EventEmitter::constructor_template);
+    constructor_template->SetClassName(String::NewSymbol("FBResult"));
+
+    Local<ObjectTemplate> instance_template =
+        constructor_template->InstanceTemplate();
+
+
+    instance_template->SetInternalFieldCount(1);
+    
+    target->Set(String::NewSymbol("FBResult"), t->GetFunction());
   }
   
  bool process_result(XSQLDA **sqldap, isc_stmt_handle *stmtp, Local<Array> res)
@@ -68,9 +85,15 @@ protected:
  static Handle<Value>
   New (const Arguments& args)
   {
+  // XSQLDA **asqldap, isc_stmt_handle *astmtp
     HandleScope scope;
-
-    FBResult *res = new FBResult();
+    
+    REQ_EXT_ARG(0, js_sqldap);
+    REQ_EXT_ARG(1, js_stmtp);
+    
+    XSQLDA **asqldap = static_cast<XSQLDA **>(js_sqldap->Value());
+    isc_stmt_handle *astmtp = static_cast<isc_stmt_handle *>(js_stmtp->Value());
+    FBResult *res = new FBResult(asqldap, astmtp);
     res->Wrap(args.This());
 
     return args.This();
@@ -642,6 +665,7 @@ class Connection : public EventEmitter {
    
     return Undefined();
   }
+  
   static Handle<Value> ConnectedGetter(Local<String> property,
                                       const AccessorInfo &info) {
     HandleScope scope;
@@ -675,21 +699,24 @@ class Connection : public EventEmitter {
     }
     
     
-    Local<Array> js_result = Array::New();
-    
-    if(!connection->process_result(&sqlda,&stmt,js_result)){
-            return ThrowException(Exception::Error(
-            String::Concat(String::New("In process_result - "),ERR_MSG(connection))));
-    }
+
+    Local<Value> argv[2];
+
+    argv[0] = External::New(&sqlda);
+    argv[1] = External::New(&stmt);
+ //    XSQLDA **asqldap, isc_stmt_handle *astmtp
+    Persistent<Object> js_result(FBResult::constructor_template->
+                                     GetFunction()->NewInstance(2, argv));
     
     if(connection->trans)
      if(!connection->commit_transaction()) {
       return ThrowException(Exception::Error(
             String::Concat(String::New("In commit_transaction - "),ERR_MSG(connection))));
      } 
+     
 
     //printf("exit qsync \n");    
-    return scope.Close(js_result);
+    return scope.Close(js_result); 
         
   }
 
@@ -918,5 +945,6 @@ extern "C" void
 init (Handle<Object> target) 
 {
   HandleScope scope;
+  FBResult::Initialize(target);
   Connection::Initialize(target);
 }
