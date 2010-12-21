@@ -10,7 +10,7 @@ var cfg = require("../config").cfg;
 var
   fb_binding = require("../../build/default/binding");
 
-exports.Binding = function (test) {
+exports.ConnectionBinding = function (test) {
   test.expect(5);
   test.ok("Connection" in fb_binding, "Connection");
   var conn = new fb_binding.Connection;
@@ -20,5 +20,16 @@ exports.Binding = function (test) {
   test.ok("disconnect" in conn, "disconnect");
   test.done();
 };
+
+exports.FBResultBinding = function(test){
+ test.expect(2);
+ var conn = new fb_binding.Connection; 
+ conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role); 
+ test.ok(conn.connected,"Connected to database");
+ var res = conn.querySync("select * from rdb$database");
+ test.ok("fetchSync" in res, "fetchSync");
+ conn.disconnect();
+ test.done();
+}
 
 

@@ -14,8 +14,20 @@ using namespace node;
 
 class Connection;
 
-#define ERR_MSG(obj) \
-String::New(Connection::ErrorMessage(obj->status,obj->err_message,sizeof(obj->err_message)))
+char * ErrorMessage(const ISC_STATUS *pvector, char *err_msg, int max_len){
+    err_msg[0] = 0;
+    char s[512], *p, *t;
+    t = err_msg;
+    while(fb_interpret(s,sizeof(s),&pvector)){
+      for(p=s;(*p)&&((t-err_msg)<max_len);){ *t++ = *p++; }
+      if((t-err_msg+1)<max_len) *t++='\n';
+    };
+    if((t-err_msg)<max_len) *t = 0;
+    return err_msg;
+}
+
+#define ERR_MSG(obj,class) \
+String::New(ErrorMessage(obj->status,obj->err_message,sizeof(obj->err_message)))
 
 #define REQ_EXT_ARG(I, VAR) \
 if (args.Length() <= (I) || !args[I]->IsExternal()) \
@@ -28,13 +40,12 @@ class FBResult : public EventEmitter {
 
 public:
 
-// static Persistent<FunctionTemplate> constructor_template;
+ static Persistent<FunctionTemplate> constructor_template;
  
  static void
    Initialize (v8::Handle<v8::Object> target)
   {
     HandleScope scope;
-    Persistent<FunctionTemplate> constructor_template;
     
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
 
@@ -45,6 +56,8 @@ public:
 
     Local<ObjectTemplate> instance_template =
         constructor_template->InstanceTemplate();
+        
+    NODE_SET_PROTOTYPE_METHOD(t, "fetchSync", FetchSync);
 
 
     instance_template->SetInternalFieldCount(1);
@@ -91,8 +104,11 @@ protected:
     REQ_EXT_ARG(0, js_sqldap);
     REQ_EXT_ARG(1, js_stmtp);
     
-    XSQLDA **asqldap = static_cast<XSQLDA **>(js_sqldap->Value());
-    isc_stmt_handle *astmtp = static_cast<isc_stmt_handle *>(js_stmtp->Value());
+    XSQLDA *asqldap;
+    asqldap = static_cast<XSQLDA *>(js_sqldap->Value());
+    isc_stmt_handle *astmtp;
+    astmtp = static_cast<isc_stmt_handle *>(js_stmtp->Value()); 
+    
     FBResult *res = new FBResult(asqldap, astmtp);
     res->Wrap(args.This());
 
@@ -239,11 +255,96 @@ protected:
     
     return scope.Close(js_field);
   }
+
+  static Handle<Value>
+  FetchSync(const Arguments& args) 
+  {
+    HandleScope scope;
+    
+    FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(args.This());
+    
+    int            fetch_stat;
+    short 	   i, num_cols;	
+    XSQLDA         *sqlda;
+    
+    uint32_t       j = 0;
+    sqlda = fb_res->sqldap;
+    if(!sqlda){ return Undefined();}
+    num_cols = sqlda->sqld;
+    printf("zzz\n");
+    
+    Local<Value> js_result = Local<Value>::New(Null());
+    
+    if (args.Length() < 2){
+       return ThrowException(Exception::Error(
+            String::New("Expecting 2 arguments")));
+    }
+    
+    int rowCount = -1;
+    if(args[0]->IsInt32()){
+       rowCount = args[0]->IntegerValue();
+    }
+    else if(! (args[0]->IsString() && args[0]->Equals(String::New("all")))){
+       return ThrowException(Exception::Error(
+            String::New("Expecting integer or string as first argument")));
+    };
+    if(rowCount<0) rowCount = -1;
+    
+    bool rowAsObject = false;
+    if(args[1]->IsBoolean()){
+         rowAsObject = args[1]->BooleanValue();
+    }else if(args[1]->IsString() && args[1]->Equals(String::New("array"))){
+         rowAsObject = false;
+    }else if(args[1]->IsString() && args[1]->Equals(String::New("object"))){
+         rowAsObject = true;
+    } else{
+     return ThrowException(Exception::Error(
+            String::New("Expecting bool or string('array'|'object') as second argument")));
+    };   
+    
+    Local<Value> js_field;
+    Local<Object> js_result_row;   
+    if(rowAsObject)
+        js_result_row = Object::New();
+    else 
+        js_result_row = Array::New();
+        
+    Local<Array> res = Array::New(); 
+    while (((fetch_stat = isc_dsql_fetch(fb_res->status, &fb_res->stmt, SQL_DIALECT_V6, sqlda)) == 0)&&((rowCount==-1)||(rowCount>0)))
+    {
+        js_result_row = Array::New();
+        for (i = 0; i < num_cols; i++)
+        {
+            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i]);
+            if(rowAsObject)
+            { 
+              js_result_row->Set(String::New(sqlda->sqlvar[i].sqlname), js_field);
+            }
+            else
+            js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
+        }
+        res->Set(Integer::NewFromUnsigned(j++), js_result_row);
+        if(rowCount>0) rowCount--;
+    }
+    
+    if ((fetch_stat != 100L) && fetch_stat) 
+          return ThrowException(Exception::Error(
+            String::Concat(String::New("While FetchSync - "),ERR_MSG(fb_res,FBResult))));
+
+    
+//    if(j==1) js_result = res->Get(0);
+//    else 
+     js_result = res;
+    
+    return scope.Close(js_result);
+
+  }
+
   
-   FBResult (XSQLDA **asqldap, isc_stmt_handle *astmtp) : EventEmitter () 
+   FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp) : EventEmitter () 
   {
     sqldap = asqldap;
-    stmtp = astmtp;
+    stmt = *astmtp;
   }
   
   ~FBResult()
@@ -253,10 +354,12 @@ protected:
   
   ISC_STATUS_ARRAY status;
   char err_message[1024];    
-  XSQLDA **sqldap;
-  isc_stmt_handle *stmtp;
+  XSQLDA *sqldap;
+  isc_stmt_handle stmt;
    
 };
+
+Persistent<FunctionTemplate> FBResult::constructor_template;
 
 class Connection : public EventEmitter {
  public:
@@ -315,7 +418,12 @@ class Connection : public EventEmitter {
   
   
   bool Close(){
-
+    
+    if(trans)
+     if(!commit_transaction()) {
+       return false;
+     }
+ 
     connected = false; 
     if (isc_detach_database(status, &db)) {
       db = NULL;
@@ -329,7 +437,6 @@ class Connection : public EventEmitter {
   bool process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp)
   {
      int            buffer[1024];
-     isc_stmt_handle stmt = *stmtp;
      XSQLDA          *sqlda;
      XSQLVAR         *var;
      static char     stmt_info[] = { isc_info_sql_stmt_type };
@@ -349,9 +456,8 @@ class Connection : public EventEmitter {
      }      
 
      /* Allocate a statement */
-     if(!stmt) {
-      if (isc_dsql_allocate_statement(status, &db, &stmt)) return false;
-      *stmtp = stmt;  
+     if(!*stmtp) {
+      if (isc_dsql_allocate_statement(status, &db, stmtp)) return false;
      } 
      
      // Start Default Transaction If None Active
@@ -359,10 +465,10 @@ class Connection : public EventEmitter {
       if (isc_start_transaction(status, &trans, 1, &db, 0, NULL)) return false;
       
      // Prepare Statement
-     if (isc_dsql_prepare(status, &trans, &stmt, 0, query, SQL_DIALECT_V6, sqlda)) return false;
+     if (isc_dsql_prepare(status, &trans, stmtp, 0, query, SQL_DIALECT_V6, sqlda)) return false;
 
      // Get sql info
-     if (!isc_dsql_sql_info(status, &stmt, sizeof (stmt_info), stmt_info, 
+     if (!isc_dsql_sql_info(status, stmtp, sizeof (stmt_info), stmt_info, 
          sizeof (info_buffer), info_buffer))
      {
          l = (short) isc_vax_integer((char *) info_buffer + 1, 2);
@@ -376,7 +482,7 @@ class Connection : public EventEmitter {
         free(sqlda);
         *sqldap = NULL;
                    
-        if (isc_dsql_execute(status, &trans, &stmt, SQL_DIALECT_V6, NULL))
+        if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
         {
              return false;
         }
@@ -409,7 +515,7 @@ class Connection : public EventEmitter {
         sqlda->sqln = num_cols;
         sqlda->version = 1;
 
-        if (isc_dsql_describe(status, &stmt, SQL_DIALECT_V6, sqlda))
+        if (isc_dsql_describe(status, stmtp, SQL_DIALECT_V6, sqlda))
         {
             return false;
         }
@@ -445,11 +551,10 @@ class Connection : public EventEmitter {
         offset += sizeof  (short);
      }
 
-    if (isc_dsql_execute(status, &trans, &stmt, SQL_DIALECT_V6, NULL))
+    if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
     {
         return false;
     }
-    
     return true;
 
   }
@@ -470,46 +575,6 @@ class Connection : public EventEmitter {
     return true;
   }
   
-  bool process_result(XSQLDA **sqldap, isc_stmt_handle *stmtp, Local<Array> res)
-  {
-    int            fetch_stat;
-    short 	   i, num_cols;	
-    XSQLDA         *sqlda;
-    
-    uint32_t       j = 0;
-    sqlda = *sqldap;
-    if(!sqlda){ return true;}
-    num_cols = (*sqldap)->sqld;
-    
-    HandleScope scope;
-    
-    Local<Object> js_result_row;
-    Local<Value> js_field;
-    
-    while ((fetch_stat = isc_dsql_fetch(status, stmtp, SQL_DIALECT_V6, *sqldap)) == 0)
-    {
-        js_result_row = Array::New();
-        for (i = 0; i < num_cols; i++)
-        {
-            js_field = Connection::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i]);
-            js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
-        }
-        res->Set(Integer::NewFromUnsigned(j++), js_result_row);
-    }
-    return true;
-  }
-  
-  static char * ErrorMessage(const ISC_STATUS *pvector, char *err_msg, int max_len){
-    err_msg[0] = 0;
-    char s[512], *p, *t;
-    t = err_msg;
-    while(fb_interpret(s,sizeof(s),&pvector)){
-      for(p=s;(*p)&&((t-err_msg)<max_len);){ *t++ = *p++; }
-      if((t-err_msg+1)<max_len) *t++='\n';
-    };
-    if((t-err_msg)<max_len) *t = 0;
-    return err_msg;
-  }
   
  protected:
  
@@ -548,7 +613,7 @@ class Connection : public EventEmitter {
 
     if (!r) {
       return ThrowException(Exception::Error(
-            String::Concat(String::New("While connecting - "),ERR_MSG(connection))));
+            String::Concat(String::New("While connecting - "),ERR_MSG(connection, Connection))));
     }
     
     return Undefined();
@@ -574,7 +639,7 @@ class Connection : public EventEmitter {
     
     if (!req->result) {
        argv[0] = Exception::Error(
-            String::Concat(String::New("While connecting - "),ERR_MSG(conn_req->conn)));
+            String::Concat(String::New("While connecting - "),ERR_MSG(conn_req->conn, Connection)));
     }
     else{
      argv[0] = Local<Value>::New(Null());
@@ -660,7 +725,7 @@ class Connection : public EventEmitter {
     
     if(!connection->Close()){
       return ThrowException(Exception::Error(
-            String::Concat(String::New("While closing - "),ERR_MSG(connection))));
+            String::Concat(String::New("While closing - "),ERR_MSG(connection, Connection))));
     }     
    
     return Undefined();
@@ -692,30 +757,20 @@ class Connection : public EventEmitter {
     XSQLDA *sqlda = NULL;
     isc_stmt_handle stmt = NULL;
     bool r = connection->process_statement(&sqlda,*Query, &stmt);
-    //printf("qsync %s\n",*Query);
     if(!r) {
       return ThrowException(Exception::Error(
-            String::Concat(String::New("In querySync - "),ERR_MSG(connection))));
+            String::Concat(String::New("In querySync - "),ERR_MSG(connection, Connection))));
     }
     
     
 
     Local<Value> argv[2];
 
-    argv[0] = External::New(&sqlda);
+    argv[0] = External::New(sqlda);
     argv[1] = External::New(&stmt);
- //    XSQLDA **asqldap, isc_stmt_handle *astmtp
     Persistent<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(2, argv));
-    
-    if(connection->trans)
-     if(!connection->commit_transaction()) {
-      return ThrowException(Exception::Error(
-            String::Concat(String::New("In commit_transaction - "),ERR_MSG(connection))));
-     } 
-     
 
-    //printf("exit qsync \n");    
     return scope.Close(js_result); 
         
   }
@@ -743,152 +798,6 @@ class Connection : public EventEmitter {
                
   }
   
-  static time_t
-  get_time(struct tm *tm_p)
-  {
-     
-  }
-  
-  static Local<Value> 
-  GetFieldValue(XSQLVAR *var)
-  {
-    short       dtype;  
-    PARAMVARY   *vary2;
-    short       len; 
-    struct tm   times;
-    ISC_QUAD    bid;
-    time_t      rawtime;
-    double      time_val;
-    
-    HandleScope scope;
-    
-    Local<Object> js_date;
-    Local<Value> js_field = Local<Value>::New(Null());
-    dtype = var->sqltype & ~1;
-    if ((var->sqltype & 1) && (*var->sqlind < 0))
-    {
-     // NULL PROCESSING
-    }
-    else
-    {
-        switch (dtype)
-        {
-            case SQL_TEXT:
-                js_field = String::New(var->sqldata,var->sqllen);
-                break;
-
-            case SQL_VARYING:
-                vary2 = (PARAMVARY*) var->sqldata;
-                vary2->vary_string[vary2->vary_length] = '\0';
-                js_field = String::New((const char*)(vary2->vary_string));
-                break;
-
-            case SQL_SHORT:
-            case SQL_LONG:
-	    case SQL_INT64:
-		{
-		ISC_INT64	value;
-		short		field_width;
-		short		dscale;
-		switch (dtype)
-		    {
-		    case SQL_SHORT:
-			value = (ISC_INT64) *(short *) var->sqldata;
-			field_width = 6;
-			break;
-		    case SQL_LONG:
-			value = (ISC_INT64) *(int *) var->sqldata;
-			field_width = 11;
-			break;
-		    case SQL_INT64:
-			value = (ISC_INT64) *(ISC_INT64 *) var->sqldata;
-			field_width = 21;
-			break;
-		    }
-		ISC_INT64	tens;    
-		short	i;
-		dscale = var->sqlscale;
-		
-		if (dscale < 0)
-		    {
-		    tens = 1;
-		    for (i = 0; i > dscale; i--) tens *= 10;
-                    js_field = Number::New(value / tens); 
-                    
-		    }
-		else if (dscale)
-		      {
-		       tens = 1;
-		       for (i = 0; i < dscale; i++) tens *= 10;
-		      js_field = Integer::New(value * tens); 
-	              }		    
-		else
-		      js_field = Integer::New( value);
-		}
-                break;
-
-            case SQL_FLOAT:
-                js_field = Number::New(*(float *) (var->sqldata));  
-                break;
-
-            case SQL_DOUBLE:
-                js_field = Number::New(*(double *) (var->sqldata));
-                break;
-
-            case SQL_TIMESTAMP: 
-	            isc_decode_timestamp((ISC_TIMESTAMP *)var->sqldata, &times);
-	            rawtime = mktime(&times);// + Connection::get_gmt_delta();
-	            time_val = static_cast<double>(rawtime)*1000 + ((*((ISC_TIME *)var->sqldata)) % 10000)/10;
-	            js_field = Date::New(time_val);
-	            break;
-	            
-            case SQL_TYPE_DATE:    
-	            	          
-	            isc_decode_sql_date((ISC_DATE *)var->sqldata, &times);
-	            rawtime = mktime(&times);// + Connection::get_gmt_delta();
-	            js_date = Object::New();
-	            js_date->Set(String::New("year"),
-                             Integer::New(times.tm_year+1900));
-                    js_date->Set(String::New("month"),
-                             Integer::New(times.tm_mon+1));
-                    js_date->Set(String::New("day"),
-                             Integer::New(times.tm_mday));
-	            time_val = static_cast<double>(rawtime)*1000;
-	            js_date->Set(String::New("date"),
-                             Date::New(time_val));
-	            js_field = js_date;
-	            break;
-	            
-           case SQL_TYPE_TIME:    
-	            isc_decode_sql_time((ISC_TIME *)var->sqldata, &times);
-	            time_val = (times.tm_hour*60*60 + 
-	                        times.tm_min*60 +
-	                        times.tm_sec)*1000 + 
-	                        ((*((ISC_TIME *)var->sqldata)) % 10000)/10;
-	            js_field = Date::New(time_val);            
-	            break;            
-
-            case SQL_BLOB:
-            case SQL_ARRAY:
-                /* Print the blob id on blobs or arrays */
-                Local<Object> js_blob;
-                bid = *(ISC_QUAD *) var->sqldata;
-                js_blob = Object::New();
-                js_blob->Set(String::New("q_hi"),
-                             Integer::New(bid.gds_quad_high));
-                js_blob->Set(String::New("q_lo"),
-                             Integer::NewFromUnsigned(bid.gds_quad_low));             
-
-                js_field = js_blob;
-                
-                break;
-
-        }
-
-    }
-    
-    return scope.Close(js_field);
-  }
     
    Connection () : EventEmitter () 
   {
@@ -899,11 +808,11 @@ class Connection : public EventEmitter {
 
 //    connecting_ = resetting_ = false;
 
-    ev_init(&read_watcher_, io_event);
+/*    ev_init(&read_watcher_, io_event);
     read_watcher_.data = this;
 
     ev_init(&write_watcher_, io_event);
-    write_watcher_.data = this;
+    write_watcher_.data = this; */
   }
 
   ~Connection ()
@@ -921,7 +830,7 @@ class Connection : public EventEmitter {
   }
 
  
-  static void
+/*  static void
   io_event (EV_P_ ev_io *w, int revents)
   {
     Connection *connection = static_cast<Connection*>(w->data);
@@ -930,7 +839,7 @@ class Connection : public EventEmitter {
 
  
   ev_io read_watcher_;
-  ev_io write_watcher_;
+  ev_io write_watcher_; */
 
   ISC_STATUS_ARRAY status;
   isc_db_handle db;
