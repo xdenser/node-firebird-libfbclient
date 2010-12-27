@@ -271,7 +271,6 @@ protected:
     sqlda = fb_res->sqldap;
     if(!sqlda){ return Undefined();}
     num_cols = sqlda->sqld;
-    printf("zzz\n");
     
     Local<Value> js_result = Local<Value>::New(Null());
     
@@ -349,7 +348,10 @@ protected:
   
   ~FBResult()
   {
-  
+   if(sqldap) {
+     free(sqldap);
+   }
+   
   }
   
   ISC_STATUS_ARRAY status;
@@ -377,6 +379,7 @@ class Connection : public EventEmitter {
     NODE_SET_PROTOTYPE_METHOD(t, "connectSync", ConnectSync);
     NODE_SET_PROTOTYPE_METHOD(t, "connect", Connect);
     NODE_SET_PROTOTYPE_METHOD(t, "querySync", QuerySync);
+    NODE_SET_PROTOTYPE_METHOD(t, "query", Query);
     NODE_SET_PROTOTYPE_METHOD(t, "disconnect", Disconnect);
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
@@ -773,6 +776,96 @@ class Connection : public EventEmitter {
 
     return scope.Close(js_result); 
         
+  }
+  
+  struct query_request {
+     Persistent<Function> callback;
+     Connection *conn;
+     String::Utf8Value *Query;
+     XSQLDA *sqlda;
+     isc_stmt_handle stmt;
+  };
+  static int EIO_After_Query(eio_req *req)
+  {
+    ev_unref(EV_DEFAULT_UC);
+    HandleScope scope;
+    struct query_request *q_req = (struct query_request *)(req->data);
+
+    Local<Value> argv[2];
+    
+    if (!req->result) {
+       argv[0] = Exception::Error(
+            String::Concat(String::New("While query - "),ERR_MSG(q_req->conn, Connection)));
+       argv[1] = Local<Value>::New(Null());        
+    }
+    else{
+     argv[0] = External::New(q_req->sqlda);
+     argv[1] = External::New(&q_req->stmt);
+     Persistent<Object> js_result(FBResult::constructor_template->
+                                     GetFunction()->NewInstance(2, argv));
+     argv[1] = Local<Value>::New(scope.Close(js_result));    
+     argv[0] = Local<Value>::New(Null());
+    }
+
+    TryCatch try_catch;
+
+    q_req->callback->Call(Context::GetCurrent()->Global(), 2, argv);
+
+    if (try_catch.HasCaught()) {
+        node::FatalException(try_catch);
+    }
+
+    q_req->callback.Dispose();
+    q_req->conn->Unref();
+    free(q_req);
+
+    return 0;
+    
+  }
+    
+  static int EIO_Query(eio_req *req)
+  {
+    struct query_request *q_req = (struct query_request *)(req->data);
+    
+    req->result = q_req->conn->process_statement(&q_req->sqlda,**(q_req->Query), &q_req->stmt);
+    delete q_req->Query;
+    return 0;
+  }
+  
+  static Handle<Value>
+  Query(const Arguments& args)
+  {
+    HandleScope scope;
+    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    
+    struct query_request *q_req =
+         (struct query_request *)calloc(1, sizeof(struct query_request));
+
+    if (!q_req) {
+      V8::LowMemoryNotification();
+      return ThrowException(Exception::Error(
+            String::New("Could not allocate memory.")));
+    }
+    
+    if (args.Length() < 2 || !args[0]->IsString() ||
+          !args[1]->IsFunction()) {
+      return ThrowException(Exception::Error(
+            String::New("Expecting 1 string argument and 1 Function")));
+    }
+    
+    q_req->conn = conn;
+    q_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[1]));
+    q_req->Query = new String::Utf8Value(args[0]->ToString());
+    q_req->sqlda = NULL;
+    q_req->stmt = 0;
+    
+    eio_custom(EIO_Query, EIO_PRI_DEFAULT, EIO_After_Query, q_req);
+    
+    ev_ref(EV_DEFAULT_UC);
+    conn->Ref();
+    
+    return Undefined();
+    
   }
 
   static time_t 

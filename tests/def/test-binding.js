@@ -11,13 +11,16 @@ var
   fb_binding = require("../../build/default/binding");
 
 exports.ConnectionBinding = function (test) {
-  test.expect(5);
+  test.expect(8);
   test.ok("Connection" in fb_binding, "Connection");
   var conn = new fb_binding.Connection;
   test.ok(conn, "Connection created");
   test.ok("connectSync" in conn, "connectSync");
+  test.ok("connect" in conn, "connect");
   test.ok("connected" in conn, "connected");
   test.ok("disconnect" in conn, "disconnect");
+  test.ok("querySync" in conn, "querySync");
+  test.ok("query" in conn, "query");
   test.done();
 };
 
