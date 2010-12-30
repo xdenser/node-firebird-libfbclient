@@ -287,7 +287,7 @@ protected:
        return ThrowException(Exception::Error(
             String::New("Expecting integer or string as first argument")));
     };
-    if(rowCount<0) rowCount = -1;
+    if(rowCount<=0) rowCount = -1;
     
     bool rowAsObject = false;
     if(args[1]->IsBoolean()){
@@ -303,15 +303,16 @@ protected:
     
     Local<Value> js_field;
     Local<Object> js_result_row;   
-    if(rowAsObject)
-        js_result_row = Object::New();
-    else 
-        js_result_row = Array::New();
         
     Local<Array> res = Array::New(); 
     while (((fetch_stat = isc_dsql_fetch(fb_res->status, &fb_res->stmt, SQL_DIALECT_V6, sqlda)) == 0)&&((rowCount==-1)||(rowCount>0)))
     {
-        js_result_row = Array::New();
+        //js_result_row = Array::New();
+         if(rowAsObject)
+            js_result_row = Object::New();
+         else 
+            js_result_row = Array::New();
+        
         for (i = 0; i < num_cols; i++)
         {
             js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i]);
@@ -337,6 +338,154 @@ protected:
     
     return scope.Close(js_result);
 
+  }
+
+  struct fetch_request {
+     Persistent<Function> callback;
+     FBResult *res;
+     int rowCount;
+     int fetchStat;
+     bool rowAsObject;
+  };
+  
+  static int EIO_After_Fetch(eio_req *req)
+  {
+    ev_unref(EV_DEFAULT_UC);
+    HandleScope scope;
+    struct fetch_request *f_req = (struct fetch_request *)(req->data);
+    short i, num_cols;
+    num_cols = f_req->res->sqldap->sqld;
+    
+    Local<Value> js_field;
+    Local<Object> js_result_row;   
+    Local<Value> argv[2];
+    
+    if(req->result)
+    {
+        if(f_req->rowCount>0) f_req->rowCount--;  
+        
+	if(f_req->rowAsObject)
+    	    js_result_row = Object::New();
+	else 
+    	    js_result_row = Array::New();
+    
+	for (i = 0; i < num_cols; i++)
+	{
+    	    js_field = FBResult::GetFieldValue((XSQLVAR *) &f_req->res->sqldap->sqlvar[i]);
+    	    if(f_req->rowAsObject)
+    	    { 
+        	js_result_row->Set(String::New(f_req->res->sqldap->sqlvar[i].sqlname), js_field);
+    	    }
+    	    else
+        	js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
+        }
+        
+        argv[0] = Local<Value>::New(Null());	
+        argv[1] = js_result_row;
+        
+	TryCatch try_catch;
+
+	Local<Value> ret = f_req->callback->Call(Context::GetCurrent()->Global(), 2, argv);
+
+	if (try_catch.HasCaught()) {
+    	    node::FatalException(try_catch);
+	}
+	else
+	if((!ret->IsBoolean() || ret->BooleanValue())&&f_req->rowCount!=0)
+	{
+	  eio_custom(EIO_Fetch, EIO_PRI_DEFAULT, EIO_After_Fetch, f_req);
+          ev_ref(EV_DEFAULT_UC);
+          return 0;
+	}
+    }
+    else 
+    if(f_req->fetchStat!=100L){
+          argv[0] = Exception::Error(
+            String::Concat(String::New("While connecting - "),ERR_MSG(f_req->res,FBResult)));
+          TryCatch try_catch;
+
+	  f_req->callback->Call(Context::GetCurrent()->Global(), 1, argv);
+
+	  if (try_catch.HasCaught()) {
+    	    node::FatalException(try_catch);
+	  }
+    }
+    
+
+    f_req->callback.Dispose();
+    f_req->res->Unref();
+    free(f_req);
+
+    return 0;
+  } 
+
+  static int EIO_Fetch(eio_req *req)
+  {
+    struct fetch_request *f_req = (struct fetch_request *)(req->data);
+    
+    f_req->fetchStat = isc_dsql_fetch(f_req->res->status, &f_req->res->stmt, SQL_DIALECT_V6, f_req->res->sqldap);
+    
+    req->result = (f_req->fetchStat == 0);
+
+    return 0;
+  }
+  
+  static Handle<Value>
+  Fetch(const Arguments& args) 
+  {
+    HandleScope scope;
+    FBResult *res = ObjectWrap::Unwrap<FBResult>(args.This());
+    
+    struct fetch_request *f_req =
+         (struct fetch_request *)calloc(1, sizeof(struct fetch_request));
+
+    if (!f_req) {
+      V8::LowMemoryNotification();
+      return ThrowException(Exception::Error(
+            String::New("Could not allocate memory.")));
+    }
+    
+    if (args.Length() < 3){
+       return ThrowException(Exception::Error(
+            String::New("Expecting 3 arguments")));
+    }
+    
+    f_req->rowCount = -1;
+    if(args[0]->IsInt32()){
+       f_req->rowCount = args[0]->IntegerValue();
+    }
+    else if(! (args[0]->IsString() && args[0]->Equals(String::New("all")))){
+       return ThrowException(Exception::Error(
+            String::New("Expecting integer or string as first argument")));
+    };
+    if(f_req->rowCount<=0) f_req->rowCount = -1;
+    
+    f_req->rowAsObject = false;
+    if(args[1]->IsBoolean()){
+         f_req->rowAsObject = args[1]->BooleanValue();
+    }else if(args[1]->IsString() && args[1]->Equals(String::New("array"))){
+         f_req->rowAsObject = false;
+    }else if(args[1]->IsString() && args[1]->Equals(String::New("object"))){
+         f_req->rowAsObject = true;
+    } else{
+     return ThrowException(Exception::Error(
+            String::New("Expecting bool or string('array'|'object') as second argument")));
+    };
+    
+    if(!args[2]->IsFunction()) {
+      return ThrowException(Exception::Error(
+            String::New("Expecting Function as third argument")));
+    }
+    
+    f_req->res = res;
+    f_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[2]));
+    
+    eio_custom(EIO_Fetch, EIO_PRI_DEFAULT, EIO_After_Fetch, f_req);
+    
+    ev_ref(EV_DEFAULT_UC);
+    res->Ref();
+    
+    return Undefined();
   }
 
   
@@ -785,6 +934,7 @@ class Connection : public EventEmitter {
      XSQLDA *sqlda;
      isc_stmt_handle stmt;
   };
+  
   static int EIO_After_Query(eio_req *req)
   {
     ev_unref(EV_DEFAULT_UC);
