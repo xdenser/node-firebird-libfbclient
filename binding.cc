@@ -58,6 +58,7 @@ public:
         constructor_template->InstanceTemplate();
         
     NODE_SET_PROTOTYPE_METHOD(t, "fetchSync", FetchSync);
+    NODE_SET_PROTOTYPE_METHOD(t, "fetch", Fetch);
 
 
     instance_template->SetInternalFieldCount(1);

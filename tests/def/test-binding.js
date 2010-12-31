@@ -25,12 +25,13 @@ exports.ConnectionBinding = function (test) {
 };
 
 exports.FBResultBinding = function(test){
- test.expect(2);
+ test.expect(3);
  var conn = new fb_binding.Connection; 
  conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role); 
  test.ok(conn.connected,"Connected to database");
  var res = conn.querySync("select * from rdb$database");
  test.ok("fetchSync" in res, "fetchSync");
+ test.ok("fetch" in res, "fetch");
  conn.disconnect();
  test.done();
 }
