@@ -543,6 +543,7 @@ class Connection : public EventEmitter {
     if (db) return false;
     int i = 0, len;
     char dpb[256];
+    char *lc_type = "UTF8";
     
     dpb[i++] = isc_dpb_version1;
     
@@ -563,6 +564,13 @@ class Connection : public EventEmitter {
     dpb[i++] = len;
     strncpy(&(dpb[i]), Role, len);
     i += len;
+    
+    dpb[i++] = isc_dpb_lc_ctype;
+    len = strlen (lc_type);
+    dpb[i++] = len;
+    strncpy(&(dpb[i]), lc_type, len);
+    i += len;
+    
     connected = false;
     if(isc_attach_database(status, 0, Database, &(db), i, dpb)) return false;
     connected = true;
