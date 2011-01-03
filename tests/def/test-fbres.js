@@ -41,6 +41,15 @@ module.exports = testCase({
            var row = this.res.fetchSync("all",false);
            test.ok(row, "There is row");
            test.done();
+         },
+         FBResFetchMany: function(test){
+           var c = 0;
+           test.expect(2);
+           this.res.fetch(2,false, function(err,row){
+             c++;
+             test.ok(row,"A Row");
+             if(c==2) test.done();
+           });
          }
 });  
 

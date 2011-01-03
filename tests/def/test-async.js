@@ -11,7 +11,7 @@ var
   fb_binding = require("../../build/default/binding");
  
 
-exports.ASyncConnection = function (test) {
+exports.AsyncConnection = function (test) {
   test.expect(4);
   var conn = new fb_binding.Connection;
   conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(){
@@ -26,7 +26,7 @@ exports.ASyncConnection = function (test) {
   });
 };
 
-exports.ASyncQueryWithError = function (test) {
+exports.AsyncQueryWithError = function (test) {
   test.expect(4);
   var conn = new fb_binding.Connection;
   conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(){
@@ -40,6 +40,24 @@ exports.ASyncQueryWithError = function (test) {
       });
   });
 }
+
+exports.AsyncFetch = function(test){
+  test.expect(6);
+  var conn = new fb_binding.Connection;
+  conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
+  test.ok(conn.connected,"Connected to database");
+  var res = conn.querySync("select * from rdb$relations");
+  test.ok(res,"There is result");
+  res.fetch(1,true, function(err,row){
+    test.ok(!err, "No error!");
+    test.ok(row,"There is row");
+    test.ok(row instanceof Object,"is object"); 
+    test.ok(!(row instanceof Array),"not array"); 
+    conn.disconnect();
+    test.done();
+  });
+  
+} 
 
 
 
