@@ -48,12 +48,13 @@ exports.AsyncFetch = function(test){
   test.ok(conn.connected,"Connected to database");
   var res = conn.querySync("select * from rdb$relations");
   test.ok(res,"There is result");
-  res.fetch(1,true, function(err,row){
-    test.ok(!err, "No error!");
+  res.fetch(1,true, function(row){
     test.ok(row,"There is row");
     test.ok(row instanceof Object,"is object"); 
     test.ok(!(row instanceof Array),"not array"); 
     conn.disconnect();
+  }, function(err,eof){
+    test.ok(!err, "No error!"); 
     test.done();
   });
   

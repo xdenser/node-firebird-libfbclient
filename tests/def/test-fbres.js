@@ -44,11 +44,13 @@ module.exports = testCase({
          },
          FBResFetchMany: function(test){
            var c = 0;
-           test.expect(2);
-           this.res.fetch(2,false, function(err,row){
+           test.expect(3);
+           this.res.fetch(2,false, function(row){
              c++;
              test.ok(row,"A Row");
-             if(c==2) test.done();
+           }, function(err,eof){
+             test.ok(!err,"No Error");
+             test.done(); 
            });
          }
 });  

@@ -342,7 +342,8 @@ protected:
   }
 
   struct fetch_request {
-     Persistent<Function> callback;
+     Persistent<Value> rowCallback;
+     Persistent<Function> eofCallback;
      FBResult *res;
      int rowCount;
      int fetchStat;
@@ -359,7 +360,8 @@ protected:
     
     Local<Value> js_field;
     Local<Object> js_result_row;   
-    Local<Value> argv[2];
+    Local<Value> argv[3];
+    int argc = 0;
     
     if(req->result)
     {
@@ -381,39 +383,61 @@ protected:
         	js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
         }
         
-        argv[0] = Local<Value>::New(Null());	
-        argv[1] = js_result_row;
+        if(f_req->rowCallback->IsFunction()){
+    	    argv[0] = js_result_row;
         
-	TryCatch try_catch;
+	    TryCatch try_catch;
 
-	Local<Value> ret = f_req->callback->Call(Context::GetCurrent()->Global(), 2, argv);
+	    Local<Value> ret = Persistent<Function>::Cast(f_req->rowCallback)->Call(Context::GetCurrent()->Global(), 1, argv);
 
-	if (try_catch.HasCaught()) {
-    	    node::FatalException(try_catch);
+	    if (try_catch.HasCaught()) {
+    		node::FatalException(try_catch);
+	    }
+	    else
+	    if((!ret->IsBoolean() || ret->BooleanValue())&&f_req->rowCount!=0)
+	    {
+		eio_custom(EIO_Fetch, EIO_PRI_DEFAULT, EIO_After_Fetch, f_req);
+        	ev_ref(EV_DEFAULT_UC);
+        	return 0;
+	    }
+	    else
+	    {
+	      argc = 2;
+	      argv[0] = Local<Value>::New(Null());
+	      argv[1] = Local<Value>::New(False());
+	    }
 	}
 	else
-	if((!ret->IsBoolean() || ret->BooleanValue())&&f_req->rowCount!=0)
-	{
-	  eio_custom(EIO_Fetch, EIO_PRI_DEFAULT, EIO_After_Fetch, f_req);
-          ev_ref(EV_DEFAULT_UC);
-          return 0;
+	{ 
+	 /* TODO: 
+	 *   accumulate result here 
+	 */
 	}
     }
     else 
     if(f_req->fetchStat!=100L){
+          argc = 1;
           argv[0] = Exception::Error(
             String::Concat(String::New("While connecting - "),ERR_MSG(f_req->res,FBResult)));
-          TryCatch try_catch;
+    }
+    else
+    {
+          argc = 2;
+          argv[0] = Local<Value>::New(Null());
+          argv[1] = Local<Value>::New(True());
+    }
 
-	  f_req->callback->Call(Context::GetCurrent()->Global(), 1, argv);
+   
+    TryCatch try_catch;
+    f_req->eofCallback->Call(Context::GetCurrent()->Global(), argc, argv);
 
-	  if (try_catch.HasCaught()) {
-    	    node::FatalException(try_catch);
-	  }
+    if (try_catch.HasCaught()) {
+        node::FatalException(try_catch);
     }
     
 
-    f_req->callback.Dispose();
+    f_req->rowCallback.Dispose();
+    f_req->eofCallback.Dispose();
     f_req->res->Unref();
     free(f_req);
 
@@ -446,9 +470,9 @@ protected:
             String::New("Could not allocate memory.")));
     }
     
-    if (args.Length() < 3){
+    if (args.Length() != 4){
        return ThrowException(Exception::Error(
-            String::New("Expecting 3 arguments")));
+            String::New("Expecting 4 arguments")));
     }
     
     f_req->rowCount = -1;
@@ -473,13 +497,19 @@ protected:
             String::New("Expecting bool or string('array'|'object') as second argument")));
     };
     
-    if(!args[2]->IsFunction()) {
+/*    if(!args[2]->IsFunction())  f_req->rowCallback = Persistent<Value>::New(Null());
+    else  f_req->rowCallback = Persistent<Function>::New(Local<Function>::Cast(args[2]));
+*/   
+    f_req->rowCallback  = Persistent<Value>::New(args[2]);
+    
+    if(!args[3]->IsFunction()) {
       return ThrowException(Exception::Error(
-            String::New("Expecting Function as third argument")));
+            String::New("Expecting Function as fourth argument")));
     }
+
     
     f_req->res = res;
-    f_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[2]));
+    f_req->eofCallback = Persistent<Function>::New(Local<Function>::Cast(args[3]));
     
     eio_custom(EIO_Fetch, EIO_PRI_DEFAULT, EIO_After_Fetch, f_req);
     
