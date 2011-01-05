@@ -38,7 +38,7 @@ Play with it from node:
     con.querySync("insert into test (id,name) values (5, 'new one')");
     var res = conn.querySync("select * from test");
     var rows = res.fetchSync("all",true);
-    console.log(sys.inspect(res));
+    console.log(sys.inspect(rows));
  
  
 ## Reference
@@ -55,10 +55,10 @@ Handles database connection and queries. Supports Synchronous and Asynchronous o
 
 where 
 
-* database - string, a database name in Firebird notation, i.e. <hostname>:<path to database file | alias>
-* username - string, user name
-* pasword - string,
-* role - string;
+* `database` - string, a database name in Firebird notation, i.e. `<hostname>:<path to database file | alias>`
+* `username` - string, user name
+* `pasword` - string,
+* `role` - string;
 
 Connects you to database, raises exception on error (try to catch it).
 Returns undefined.
@@ -68,7 +68,7 @@ Returns undefined.
     
 where first four parameters same as in connectSync()
 
-* callback - function(err), where err is error object in case of error.
+* `callback` - function(err), where err is error object in case of error.
 
 Asynchronously connects you to Database.
 Returns udefined.
@@ -79,7 +79,7 @@ A boolean readonly property indicating if Connection object is connected to data
 
 * * *
     function querySync(sql);
-* sql - string, an SQL query to execute.
+* `sql` - string, an SQL query to execute.
 
 Executes SQL query.
 Returns FBResult object in case of success. Raises error otherwise.
@@ -87,8 +87,8 @@ Returns FBResult object in case of success. Raises error otherwise.
 * * *
     function query(sql, callback);
 
-* sql - string, an SQL query to execute;
-* callback - function(err,res), err - is error object or null, res - FBResult object.
+* `sql` - string, an SQL query to execute;
+* `callback` - function(err,res), err - is error object or null, res - FBResult object.
 
 Asynchronously executes query.
 Returns undefined. 
@@ -104,8 +104,8 @@ Represents results of SQL query if any.
 * * *
     function fetchSync(rowCount, asObject);
     
-* rowCount - integer|"all", number of rows to fetch from results;
-* asObject - true|false, format of returned rows. When false - methods returns array of array, when true - array of objects.
+* `rowCount` - integer|"all", number of rows to fetch from results;
+* `asObject` - true|false, format of returned rows. When false - methods returns array of array, when true - array of objects.
 
 Synchronously fetches result rows. If you pass "all" as rowCount - it will fetch all result rows. 
 If you pass less rowCount than are actually in result, it will return specified number of rows. 
@@ -115,10 +115,10 @@ If you specify more rowCount than available it will return only actual number of
 * * *
     function fetch(rowCount, asObject, rowCallback, eofCallback);
     
-* rowCount - integer|"all", number of rows to fetch from results;
-* asObject - true|false, format of returned rows. When false - methods returns array of array, when true - array of objects;
-* rowCallback - function(row), row - Array or Object (depends on asObject parameter) representing single row from result;
-* eofCallback - function(err,eof), err - Error object in case of error, or null; eof - true | false.
+* `rowCount` - integer|"all", number of rows to fetch from results;
+* `asObject` - true|false, format of returned rows. When false - methods returns array of array, when true - array of objects;
+* `rowCallback` - function(row), row - Array or Object (depends on asObject parameter) representing single row from result;
+* `eofCallback` - function(err,eof), err - Error object in case of error, or null; eof - true | false.
 
 Asynchronously fetches rows one by one. 
 rowCallback is called for each fetched row. 
