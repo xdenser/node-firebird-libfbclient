@@ -35,6 +35,7 @@ return ThrowException(Exception::TypeError( \
 String::New("Argument " #I " invalid"))); \
 Local<External> VAR = Local<External>::Cast(args[I]);
 
+#define MAX_EVENTS_PER_BLOCK	15
 
 class FBResult : public EventEmitter {
 
@@ -541,6 +542,163 @@ protected:
    
 };
 
+static Persistent<String> fbevent_symbol;
+
+class event_block {
+
+public:
+    Connection *conn;
+    ISC_UCHAR *event_buffer;
+    ISC_UCHAR *result_buffer;
+    ISC_LONG event_id;
+    char *event_names[MAX_EVENTS_PER_BLOCK];
+    int count;
+    long blength;
+    event_block *next;
+    ev_async *event_;
+    bool was_queued;
+    
+    ISC_STATUS_ARRAY status;
+    isc_db_handle *db;
+    
+    bool alloc_block()
+    {
+      blength = isc_event_block(&event_buffer, &result_buffer, count, event_names);
+      return event_buffer && result_buffer && blength;
+    }
+    
+    bool free_block()
+    {
+      if(event_id)
+       if(isc_cancel_events(status, db, &event_id)) return false; 
+      isc_free((ISC_SCHAR*) event_buffer);
+      event_buffer  = NULL;
+      isc_free((ISC_SCHAR*) result_buffer);
+      result_buffer  = NULL;
+      return true;
+    }
+    
+    static void isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR *updated)
+    {
+      event_block* eb = static_cast<event_block*>(aeb);
+      while(length--) *eb->result_buffer++ = *updated++;
+      ev_async_send(EV_DEFAULT_UC_ eb->event_);
+      //return 0;    
+    }
+    
+    static void event_notification(EV_P_ ev_async *w, int revents){
+        event_block* eb = static_cast<event_block*>(w->data);
+        ((EventEmitter*) eb->conn)->Emit(fbevent_symbol,0,NULL);
+    }
+    
+    static bool re_que_event(event_block *eb)
+    { 
+             
+      if(!eb->free_block()) return false;
+      if(!eb->alloc_block()) return false;
+      if(isc_que_events(
+         eb->status,
+         eb->db,
+         &(eb->event_id),
+         eb->blength,
+         eb->event_buffer,
+         event_block::isc_ev_callback,
+         eb          
+      )) return false;
+      return true;
+    }
+    
+    
+    
+    
+    int hasEvent(char *Event)
+    {
+      int i;
+      for(i=0;i<count;i++){
+       if(event_names[i]&&(strcmp(event_names[i],Event)==0)) return i;
+      } 
+      return -1;
+    }
+    
+    bool addEvent(char *Event)
+    {
+      int len = strlen(Event);
+      event_names[count] = (char*) calloc(1,len+1);
+      if(!event_names[count]) return false;
+      char *p, *t;
+      t = event_names[count];
+      for(p=Event;(*p);){ *t++ = *p++; }
+      *t = 0;
+      count++;
+      return true;
+    }
+    
+    void removeEvent(char *Event)
+    {
+      int idx = hasEvent(Event); 
+      if(idx>=0) free(event_names[idx]);
+      else return ;
+      for(int i = idx;i < count;i++) event_names[i] = event_names[i+1];
+      count--;
+    }
+    
+    static event_block* RegEvent(event_block* root, char *Event, Connection *aconn)
+    {
+      event_block* res = event_block::FindBlock(root,Event);
+      if(res) return NULL;
+      
+      res = root;
+      while(res)
+      {
+        if(res->count<MAX_EVENTS_PER_BLOCK) break;
+        root = res;
+        res = res->next;
+      }
+      if(!res){
+        res = new event_block(aconn);
+        res->event_->data = res;
+        ev_async_init(res->event_, event_block::event_notification);
+        ev_async_start(EV_DEFAULT_UC_ res->event_);
+        ev_unref(EV_DEFAULT_UC);
+        if(root) root->next = res;
+      }
+      
+      
+      if(!res->addEvent(Event)) return NULL;
+      else 
+      {
+        event_block::que_event(res);  
+        return res;
+      } 
+    }
+    
+    static event_block* FindBlock(event_block* root, char *Event)
+    {
+      event_block* res = root;
+      while(res && !res->hasEvent(Event)) res = res->next;
+      return res;
+    }
+    
+    event_block(Connection *aconn, )
+    {
+      conn = aconn;
+      count = 0;
+      next = NULL;
+      blength = 0;
+      event_ = new ev_async();
+      was_queued = false;
+    }
+    
+    ~event_block()
+    {
+      int i;
+      for(i=0;i<count;i++) free(event_names[i]);
+      free_block();
+      free(event_);
+    }
+};
+
+
 Persistent<FunctionTemplate> FBResult::constructor_template;
 
 class Connection : public EventEmitter {
@@ -561,9 +719,14 @@ class Connection : public EventEmitter {
     NODE_SET_PROTOTYPE_METHOD(t, "querySync", QuerySync);
     NODE_SET_PROTOTYPE_METHOD(t, "query", Query);
     NODE_SET_PROTOTYPE_METHOD(t, "disconnect", Disconnect);
+    NODE_SET_PROTOTYPE_METHOD(t, "addFBevent", addEvent);
+    NODE_SET_PROTOTYPE_METHOD(t, "deleteFBevent", deleteEvent);
+    
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
     instance_t->SetAccessor(String::NewSymbol("connected"), ConnectedGetter);
+    
+    fbevent_symbol = NODE_PSYMBOL("fbevent");
     
     target->Set(String::NewSymbol("Connection"), t->GetFunction());  
   }
@@ -754,8 +917,7 @@ class Connection : public EventEmitter {
   {
      
   }
-  
-   
+     
   
   bool commit_transaction()
   {
@@ -766,6 +928,16 @@ class Connection : public EventEmitter {
     return true;
   }
   
+  
+  bool add_event (const char* Event)
+  {
+    
+  }
+  
+  bool delete_event (const char* Event)
+  {
+    
+  }
   
  protected:
  
@@ -1056,7 +1228,76 @@ class Connection : public EventEmitter {
     return Undefined();
     
   }
+  
+  static Handle<Value>
+  addEvent(const Arguments& args)
+  {
+    HandleScope scope;
+    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    
+    if (args.Length() < 1 || !args[0]->IsString()) {
+      return ThrowException(Exception::Error(
+            String::New("Expecting 1 string argument")));
+    }
+    
+    String::Utf8Value Event(args[0]->ToString());
+    
 
+//    bool r = conn->add_event(*Event);
+    
+    if(!event_block::FindBlock(conn->fb_events, *Event)){
+        event_block* eb;
+        eb = event_block::RegEvent(conn->fb_events, *Event, conn);
+      
+	if(!conn->fb_events) conn->fb_events = eb;
+    
+	if(!eb){
+    	    V8::LowMemoryNotification();
+    	    return ThrowException(Exception::Error(
+            String::New("Cannot allocate event block")));
+	}
+	
+	
+    }
+    
+    
+/*    if (!r) {
+      return ThrowException(Exception::Error(
+            String::Concat(String::New("While addEvent "),ERR_MSG(conn, Connection))));
+    }
+*/
+    
+    return Undefined();
+
+  
+  }
+  
+  static Handle<Value>
+  deleteEvent(const Arguments& args)
+  {
+  
+    HandleScope scope;
+    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    
+    if (args.Length() < 1 || !args[0]->IsString()) {
+      return ThrowException(Exception::Error(
+            String::New("Expecting 1 string argument")));
+    }
+    
+    String::Utf8Value Event(args[0]->ToString());
+    
+
+    bool r = conn->delete_event(*Event);
+
+    if (!r) {
+      return ThrowException(Exception::Error(
+            String::Concat(String::New("While deleteEvent "),ERR_MSG(conn, Connection))));
+    }
+    
+    return Undefined();
+
+  }
+  
   static time_t 
   get_gmt_delta()
   {
@@ -1125,10 +1366,12 @@ class Connection : public EventEmitter {
 
   ISC_STATUS_ARRAY status;
   isc_db_handle db;
+  event_block* fb_events;
   bool connected; 
   isc_tr_handle trans;
   bool in_async;
   char err_message[1024];
+  
 
 };
 
