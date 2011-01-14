@@ -36,6 +36,7 @@ String::New("Argument " #I " invalid"))); \
 Local<External> VAR = Local<External>::Cast(args[I]);
 
 #define MAX_EVENTS_PER_BLOCK	15
+#define EXP_15_VAR_ARGS(x) x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11],x[12],x[13],x[14]
 
 class FBResult : public EventEmitter {
 
@@ -542,6 +543,8 @@ protected:
    
 };
 
+
+typedef char* ev_names[MAX_EVENTS_PER_BLOCK];
 static Persistent<String> fbevent_symbol;
 
 class event_block {
@@ -551,7 +554,7 @@ public:
     ISC_UCHAR *event_buffer;
     ISC_UCHAR *result_buffer;
     ISC_LONG event_id;
-    char *event_names[MAX_EVENTS_PER_BLOCK];
+    ev_names event_names;
     int count;
     long blength;
     event_block *next;
@@ -563,23 +566,33 @@ public:
     
     bool alloc_block()
     {
-      blength = isc_event_block(&event_buffer, &result_buffer, count, event_names);
+      blength = isc_event_block(&event_buffer, &result_buffer, count, EXP_15_VAR_ARGS(event_names));
       return event_buffer && result_buffer && blength;
     }
     
     bool free_block()
     {
+      
       if(event_id)
+      {
+       printf("before isc_cancel_events\n");
        if(isc_cancel_events(status, db, &event_id)) return false; 
-      isc_free((ISC_SCHAR*) event_buffer);
-      event_buffer  = NULL;
-      isc_free((ISC_SCHAR*) result_buffer);
-      result_buffer  = NULL;
+      } 
+      
+      if(blength)
+      { 
+       isc_free((ISC_SCHAR*) event_buffer);
+       event_buffer  = NULL;
+       isc_free((ISC_SCHAR*) result_buffer);
+       result_buffer  = NULL;
+       blength = 0;
+      }
       return true;
     }
     
     static void isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR *updated)
     {
+      printf("isc_ev_callback\n");
       event_block* eb = static_cast<event_block*>(aeb);
       while(length--) *eb->result_buffer++ = *updated++;
       ev_async_send(EV_DEFAULT_UC_ eb->event_);
@@ -587,15 +600,24 @@ public:
     }
     
     static void event_notification(EV_P_ ev_async *w, int revents){
+        printf("event_notification\n");
         event_block* eb = static_cast<event_block*>(w->data);
         ((EventEmitter*) eb->conn)->Emit(fbevent_symbol,0,NULL);
     }
     
     static bool re_que_event(event_block *eb)
     { 
-             
+      printf("In re_que_event\n");
       if(!eb->free_block()) return false;
+      printf("after free_block\n");
       if(!eb->alloc_block()) return false;
+      printf("before isc_que_events\n");
+      
+      printf("eb->status=%d\n", eb->status);
+      printf("eb->db=%d\n",  eb->db);
+      printf("eb->event_id=%d\n",  eb->event_id);
+      printf("eb->blength=%d\n",  eb->blength);
+      
       if(isc_que_events(
          eb->status,
          eb->db,
@@ -607,9 +629,6 @@ public:
       )) return false;
       return true;
     }
-    
-    
-    
     
     int hasEvent(char *Event)
     {
@@ -642,10 +661,12 @@ public:
       count--;
     }
     
-    static event_block* RegEvent(event_block* root, char *Event, Connection *aconn)
+    static event_block* RegEvent(event_block* root, char *Event, Connection *aconn, isc_db_handle *db)
     {
       event_block* res = event_block::FindBlock(root,Event);
       if(res) return NULL;
+      
+      printf("In RegEvent\n");
       
       res = root;
       while(res)
@@ -655,36 +676,61 @@ public:
         res = res->next;
       }
       if(!res){
-        res = new event_block(aconn);
+      
+        printf("create new event_block\n");
+        res = new event_block(aconn, db);
         res->event_->data = res;
         ev_async_init(res->event_, event_block::event_notification);
         ev_async_start(EV_DEFAULT_UC_ res->event_);
         ev_unref(EV_DEFAULT_UC);
         if(root) root->next = res;
+        printf("created new event_block\n");
       }
       
       
       if(!res->addEvent(Event)) return NULL;
       else 
       {
-        event_block::que_event(res);  
+        printf("before re_que_event\n");
+        event_block::re_que_event(res); 
+        printf("after re_que_event\n"); 
         return res;
       } 
     }
     
     static event_block* FindBlock(event_block* root, char *Event)
     {
+      printf("In FindBlock\n");
       event_block* res = root;
-      while(res && !res->hasEvent(Event)) res = res->next;
+      while(res)
+       if(res->hasEvent(Event)==-1) res = res->next;
+       else break;
+      printf("out FindBlock %d\n", res); 
       return res;
+      
     }
     
-    event_block(Connection *aconn, )
+    static void RemoveEvent(event_block* root, char *Event)
+    {
+      event_block* eb = event_block::FindBlock(root, Event);
+      if(eb)
+      {
+        eb->removeEvent(Event);
+        if(!eb->count) free(eb);
+        else event_block::re_que_event(eb);    
+      }	
+    }
+    
+    event_block(Connection *aconn,isc_db_handle *adb)
     {
       conn = aconn;
+      db = adb;
       count = 0;
       next = NULL;
+      event_buffer = NULL;
+      result_buffer = NULL;
       blength = 0;
+      event_id = 0;
       event_ = new ev_async();
       was_queued = false;
     }
@@ -1232,6 +1278,8 @@ class Connection : public EventEmitter {
   static Handle<Value>
   addEvent(const Arguments& args)
   {
+    
+    
     HandleScope scope;
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     
@@ -1242,33 +1290,25 @@ class Connection : public EventEmitter {
     
     String::Utf8Value Event(args[0]->ToString());
     
-
-//    bool r = conn->add_event(*Event);
+    printf("addEvent %s\n", *Event);
     
     if(!event_block::FindBlock(conn->fb_events, *Event)){
+        
         event_block* eb;
-        eb = event_block::RegEvent(conn->fb_events, *Event, conn);
-      
+        
+        eb = event_block::RegEvent(conn->fb_events, *Event, conn, &conn->db);
+        
 	if(!conn->fb_events) conn->fb_events = eb;
-    
+	
 	if(!eb){
     	    V8::LowMemoryNotification();
     	    return ThrowException(Exception::Error(
             String::New("Cannot allocate event block")));
 	}
 	
-	
     }
-    
-    
-/*    if (!r) {
-      return ThrowException(Exception::Error(
-            String::Concat(String::New("While addEvent "),ERR_MSG(conn, Connection))));
-    }
-*/
     
     return Undefined();
-
   
   }
   
@@ -1286,13 +1326,9 @@ class Connection : public EventEmitter {
     
     String::Utf8Value Event(args[0]->ToString());
     
+    event_block::RemoveEvent(conn->fb_events, *Event);
+    
 
-    bool r = conn->delete_event(*Event);
-
-    if (!r) {
-      return ThrowException(Exception::Error(
-            String::Concat(String::New("While deleteEvent "),ERR_MSG(conn, Connection))));
-    }
     
     return Undefined();
 
@@ -1326,6 +1362,7 @@ class Connection : public EventEmitter {
   {
     db = NULL;
     trans = NULL;
+    fb_events = NULL;
     in_async = false;
     connected = false;
 
