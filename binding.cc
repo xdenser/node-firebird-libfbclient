@@ -560,8 +560,10 @@ public:
     event_block *next;
     ev_async *event_;
     bool was_queued;
+    int first_time;
     
     ISC_STATUS_ARRAY status;
+    ISC_STATUS_ARRAY Was_reg;
     isc_db_handle *db;
     
     bool alloc_block()
@@ -575,8 +577,8 @@ public:
       
       if(event_id)
       {
-       printf("before isc_cancel_events\n");
        if(isc_cancel_events(status, db, &event_id)) return false; 
+       event_id = 0;
       } 
       
       if(blength)
@@ -592,31 +594,64 @@ public:
     
     static void isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR *updated)
     {
-      printf("isc_ev_callback\n");
+      //printf("+++isc_ev_callback\n");
       event_block* eb = static_cast<event_block*>(aeb);
-      while(length--) *eb->result_buffer++ = *updated++;
+      ISC_UCHAR *r = eb->result_buffer;
+      while(length--) *r++ = *updated++;
       ev_async_send(EV_DEFAULT_UC_ eb->event_);
-      //return 0;    
     }
     
     static void event_notification(EV_P_ ev_async *w, int revents){
-        printf("event_notification\n");
+        //printf("event_notification\n");
+        ISC_STATUS_ARRAY Vector;
+    
         event_block* eb = static_cast<event_block*>(w->data);
-        ((EventEmitter*) eb->conn)->Emit(fbevent_symbol,0,NULL);
+        
+        if(eb->first_time) {
+//	   printf("it is first time\n");
+           eb->first_time = false;
+	   return ;
+	}			
+	
+	isc_event_counts((ISC_ULONG*) Vector, eb->blength, eb->event_buffer,
+				      eb->result_buffer);
+	
+	for(int i=0; i < eb->count; i++){
+	   if((Vector[i]-eb->Was_reg[i])>0) {
+	     
+	     HandleScope scope;
+	     Local<Value> argv[2];
+	     argv[0] = String::New(eb->event_names[i]);
+	     argv[1] = Integer::New(Vector[i] - eb->Was_reg[i]);
+	     
+             ((EventEmitter*) eb->conn)->Emit(fbevent_symbol,2,argv);
+             
+             //scope.Close();
+             
+           }     
+           if(eb->Was_reg[i]) eb->Was_reg[i] = 0;      
+//           printf("after emit count[%d]=%d\n",i,Vector[i]);      
+        }   
+        
+        isc_que_events(
+         eb->status,
+         eb->db,
+         &(eb->event_id),
+         eb->blength,
+         eb->event_buffer,
+         event_block::isc_ev_callback,
+         eb          
+        );
+    }
+    bool un_que_event()
+    {
+      if(!free_block()) return false;
+      return true;
     }
     
-    static bool re_que_event(event_block *eb)
+    static bool que_event(event_block *eb)
     { 
-      printf("In re_que_event\n");
-      if(!eb->free_block()) return false;
-      printf("after free_block\n");
       if(!eb->alloc_block()) return false;
-      printf("before isc_que_events\n");
-      
-      printf("eb->status=%d\n", eb->status);
-      printf("eb->db=%d\n",  eb->db);
-      printf("eb->event_id=%d\n",  eb->event_id);
-      printf("eb->blength=%d\n",  eb->blength);
       
       if(isc_que_events(
          eb->status,
@@ -627,6 +662,18 @@ public:
          event_block::isc_ev_callback,
          eb          
       )) return false;
+      
+      
+    //  printf("eb->status[0]=%d\n",eb->status[0]); 
+    //  printf("eb->status[1]=%d\n",eb->status[1]); 
+    //  printf("eb->db=%d\n",(long)*eb->db); 
+    //  printf("eb->event_id=%d\n",eb->event_id); 
+    //  printf("eb->blength=%d\n",eb->blength); 
+//      printf("eb->count=%d\n",eb->count); 
+      
+      if(eb->status[1]) return false;
+
+      //eb->first_time = true;
       return true;
     }
     
@@ -643,6 +690,7 @@ public:
     {
       int len = strlen(Event);
       event_names[count] = (char*) calloc(1,len+1);
+      Was_reg[count] = 1;
       if(!event_names[count]) return false;
       char *p, *t;
       t = event_names[count];
@@ -653,7 +701,7 @@ public:
     }
     
     void removeEvent(char *Event)
-    {
+    { 
       int idx = hasEvent(Event); 
       if(idx>=0) free(event_names[idx]);
       else return ;
@@ -665,9 +713,7 @@ public:
     {
       event_block* res = event_block::FindBlock(root,Event);
       if(res) return NULL;
-      
-      printf("In RegEvent\n");
-      
+  
       res = root;
       while(res)
       {
@@ -676,38 +722,28 @@ public:
         res = res->next;
       }
       if(!res){
-      
-        printf("create new event_block\n");
         res = new event_block(aconn, db);
         res->event_->data = res;
         ev_async_init(res->event_, event_block::event_notification);
         ev_async_start(EV_DEFAULT_UC_ res->event_);
         ev_unref(EV_DEFAULT_UC);
         if(root) root->next = res;
-        printf("created new event_block\n");
       }
       
+      if(!res->un_que_event()) return NULL;
       
       if(!res->addEvent(Event)) return NULL;
-      else 
-      {
-        printf("before re_que_event\n");
-        event_block::re_que_event(res); 
-        printf("after re_que_event\n"); 
-        return res;
-      } 
+      event_block::que_event(res); 
+      return res;
     }
     
     static event_block* FindBlock(event_block* root, char *Event)
     {
-      printf("In FindBlock\n");
       event_block* res = root;
       while(res)
        if(res->hasEvent(Event)==-1) res = res->next;
        else break;
-      printf("out FindBlock %d\n", res); 
       return res;
-      
     }
     
     static void RemoveEvent(event_block* root, char *Event)
@@ -715,9 +751,10 @@ public:
       event_block* eb = event_block::FindBlock(root, Event);
       if(eb)
       {
+        if(!eb->un_que_event()) return;
         eb->removeEvent(Event);
         if(!eb->count) free(eb);
-        else event_block::re_que_event(eb);    
+        else event_block::que_event(eb);    
       }	
     }
     
@@ -733,6 +770,8 @@ public:
       event_id = 0;
       event_ = new ev_async();
       was_queued = false;
+      first_time = true;
+      memset(Was_reg,0,sizeof(Was_reg));
     }
     
     ~event_block()
@@ -891,7 +930,7 @@ class Connection : public EventEmitter {
 
         if (trans && (statement_type == isc_info_sql_stmt_ddl))
         {
-            
+            //printf("it is ddl !");
             if (isc_commit_transaction(status, &trans))
             {
              return false;    
@@ -967,10 +1006,12 @@ class Connection : public EventEmitter {
   
   bool commit_transaction()
   {
+    //printf("in commit transaction\n");
     if (isc_commit_transaction(status, &trans))
     {
              return false;    
     }    
+    //printf("commit transaction\n");
     return true;
   }
   
@@ -1131,7 +1172,7 @@ class Connection : public EventEmitter {
     Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
 
     HandleScope scope;
-    
+    //printf("disconnect\n");
     if(!connection->Close()){
       return ThrowException(Exception::Error(
             String::Concat(String::New("While closing - "),ERR_MSG(connection, Connection))));
@@ -1290,7 +1331,7 @@ class Connection : public EventEmitter {
     
     String::Utf8Value Event(args[0]->ToString());
     
-    printf("addEvent %s\n", *Event);
+    //printf("addEvent %s\n", *Event);
     
     if(!event_block::FindBlock(conn->fb_events, *Event)){
         
