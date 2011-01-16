@@ -3,10 +3,9 @@ This is first basic version of project.
 As for now in plans are:
 
 - adding blob field support;
-- firebird events;
 - transaction control.
 
-## Getting Started
+# Getting Started
 
 You will need:
  NodeJS (tested with v0.3.2-pre)
@@ -41,15 +40,15 @@ Play with it from node:
     console.log(sys.inspect(rows));
  
  
-## Reference
+# Reference
 
  createConnection() method will create Firebird Connection object for you
  
-### Connection object
+## Connection object
 
 Handles database connection and queries. Supports Synchronous and Asynchronous operation.
 
-#### Connection object members
+### Connection object members
 * * *
     function connectSync(database, username, password, role);
 
@@ -94,12 +93,26 @@ Asynchronously executes query.
 Returns undefined. 
 
 * * *
+    function addFBevent(name);
+* `name` - string, Firebird Event Name.
 
-### FBResult object
+Registers connection to listen for firebird event `name`, called from PL\SQL (in stored procedures or triggers) with post_event '`name`'.
+You may set callback for event with `connection.on('fbevent', function(name, count){ <your code>));`. 
+Where name is event name, and count is number of times event were posted.
+    
+* * *
+    function deleteFBevent(name);
+* `name` - string, Firebird Event Name.
+
+Unsubscribes connection from getting events for name.
+     
+* * *
+
+## FBResult object
 
 Represents results of SQL query if any. 
     
-#### FBResult object members
+### FBResult object members
 
 * * *
     function fetchSync(rowCount, asObject);

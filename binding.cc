@@ -557,10 +557,9 @@ public:
     ev_names event_names;
     int count;
     long blength;
-    event_block *next;
+    event_block *next, *prev;
     ev_async *event_;
-    bool was_queued;
-    int first_time;
+    bool first_time;
     
     ISC_STATUS_ARRAY status;
     ISC_STATUS_ARRAY Was_reg;
@@ -594,7 +593,6 @@ public:
     
     static void isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR *updated)
     {
-      //printf("+++isc_ev_callback\n");
       event_block* eb = static_cast<event_block*>(aeb);
       ISC_UCHAR *r = eb->result_buffer;
       while(length--) *r++ = *updated++;
@@ -602,13 +600,11 @@ public:
     }
     
     static void event_notification(EV_P_ ev_async *w, int revents){
-        //printf("event_notification\n");
         ISC_STATUS_ARRAY Vector;
     
         event_block* eb = static_cast<event_block*>(w->data);
         
         if(eb->first_time) {
-//	   printf("it is first time\n");
            eb->first_time = false;
 	   return ;
 	}			
@@ -626,11 +622,8 @@ public:
 	     
              ((EventEmitter*) eb->conn)->Emit(fbevent_symbol,2,argv);
              
-             //scope.Close();
-             
            }     
            if(eb->Was_reg[i]) eb->Was_reg[i] = 0;      
-//           printf("after emit count[%d]=%d\n",i,Vector[i]);      
         }   
         
         isc_que_events(
@@ -662,18 +655,8 @@ public:
          event_block::isc_ev_callback,
          eb          
       )) return false;
-      
-      
-    //  printf("eb->status[0]=%d\n",eb->status[0]); 
-    //  printf("eb->status[1]=%d\n",eb->status[1]); 
-    //  printf("eb->db=%d\n",(long)*eb->db); 
-    //  printf("eb->event_id=%d\n",eb->event_id); 
-    //  printf("eb->blength=%d\n",eb->blength); 
-//      printf("eb->count=%d\n",eb->count); 
-      
-      if(eb->status[1]) return false;
 
-      //eb->first_time = true;
+      if(eb->status[1]) return false;
       return true;
     }
     
@@ -727,7 +710,10 @@ public:
         ev_async_init(res->event_, event_block::event_notification);
         ev_async_start(EV_DEFAULT_UC_ res->event_);
         ev_unref(EV_DEFAULT_UC);
-        if(root) root->next = res;
+        if(root) {
+         root->next = res;
+         res->prev = root;
+        } 
       }
       
       if(!res->un_que_event()) return NULL;
@@ -746,14 +732,24 @@ public:
       return res;
     }
     
-    static void RemoveEvent(event_block* root, char *Event)
+    static void RemoveEvent(event_block** root, char *Event)
     {
-      event_block* eb = event_block::FindBlock(root, Event);
+      event_block* eb = event_block::FindBlock( *root, Event);
       if(eb)
       {
         if(!eb->un_que_event()) return;
         eb->removeEvent(Event);
-        if(!eb->count) free(eb);
+        if(!eb->count) {
+         if(eb->prev) 
+         {
+          eb->prev->next = eb->next;
+         }
+         else
+         {
+          *root = NULL;
+         }
+         free(eb);
+        } 
         else event_block::que_event(eb);    
       }	
     }
@@ -764,12 +760,12 @@ public:
       db = adb;
       count = 0;
       next = NULL;
+      prev = NULL;
       event_buffer = NULL;
       result_buffer = NULL;
       blength = 0;
       event_id = 0;
       event_ = new ev_async();
-      was_queued = false;
       first_time = true;
       memset(Was_reg,0,sizeof(Was_reg));
     }
@@ -1006,25 +1002,14 @@ class Connection : public EventEmitter {
   
   bool commit_transaction()
   {
-    //printf("in commit transaction\n");
     if (isc_commit_transaction(status, &trans))
     {
              return false;    
     }    
-    //printf("commit transaction\n");
     return true;
   }
   
   
-  bool add_event (const char* Event)
-  {
-    
-  }
-  
-  bool delete_event (const char* Event)
-  {
-    
-  }
   
  protected:
  
@@ -1331,8 +1316,6 @@ class Connection : public EventEmitter {
     
     String::Utf8Value Event(args[0]->ToString());
     
-    //printf("addEvent %s\n", *Event);
-    
     if(!event_block::FindBlock(conn->fb_events, *Event)){
         
         event_block* eb;
@@ -1367,7 +1350,7 @@ class Connection : public EventEmitter {
     
     String::Utf8Value Event(args[0]->ToString());
     
-    event_block::RemoveEvent(conn->fb_events, *Event);
+    event_block::RemoveEvent(&(conn->fb_events), *Event);
     
 
     
@@ -1406,19 +1389,10 @@ class Connection : public EventEmitter {
     fb_events = NULL;
     in_async = false;
     connected = false;
-
-//    connecting_ = resetting_ = false;
-
-/*    ev_init(&read_watcher_, io_event);
-    read_watcher_.data = this;
-
-    ev_init(&write_watcher_, io_event);
-    write_watcher_.data = this; */
   }
 
   ~Connection ()
   {
-    //printf("conn destroy\n");
     if(db!=NULL) Close();
     assert(db == NULL);
   }
@@ -1429,18 +1403,6 @@ class Connection : public EventEmitter {
   {
 
   }
-
- 
-/*  static void
-  io_event (EV_P_ ev_io *w, int revents)
-  {
-    Connection *connection = static_cast<Connection*>(w->data);
-    connection->Event(revents);
-  }
-
- 
-  ev_io read_watcher_;
-  ev_io write_watcher_; */
 
   ISC_STATUS_ARRAY status;
   isc_db_handle db;
