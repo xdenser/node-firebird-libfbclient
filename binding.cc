@@ -800,12 +800,17 @@ class Connection : public EventEmitter {
     NODE_SET_PROTOTYPE_METHOD(t, "querySync", QuerySync);
     NODE_SET_PROTOTYPE_METHOD(t, "query", Query);
     NODE_SET_PROTOTYPE_METHOD(t, "disconnect", Disconnect);
+    NODE_SET_PROTOTYPE_METHOD(t, "commitSync", CommitSync);
+    NODE_SET_PROTOTYPE_METHOD(t, "commit", Commit);
+    NODE_SET_PROTOTYPE_METHOD(t, "rollbackSync", RollbackSync);
+    NODE_SET_PROTOTYPE_METHOD(t, "rollback", Rollback);
     NODE_SET_PROTOTYPE_METHOD(t, "addFBevent", addEvent);
     NODE_SET_PROTOTYPE_METHOD(t, "deleteFBevent", deleteEvent);
     
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
     instance_t->SetAccessor(String::NewSymbol("connected"), ConnectedGetter);
+    instance_t->SetAccessor(String::NewSymbol("inTransaction"), InTransactionGetter);
     
     fbevent_symbol = NODE_PSYMBOL("fbevent");
     
@@ -897,7 +902,9 @@ class Connection : public EventEmitter {
      
      // Start Default Transaction If None Active
      if(!trans) 
+      {
       if (isc_start_transaction(status, &trans, 1, &db, 0, NULL)) return false;
+      }
       
      // Prepare Statement
      if (isc_dsql_prepare(status, &trans, stmtp, 0, query, SQL_DIALECT_V6, sqlda)) return false;
@@ -929,8 +936,10 @@ class Connection : public EventEmitter {
             //printf("it is ddl !");
             if (isc_commit_transaction(status, &trans))
             {
+             trans = 0;
              return false;    
             }    
+            trans = 0;
         }
 
         return true;
@@ -994,18 +1003,27 @@ class Connection : public EventEmitter {
 
   }
   
-  bool start_transaction()
-  {
-     
-  }
-     
+
   
   bool commit_transaction()
   {
     if (isc_commit_transaction(status, &trans))
     {
+             trans = 0;
              return false;    
     }    
+    trans = 0;
+    return true;
+  }
+    
+  bool rollback_transaction()
+  {
+    if (isc_rollback_transaction(status, &trans))
+    {
+             trans = 0;
+             return false;    
+    }    
+    trans = 0;
     return true;
   }
   
@@ -1173,7 +1191,160 @@ class Connection : public EventEmitter {
 
     return scope.Close(Boolean::New(connection->connected));
   }
+  
+  static Handle<Value>
+  InTransactionGetter(Local<String> property,
+                      const AccessorInfo &info) 
+  {
+    HandleScope scope;
+    Connection *connection = ObjectWrap::Unwrap<Connection>(info.Holder());
 
+    return scope.Close(Boolean::New(connection->trans));
+  }
+
+  static Handle<Value>
+  CommitSync (const Arguments& args)
+  {
+    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+
+    HandleScope scope;
+    
+    bool r = connection->commit_transaction();
+
+    if (!r) {
+      return ThrowException(Exception::Error(
+            String::Concat(String::New("While commitSync - "),ERR_MSG(connection, Connection))));
+    }
+    
+    return Undefined();
+  } 
+    
+  static Handle<Value>
+  RollbackSync (const Arguments& args)
+  {
+    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+
+    HandleScope scope;
+    
+    bool r = connection->rollback_transaction();
+
+    if (!r) {
+      return ThrowException(Exception::Error(
+            String::Concat(String::New("While rollbackSync - "),ERR_MSG(connection, Connection))));
+    }
+    
+    return Undefined();
+  } 
+  
+  struct transaction_request {
+     Persistent<Function> callback;
+     Connection *conn;
+     bool commit;
+  };
+
+  static int EIO_After_TransactionRequest(eio_req *req)
+  {
+    ev_unref(EV_DEFAULT_UC);
+    HandleScope scope;
+    struct transaction_request *tr_req = (struct transaction_request *)(req->data);
+
+    Local<Value> argv[1];
+    
+    if (!req->result) {
+       argv[0] = Exception::Error(ERR_MSG(tr_req->conn, Connection));
+    }
+    else{
+     argv[0] = Local<Value>::New(Null());
+    }
+   
+    TryCatch try_catch;
+
+    tr_req->callback->Call(Context::GetCurrent()->Global(), 1, argv);
+
+    if (try_catch.HasCaught()) {
+        node::FatalException(try_catch);
+    }
+
+    tr_req->callback.Dispose();
+    tr_req->conn->Unref();
+    free(tr_req);
+
+    return 0;
+    
+  }
+  
+  static int EIO_TransactionRequest(eio_req *req)
+  {
+    struct transaction_request *tr_req = (struct transaction_request *)(req->data);
+    if(tr_req->commit) req->result = tr_req->conn->commit_transaction();
+    else req->result = tr_req->conn->rollback_transaction();
+    return 0;
+  }
+
+  
+  static Handle<Value>
+  Commit (const Arguments& args)
+  {
+    HandleScope scope;
+    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    
+    struct transaction_request *tr_req =
+         (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
+
+    if (!tr_req) {
+      V8::LowMemoryNotification();
+      return ThrowException(Exception::Error(
+            String::New("Could not allocate memory.")));
+    }
+    
+    if (args.Length() < 1) {
+      return ThrowException(Exception::Error(
+            String::New("Expecting Callback Function argument")));
+    }
+    
+    tr_req->conn = conn;
+    tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+    tr_req->commit = true;
+    
+    eio_custom(EIO_TransactionRequest, EIO_PRI_DEFAULT, EIO_After_TransactionRequest, tr_req);
+    
+    ev_ref(EV_DEFAULT_UC);
+    conn->Ref();
+    
+    return Undefined();
+  }
+  
+  static Handle<Value>
+  Rollback (const Arguments& args)
+  {
+    HandleScope scope;
+    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    
+    struct transaction_request *tr_req =
+         (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
+
+    if (!tr_req) {
+      V8::LowMemoryNotification();
+      return ThrowException(Exception::Error(
+            String::New("Could not allocate memory.")));
+    }
+    
+    if (args.Length() < 1) {
+      return ThrowException(Exception::Error(
+            String::New("Expecting Callback Function argument")));
+    }
+    
+    tr_req->conn = conn;
+    tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+    tr_req->commit = false;
+    
+    eio_custom(EIO_TransactionRequest, EIO_PRI_DEFAULT, EIO_After_TransactionRequest, tr_req);
+    
+    ev_ref(EV_DEFAULT_UC);
+    conn->Ref();
+    
+    return Undefined();
+  } 
   
   static Handle<Value>
   QuerySync(const Arguments& args)

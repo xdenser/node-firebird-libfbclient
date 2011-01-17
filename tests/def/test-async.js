@@ -35,7 +35,7 @@ exports.AsyncQueryWithError = function (test) {
          test.ok(err,"There is error");   
          test.ok(!res,"No result");   
          conn.disconnect();
-         test.ok(!conn.connected,"Disconnected to database");
+         test.ok(!conn.connected,"Disconnected from database");
          test.done();
       });
   });

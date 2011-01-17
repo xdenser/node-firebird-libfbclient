@@ -11,7 +11,7 @@ var
   fb_binding = require("../../build/default/binding");
 
 exports.ConnectionBinding = function (test) {
-  test.expect(11);
+  test.expect(15);
   test.ok("Connection" in fb_binding, "Connection");
   var conn = new fb_binding.Connection;
   test.ok(conn, "Connection created");
@@ -21,9 +21,13 @@ exports.ConnectionBinding = function (test) {
   test.ok("disconnect" in conn, "disconnect");
   test.ok("querySync" in conn, "querySync");
   test.ok("query" in conn, "query");
-  test.ok("query" in conn, "query");
   test.ok("addFBevent" in conn,"addFBevent");
   test.ok("deleteFBevent" in conn,"deleteFBevent");
+  test.ok("commit" in conn, "commit");
+  test.ok("commitSync" in conn, "commitSync");
+  test.ok("inTransaction" in conn, "inTransaction");
+  test.ok("rollback" in conn, "rollback");
+  test.ok("rollbackSync" in conn, "rollbackSync");
   test.done();
 };
 

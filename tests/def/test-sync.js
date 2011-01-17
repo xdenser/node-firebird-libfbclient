@@ -23,5 +23,76 @@ exports.SyncConnection = function (test) {
   test.done();
 };
 
+function Connect(){
+  var conn = new fb_binding.Connection;
+  conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
+  conn.querySync("create table TEST_TRANS (ID INTEGER, NAME VARCHAR(20))");
+  return conn;
+}
+function Close(conn){
+  conn.disconnect();
+  var con = new fb_binding.Connection;
+  con.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
+  con.querySync("drop table TEST_TRANS;");
+  con.disconnect();
+}
+
+exports.SyncDDLTransaction = function(test) {
+  test.expect(2);
+  var conn = Connect();
+  test.ok(conn.connected,"Connected to database");
+  test.ok(!conn.inTransaction,"DDL should commit automatically");
+  Close(conn);    
+  test.done();
+}
+
+exports.SyncTransCommit = function(test) {
+  test.expect(5);
+  var conn = Connect();
+  test.ok(conn.connected,"Connected to database");
+  
+  test.doesNotThrow(function(){
+    conn.querySync("insert into TEST_TRANS (ID, NAME) values (0, 'Test Name 1')");
+  },"insert query");
+      
+  test.ok(conn.inTransaction,"DML should not commit automatically");
+  
+  test.doesNotThrow(function(){
+   conn.commitSync();
+  },"commit insert"); 
+  
+  test.ok(!conn.inTransaction,"Not in transaction");
+  Close(conn);    
+  test.done();
+}
+
+exports.SyncTransRollback = function(test) {
+  test.expect(6);
+  var conn = Connect();
+  test.ok(conn.connected,"Connected to database");
+  
+  test.doesNotThrow(function(){
+    conn.querySync("insert into TEST_TRANS (ID, NAME) values (0, 'Test Name 1')");
+  },"insert query");
+  
+  var res;
+  test.doesNotThrow(function(){
+  res = conn.querySync("select * from TEST_TRANS").fetchSync("all",true);
+  },"select before rollback");
+  
+  test.ok(res.length == 1, "Got one result");
+  
+  conn.rollbackSync();
+  
+  var res;
+  test.doesNotThrow(function(){
+  res = conn.querySync("select * from TEST_TRANS").fetchSync("all",true);
+  },"select after rollback");
+  
+  test.ok(res.length == 0, "Got zero result");
+  
+  Close(conn);
+  test.done();
+}
 
 

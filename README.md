@@ -1,9 +1,17 @@
-This is first basic version of project.
+C++ NodeJS module to work with Firebird SQL Server. Uses libfbclient.
+Inspired by node-mysql-libmysql, node-postgress and other modules used as sample source. 
+
+# Features
+
+* Synchronous and Asynchronous methods for connection, query and fetch data;
+* Support of Firebird Events (__post_event statement);
+* Covered with tests in nodeunit.
 
 As for now in plans are:
 
-- adding blob field support;
-- transaction control.
+* adding blob field support;
+* continous refactoring;
+* more tests.
 
 # Getting Started
 
