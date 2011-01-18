@@ -26,6 +26,7 @@ char * ErrorMessage(const ISC_STATUS *pvector, char *err_msg, int max_len){
     return err_msg;
 }
 
+#define MAX_ERR_MSG_LEN 1024
 #define ERR_MSG(obj,class) \
 String::New(ErrorMessage(obj->status,obj->err_message,sizeof(obj->err_message)))
 
@@ -537,13 +538,18 @@ protected:
   }
   
   ISC_STATUS_ARRAY status;
-  char err_message[1024];    
+  char err_message[MAX_ERR_MSG_LEN];    
   XSQLDA *sqldap;
   isc_stmt_handle stmt;
    
 };
 
-
+/*
+*	Class event_block 
+*   	Firebird accepts events in blocks by 15 event names.
+*	So this class helps to organize linked list chain of such blocks
+*	for "infinite" number of events support.
+*/
 typedef char* ev_names[MAX_EVENTS_PER_BLOCK];
 static Persistent<String> fbevent_symbol;
 
@@ -562,24 +568,29 @@ public:
     bool first_time;
     
     ISC_STATUS_ARRAY status;
+    char err_message[MAX_ERR_MSG_LEN];
     ISC_STATUS_ARRAY Was_reg;
     isc_db_handle *db;
     
     bool alloc_block()
     {
+      // allocate event buffers
+      // we pass all event_names as there is no method to pass varargs dynamically
+      // isc_event_block will not use more than count
       blength = isc_event_block(&event_buffer, &result_buffer, count, EXP_15_VAR_ARGS(event_names));
       return event_buffer && result_buffer && blength;
     }
     
-    bool free_block()
+    bool cancel_events() // or free_block ?
     {
-      
+      //If event_id was set - we have queued events
+      // so cancel them
       if(event_id)
       {
        if(isc_cancel_events(status, db, &event_id)) return false; 
        event_id = 0;
       } 
-      
+      // free buffers allocated by isc_event_block
       if(blength)
       { 
        isc_free((ISC_SCHAR*) event_buffer);
@@ -593,6 +604,7 @@ public:
     
     static void isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR *updated)
     {
+      // this callback is called by libfbclient
       event_block* eb = static_cast<event_block*>(aeb);
       ISC_UCHAR *r = eb->result_buffer;
       while(length--) *r++ = *updated++;
@@ -601,6 +613,10 @@ public:
     
     static void event_notification(EV_P_ ev_async *w, int revents){
         ISC_STATUS_ARRAY Vector;
+        
+        HandleScope scope;
+	Local<Value> argv[2];
+	
     
         event_block* eb = static_cast<event_block*>(w->data);
         
@@ -615,8 +631,6 @@ public:
 	for(int i=0; i < eb->count; i++){
 	   if((Vector[i]-eb->Was_reg[i])>0) {
 	     
-	     HandleScope scope;
-	     Local<Value> argv[2];
 	     argv[0] = String::New(eb->event_names[i]);
 	     argv[1] = Integer::New(Vector[i] - eb->Was_reg[i]);
 	     
@@ -625,26 +639,30 @@ public:
            }     
            if(eb->Was_reg[i]) eb->Was_reg[i] = 0;      
         }   
+    
+	if(isc_que_events(
+    	    eb->status,
+            eb->db,
+            &(eb->event_id),
+            eb->blength,
+            eb->event_buffer,
+            event_block::isc_ev_callback,
+            eb          
+        )) {
+            ThrowException(Exception::Error(
+            String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
+        }    
         
-        isc_que_events(
-         eb->status,
-         eb->db,
-         &(eb->event_id),
-         eb->blength,
-         eb->event_buffer,
-         event_block::isc_ev_callback,
-         eb          
-        );
-    }
-    bool un_que_event()
-    {
-      if(!free_block()) return false;
-      return true;
     }
     
-    static bool que_event(event_block *eb)
+    static Handle<Value> 
+    que_event(event_block *eb)
     { 
-      if(!eb->alloc_block()) return false;
+      if(!eb->alloc_block()) {
+    	    V8::LowMemoryNotification();
+    	    return ThrowException(Exception::Error(
+			      	  String::New("Could not allocate event block buffers.")));
+      }
       
       if(isc_que_events(
          eb->status,
@@ -654,10 +672,13 @@ public:
          eb->event_buffer,
          event_block::isc_ev_callback,
          eb          
-      )) return false;
+      )) {
+            return ThrowException(Exception::Error(
+            String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
+      }
 
-      if(eb->status[1]) return false;
-      return true;
+    //  if(eb->status[1]) return false;
+      return Undefined();
     }
     
     int hasEvent(char *Event)
@@ -671,15 +692,19 @@ public:
     
     bool addEvent(char *Event)
     {
+      // allocate memory for event name
       int len = strlen(Event);
       event_names[count] = (char*) calloc(1,len+1);
-      Was_reg[count] = 1;
       if(!event_names[count]) return false;
+      Was_reg[count] = 1;
+      
+      // copy event name
       char *p, *t;
       t = event_names[count];
       for(p=Event;(*p);){ *t++ = *p++; }
       *t = 0;
       count++;
+      
       return true;
     }
     
@@ -692,39 +717,65 @@ public:
       count--;
     }
     
-    static event_block* RegEvent(event_block* root, char *Event, Connection *aconn, isc_db_handle *db)
+    static Handle<Value> 
+    RegEvent(event_block** rootp, char *Event, Connection *aconn, isc_db_handle *db)
     {
+      event_block* root = *rootp;
+      // Check if we already have regisred that event
       event_block* res = event_block::FindBlock(root,Event);
-      if(res) return NULL;
+      // Exit if yes
+      if(res) return Undefined();
   
+      // Search for available event block
       res = root;
       while(res)
       {
-        if(res->count<MAX_EVENTS_PER_BLOCK) break;
+        if(res->count < MAX_EVENTS_PER_BLOCK) break;
         root = res;
         res = res->next;
       }
+      // Have we found one ?
       if(!res){
+        // Create new event block
         res = new event_block(aconn, db);
+        if(!res){
+    	    V8::LowMemoryNotification();
+    	    return ThrowException(Exception::Error(
+			      	  String::New("Could not allocate memory.")));
+	}
         res->event_->data = res;
         ev_async_init(res->event_, event_block::event_notification);
         ev_async_start(EV_DEFAULT_UC_ res->event_);
         ev_unref(EV_DEFAULT_UC);
-        if(root) {
-         root->next = res;
-         res->prev = root;
-        } 
+        
+        // Set links
+        if(root) root->next = res;
+        res->prev = root;
       }
       
-      if(!res->un_que_event()) return NULL;
+      // Set first element in chain if it is not set yet
+      if(!*rootp) *rootp = res;
       
-      if(!res->addEvent(Event)) return NULL;
-      event_block::que_event(res); 
-      return res;
+      // Cancel old queue is any 
+      if(!res->cancel_events()){
+    	    return ThrowException(Exception::Error(
+        	String::Concat(String::New("While cancel_events - "),ERR_MSG(res, event_block))));
+      }        
+
+      // Add event to block
+      if(!res->addEvent(Event)) {
+    	    V8::LowMemoryNotification();
+    	    return ThrowException(Exception::Error(
+			      	  String::New("Could not allocate memory.")));
+      }
+      
+      return event_block::que_event(res); 
+
     }
     
     static event_block* FindBlock(event_block* root, char *Event)
     {
+      // Find block with Event in linked list
       event_block* res = root;
       while(res)
        if(res->hasEvent(Event)==-1) res = res->next;
@@ -732,14 +783,25 @@ public:
       return res;
     }
     
-    static void RemoveEvent(event_block** root, char *Event)
+    static Handle<Value> 
+    RemoveEvent(event_block** root, char *Event)
     {
+      // Find event_block with Event name
       event_block* eb = event_block::FindBlock( *root, Event);
       if(eb)
       {
-        if(!eb->un_que_event()) return;
+        // If we have found it
+        // it was queued and should be canceled
+        if(!eb->cancel_events()){
+    	    return ThrowException(Exception::Error(
+        	    String::Concat(String::New("While cancel_events - "),ERR_MSG(eb, event_block))));
+    	}        
+    	// Remove it from event list
         eb->removeEvent(Event);
         if(!eb->count) {
+         // If there is no more events in block
+         // we can free it
+         // but keep link to next block
          if(eb->prev) 
          {
           eb->prev->next = eb->next;
@@ -748,10 +810,17 @@ public:
          {
           *root = NULL;
          }
+         eb->next = NULL;
          free(eb);
         } 
-        else event_block::que_event(eb);    
+        else {
+            // if block still has events we should requeue it
+    	    return event_block::que_event(eb);    
+        }
       }	
+      // No block with that name 
+      // may be throw error ???
+      return Undefined();
     }
     
     event_block(Connection *aconn,isc_db_handle *adb)
@@ -772,10 +841,10 @@ public:
     
     ~event_block()
     {
-      int i;
-      for(i=0;i<count;i++) free(event_names[i]);
-      free_block();
+      cancel_events();
+      for(int i=0;i<count;i++) free(event_names[i]);
       free(event_);
+      if(next) free(next);
     }
 };
 
@@ -1491,16 +1560,8 @@ class Connection : public EventEmitter {
         
         event_block* eb;
         
-        eb = event_block::RegEvent(conn->fb_events, *Event, conn, &conn->db);
+        return event_block::RegEvent(&(conn->fb_events), *Event, conn, &conn->db);
         
-	if(!conn->fb_events) conn->fb_events = eb;
-	
-	if(!eb){
-    	    V8::LowMemoryNotification();
-    	    return ThrowException(Exception::Error(
-            String::New("Cannot allocate event block")));
-	}
-	
     }
     
     return Undefined();
@@ -1521,11 +1582,7 @@ class Connection : public EventEmitter {
     
     String::Utf8Value Event(args[0]->ToString());
     
-    event_block::RemoveEvent(&(conn->fb_events), *Event);
-    
-
-    
-    return Undefined();
+    return event_block::RemoveEvent(&(conn->fb_events), *Event);
 
   }
   
@@ -1581,7 +1638,7 @@ class Connection : public EventEmitter {
   bool connected; 
   isc_tr_handle trans;
   bool in_async;
-  char err_message[1024];
+  char err_message[MAX_ERR_MSG_LEN];
   
 
 };

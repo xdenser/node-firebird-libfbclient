@@ -115,7 +115,38 @@ Where name is event name, and count is number of times event were posted.
 Unsubscribes connection from getting events for name.
      
 * * *
+    function commitSync();
+    
+Synchronously commits current transaction. 
 
+Note:
+There is only one transaction associated with connection. 
+Transacation is automatically started before any query. Use of mutliple transactions with same connection may be added in future.
+You also should note that DDL statements (altering database structure) are commited automatically.
+
+* * *
+    function commit(callback);
+* `callback` - function(err), where err is error object in case of error.    
+
+Asynchronous commit transaction.Read notes in `commitSync();`.
+
+* * *
+    function rollbackSync();
+    
+Synchronously rollbacks current transaction. Read notes in `commitSync();`.
+
+* * *
+    function rollback(callback);
+* `callback` - function(err), where err is error object in case of error.    
+    
+Asynchronously rollbacks current transaction. Read notes in `commitSync();`.
+
+* * *
+    inTransaction;
+
+A boolean readonly property indicating if connection is in started transaction state.
+    
+* * *
 ## FBResult object
 
 Represents results of SQL query if any. 
