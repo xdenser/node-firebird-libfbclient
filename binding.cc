@@ -547,8 +547,8 @@ protected:
 /*
 *	Class event_block 
 *   	Firebird accepts events in blocks by 15 event names.
-*	So this class helps to organize linked list chain of such blocks
-*	for "infinite" number of events support.
+*	This class helps to organize linked list chain of such blocks
+*	to support "infinite" number of events.
 */
 typedef char* ev_names[MAX_EVENTS_PER_BLOCK];
 static Persistent<String> fbevent_symbol;
@@ -565,12 +565,13 @@ public:
     long blength;
     event_block *next, *prev;
     ev_async *event_;
-    bool first_time;
+    
     
     ISC_STATUS_ARRAY status;
     char err_message[MAX_ERR_MSG_LEN];
     ISC_STATUS_ARRAY Was_reg;
     isc_db_handle *db;
+    bool first_time;
     
     bool alloc_block()
     {
@@ -578,12 +579,13 @@ public:
       // we pass all event_names as there is no method to pass varargs dynamically
       // isc_event_block will not use more than count
       blength = isc_event_block(&event_buffer, &result_buffer, count, EXP_15_VAR_ARGS(event_names));
+      //first_time = true;
       return event_buffer && result_buffer && blength;
     }
     
     bool cancel_events() // or free_block ?
     {
-      //If event_id was set - we have queued events
+      // If event_id was set - we have queued events
       // so cancel them
       if(event_id)
       {
@@ -604,11 +606,14 @@ public:
     
     static void isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR *updated)
     {
-      // this callback is called by libfbclient
+      // this callback is called by libfbclient when event occures in FB
       event_block* eb = static_cast<event_block*>(aeb);
       ISC_UCHAR *r = eb->result_buffer;
       while(length--) *r++ = *updated++;
-      ev_async_send(EV_DEFAULT_UC_ eb->event_);
+      
+      if(eb->first_time) eb->first_time = false;
+      else ev_async_send(EV_DEFAULT_UC_ eb->event_);
+      
     }
     
     static void event_notification(EV_P_ ev_async *w, int revents){
@@ -627,19 +632,16 @@ public:
 	
 	isc_event_counts((ISC_ULONG*) Vector, eb->blength, eb->event_buffer,
 				      eb->result_buffer);
+	int count = eb->count;
+	int i;
+	Local<Value> EvNames[MAX_EVENTS_PER_BLOCK];
 	
-	for(int i=0; i < eb->count; i++){
-	   if((Vector[i]-eb->Was_reg[i])>0) {
-	     
-	     argv[0] = String::New(eb->event_names[i]);
-	     argv[1] = Integer::New(Vector[i] - eb->Was_reg[i]);
-	     
-             ((EventEmitter*) eb->conn)->Emit(fbevent_symbol,2,argv);
-             
-           }     
-           if(eb->Was_reg[i]) eb->Was_reg[i] = 0;      
-        }   
-    
+	for(i=0; i < count; i++){
+	  Vector[i] -= eb->Was_reg[i];
+	  if(Vector[i]) EvNames[i] = String::New(eb->event_names[i]);
+	  if(eb->Was_reg[i]) eb->Was_reg[i] = 0;      
+	}
+				      
 	if(isc_que_events(
     	    eb->status,
             eb->db,
@@ -651,8 +653,18 @@ public:
         )) {
             ThrowException(Exception::Error(
             String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
-        }    
+        }			      
         
+	Connection *conn = eb->conn;
+
+	for( i=0; i < count; i++){
+	   if(Vector[i]) {
+	     argv[0] = EvNames[i];
+	     argv[1] = Integer::New(Vector[i]);
+             ((EventEmitter*) conn)->Emit(fbevent_symbol,2,argv);
+           }     
+        }
+
     }
     
     static Handle<Value> 
@@ -676,7 +688,7 @@ public:
             return ThrowException(Exception::Error(
             String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
       }
-
+     
     //  if(eb->status[1]) return false;
       return Undefined();
     }
@@ -721,7 +733,7 @@ public:
     RegEvent(event_block** rootp, char *Event, Connection *aconn, isc_db_handle *db)
     {
       event_block* root = *rootp;
-      // Check if we already have regisred that event
+      // Check if we already have registered that event
       event_block* res = event_block::FindBlock(root,Event);
       // Exit if yes
       if(res) return Undefined();
@@ -824,7 +836,7 @@ public:
     }
     
     event_block(Connection *aconn,isc_db_handle *adb)
-    {
+    { 
       conn = aconn;
       db = adb;
       count = 0;
@@ -932,6 +944,9 @@ class Connection : public EventEmitter {
      if(!commit_transaction()) {
        return false;
      }
+    
+    if(fb_events) free(fb_events);
+    fb_events = NULL;
  
     connected = false; 
     if (isc_detach_database(status, &db)) {
