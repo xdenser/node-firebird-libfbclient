@@ -35,6 +35,12 @@ Create some Database:
     CONNECT 'test.fdb';
     CREATE TABLE TEST (id integer, name varchar(50));
     exit;
+
+Clone repository and build module
+
+    git clone git://github.com/xdenser/node-firebird-libfbclient.git
+    node-waf configure build
+
  
 Play with it from node:
 

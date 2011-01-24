@@ -579,7 +579,6 @@ public:
       // we pass all event_names as there is no method to pass varargs dynamically
       // isc_event_block will not use more than count
       blength = isc_event_block(&event_buffer, &result_buffer, reg_count, EXP_15_VAR_ARGS(event_names));
-//      first_time = true;
       return event_buffer && result_buffer && blength;
     }
     
@@ -590,16 +589,13 @@ public:
       
       if(event_id)
       {
-       printf("cancel_events %d\n",event_id);    
        canceled = true;
-//       ev_clear_pending(EV_DEFAULT_UC_ event_);
        if(isc_cancel_events(status, db, &event_id)) return false; 
        event_id = 0;
       } 
       // free buffers allocated by isc_event_block
       if(blength)
       { 
-//       printf("free_buffers\n");    
        isc_free((ISC_SCHAR*) event_buffer);
        event_buffer  = NULL;
        isc_free((ISC_SCHAR*) result_buffer);
@@ -614,27 +610,31 @@ public:
       // this callback is called by libfbclient when event occures in FB
       
       event_block* eb = static_cast<event_block*>(aeb);
-      printf("event_callback %d first_time=%d count=%d reg_count=%d updated=%d length=%d\n",eb, eb->first_time, eb->count, eb->reg_count, updated, length);
-
-      if(!updated || eb->canceled) {
+      
+      // have not found that in documentation
+      // but on isc_cancel_events this callback is called
+      // with updated == NULL, length==0
+      // here we have potential race condition 
+      // when cancel and callback get called simultanously .. hmm..
+      if(!updated || eb->canceled || !length) {
+      // in that case mark block as bad and exit;
         eb->bad = true;
         return;
       }     
+      // mark block as locked 
+      // to prevent reallocation of buffers when adding or deleting records to block
+      // potential race condition ????
       eb->lock = true;
       eb->bad = false;
       
+      // copy updated to result buffer
+      // or examples use loop
+      // why not to use mmcpy ???
       ISC_UCHAR *r = eb->result_buffer;
       while(length--) *r++ = *updated++;
       
-//      if(eb->first_time) eb->first_time = false;
-//      else{
-//       bool oir = eb->in_risk;
-//       eb->in_risk = true;
-//       if(!oir) 
-//       ev_clear_pending(EV_DEFAULT_UC_ eb->event_);
-       ev_async_send(EV_DEFAULT_UC_ eb->event_);
-//      } 
-      
+      // schedule event_notification call
+      ev_async_send(EV_DEFAULT_UC_ eb->event_);
     }
     
     static void event_notification(EV_P_ ev_async *w, int revents){
@@ -643,28 +643,39 @@ public:
         HandleScope scope;
 	Local<Value> argv[2];
 	
-        printf("event_notification\n");
         event_block* eb = static_cast<event_block*>(w->data);
-//        if(eb->first_time){
-//          eb->in_risk = false;
-//          return;
-//        }
+        
+        // get event counts
+        // but only if block is not marked as bad
         if(!eb->bad)
 	 isc_event_counts((ISC_ULONG*) Vector, eb->blength, eb->event_buffer,
 				      eb->result_buffer);
 	else 
 	{
+	 // do not use vector 
+	 // if block is bad
 	 use_vector = false;
-	 printf("dont use vector\n");
 	} 
-				      
+			
+	// we have event counts
+	// so we may unlock block
+	// race???			      
 	eb->lock  = false;
+	
+	// use only previously queued events
 	int count = eb->reg_count;
 	int i;
 	Local<Value> EvNames[MAX_EVENTS_PER_BLOCK];
-	
+
+	// update Events Counts Vector
+	// when event first registered it is initialized with count = 1
+	// But if you register and than unregister event
+	// and after that register it again if will be inited with count = 2
+	// now it does not track event registration history
+	// may be it should ???
+	// all that "tracking" is reset on disconnect
+	if(use_vector)
 	for(i=0; i < count; i++){
-	  printf("event: %s, count: %d, was_reg: %d\n",eb->event_names[i],Vector[i],eb->Was_reg[i]);
 	  if((Vector[i] - eb->Was_reg[i])>0) EvNames[i] = String::New(eb->event_names[i]);
 	  if(eb->Was_reg[i]){
 	    Vector[i]--;
@@ -673,29 +684,33 @@ public:
 	  }    
 	}
 	
-	//if(eb->first_time) eb->first_time = false;
-        //else		
+	// detect if we have added or deleted some events
+	// while block was locked
         if((eb->count!=eb->reg_count) || eb->del_count){
         
-    	    printf("Updating added deleted\n");
+    	    // if so - free buffers
     	    eb->event_id = 0;
     	    if(!eb->cancel_events()) {
     	      ThrowException(Exception::Error(
                String::Concat(String::New("While cancel_events - "),ERR_MSG(eb, event_block))));
                return ;
     	    }     
+    	    // update event list
     	    if(eb->del_count) eb->removeDeleted();
     	    eb->reg_count = eb->count;     
-
+            
+            // allocate new events
     	    if(!eb->alloc_block()) {
     		V8::LowMemoryNotification();
     		ThrowException(Exception::Error(
 			      	    String::New("Could not allocate event block buffers.")));
 	        return ;
     	    }
+    	    // set initial event count 
             for(i=0; i<eb->count; i++) eb->Was_reg[i] = 1;	    
         }
 
+        // re queue event trap
 	if(isc_que_events(
     	    eb->status,
             eb->db,
@@ -709,11 +724,12 @@ public:
             String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
         }			      
         
-        printf("re_que_event %d\n",eb->event_id);    
+        // exit if block was marked as bad
         
         if(!use_vector) return;
 	Connection *conn = eb->conn;
 
+        // emit events 
 	for( i=0; i < count; i++){
 	   if(Vector[i]) {
 	     argv[0] = EvNames[i];
@@ -734,7 +750,6 @@ public:
 			      	  String::New("Could not allocate event block buffers.")));
       }
      
-      printf("before que_event %d\n",eb->event_id);
       eb->canceled = false;
       for(int i=0; i<eb->count; i++) eb->Was_reg[i] = 1;
       if(isc_que_events(
@@ -749,8 +764,6 @@ public:
             return ThrowException(Exception::Error(
             String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
       }
-     printf("que_event %d\n",eb->event_id);    
-    //  if(eb->status[1]) return false;
       return Undefined();
     }
     
@@ -778,6 +791,11 @@ public:
       *t = 0;
       
       count++;
+      
+      // if block is locked 
+      // just add event_name
+      // but delay registration 
+      // until notification is called
       if(!lock) reg_count = count; 
       
       return true;
@@ -787,6 +805,8 @@ public:
     { 
       int idx = hasEvent(Event); 
       if(idx<0) return;
+      // delete event if block is not locked
+      // or if deleted event was not registered yet
       if(!lock || (idx>=reg_count)){
         free(event_names[idx]);
         for(int i = idx;i < count;i++) event_names[i] = event_names[i+1];
@@ -794,6 +814,8 @@ public:
         count--;
       }
       else{
+       // if block is locked mark events to be deleted
+       // when notification will be called
         for(int i = 0; i<del_count; i++) 
          if(deleted[i]==idx) return ;
         deleted[del_count] = idx;
@@ -802,6 +824,7 @@ public:
           
     }
     
+    // removes events to be deleted
     void removeDeleted()
     {
       int i,j;
@@ -859,7 +882,10 @@ public:
       // Set first element in chain if it is not set yet
       if(!*rootp) *rootp = res;
       
+      
       if(res->lock){
+        // if block is locked
+        // just add event name and exit
         if(!res->addEvent(Event)) {
     	    V8::LowMemoryNotification();
     	    return ThrowException(Exception::Error(

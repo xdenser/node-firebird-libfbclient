@@ -130,7 +130,7 @@ exports.TensOfEvents = function(test){
   
   var evcount = 0;
   conn.on("fbevent", function(event,count){
-    console.log("->"+event+" "+count);
+    //console.log("->"+event+" "+count);
     evcount++;
   });
   
@@ -146,7 +146,7 @@ exports.TensOfEvents = function(test){
     setTimeout((function(idx){
      return  function(){
      GenEvent(events[idx]);
-     console.log("Gen "+events[idx]);
+    // console.log("Gen "+events[idx]);
     };})(i),0);
   }
   setTimeout(function(){
