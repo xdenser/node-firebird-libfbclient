@@ -34,3 +34,12 @@ def test(tst):
     exit(1)
   else:
     Utils.exec_command(node_binary + ' ./tools/nodeunit/bin/nodeunit tests/def')
+
+def test_f(tstf):
+  node_binary = 'node'
+  
+  if not exists('./tools/nodeunit/bin/nodeunit'):
+    print("\033[31mNodeunit doesn't exists.\033[39m\nYou should run `git submodule update --init` before run tests.")
+    exit(1)
+  else:
+    Utils.exec_command(node_binary + ' ./tools/nodeunit/bin/nodeunit tests/def'+' > test.res')

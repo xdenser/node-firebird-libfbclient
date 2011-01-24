@@ -561,7 +561,7 @@ public:
     ISC_UCHAR *result_buffer;
     ISC_LONG event_id;
     ev_names event_names;
-    int count;
+    int count, reg_count, del_count;
     long blength;
     event_block *next, *prev;
     ev_async *event_;
@@ -569,17 +569,17 @@ public:
     
     ISC_STATUS_ARRAY status;
     char err_message[MAX_ERR_MSG_LEN];
-    ISC_STATUS_ARRAY Was_reg;
+    ISC_STATUS_ARRAY Was_reg, deleted;
     isc_db_handle *db;
-    bool first_time;
+    bool first_time, bad, canceled, lock;
     
     bool alloc_block()
     {
       // allocate event buffers
       // we pass all event_names as there is no method to pass varargs dynamically
       // isc_event_block will not use more than count
-      blength = isc_event_block(&event_buffer, &result_buffer, count, EXP_15_VAR_ARGS(event_names));
-      //first_time = true;
+      blength = isc_event_block(&event_buffer, &result_buffer, reg_count, EXP_15_VAR_ARGS(event_names));
+//      first_time = true;
       return event_buffer && result_buffer && blength;
     }
     
@@ -587,14 +587,19 @@ public:
     {
       // If event_id was set - we have queued events
       // so cancel them
+      
       if(event_id)
       {
+       printf("cancel_events %d\n",event_id);    
+       canceled = true;
+//       ev_clear_pending(EV_DEFAULT_UC_ event_);
        if(isc_cancel_events(status, db, &event_id)) return false; 
        event_id = 0;
       } 
       // free buffers allocated by isc_event_block
       if(blength)
       { 
+//       printf("free_buffers\n");    
        isc_free((ISC_SCHAR*) event_buffer);
        event_buffer  = NULL;
        isc_free((ISC_SCHAR*) result_buffer);
@@ -607,41 +612,90 @@ public:
     static void isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR *updated)
     {
       // this callback is called by libfbclient when event occures in FB
+      
       event_block* eb = static_cast<event_block*>(aeb);
+      printf("event_callback %d first_time=%d count=%d reg_count=%d updated=%d length=%d\n",eb, eb->first_time, eb->count, eb->reg_count, updated, length);
+
+      if(!updated || eb->canceled) {
+        eb->bad = true;
+        return;
+      }     
+      eb->lock = true;
+      eb->bad = false;
+      
       ISC_UCHAR *r = eb->result_buffer;
       while(length--) *r++ = *updated++;
       
-      if(eb->first_time) eb->first_time = false;
-      else ev_async_send(EV_DEFAULT_UC_ eb->event_);
+//      if(eb->first_time) eb->first_time = false;
+//      else{
+//       bool oir = eb->in_risk;
+//       eb->in_risk = true;
+//       if(!oir) 
+//       ev_clear_pending(EV_DEFAULT_UC_ eb->event_);
+       ev_async_send(EV_DEFAULT_UC_ eb->event_);
+//      } 
       
     }
     
     static void event_notification(EV_P_ ev_async *w, int revents){
         ISC_STATUS_ARRAY Vector;
-        
+        bool use_vector = true;
         HandleScope scope;
 	Local<Value> argv[2];
 	
-    
+        printf("event_notification\n");
         event_block* eb = static_cast<event_block*>(w->data);
-        
-        if(eb->first_time) {
-           eb->first_time = false;
-	   return ;
-	}			
-	
-	isc_event_counts((ISC_ULONG*) Vector, eb->blength, eb->event_buffer,
+//        if(eb->first_time){
+//          eb->in_risk = false;
+//          return;
+//        }
+        if(!eb->bad)
+	 isc_event_counts((ISC_ULONG*) Vector, eb->blength, eb->event_buffer,
 				      eb->result_buffer);
-	int count = eb->count;
+	else 
+	{
+	 use_vector = false;
+	 printf("dont use vector\n");
+	} 
+				      
+	eb->lock  = false;
+	int count = eb->reg_count;
 	int i;
 	Local<Value> EvNames[MAX_EVENTS_PER_BLOCK];
 	
 	for(i=0; i < count; i++){
-	  Vector[i] -= eb->Was_reg[i];
-	  if(Vector[i]) EvNames[i] = String::New(eb->event_names[i]);
-	  if(eb->Was_reg[i]) eb->Was_reg[i] = 0;      
+	  printf("event: %s, count: %d, was_reg: %d\n",eb->event_names[i],Vector[i],eb->Was_reg[i]);
+	  if((Vector[i] - eb->Was_reg[i])>0) EvNames[i] = String::New(eb->event_names[i]);
+	  if(eb->Was_reg[i]){
+	    Vector[i]--;
+	    if(Vector[i]<0) Vector[i] = 0;
+	    else  eb->Was_reg[i] = 0;      
+	  }    
 	}
-				      
+	
+	//if(eb->first_time) eb->first_time = false;
+        //else		
+        if((eb->count!=eb->reg_count) || eb->del_count){
+        
+    	    printf("Updating added deleted\n");
+    	    eb->event_id = 0;
+    	    if(!eb->cancel_events()) {
+    	      ThrowException(Exception::Error(
+               String::Concat(String::New("While cancel_events - "),ERR_MSG(eb, event_block))));
+               return ;
+    	    }     
+    	    if(eb->del_count) eb->removeDeleted();
+    	    eb->reg_count = eb->count;     
+
+    	    if(!eb->alloc_block()) {
+    		V8::LowMemoryNotification();
+    		ThrowException(Exception::Error(
+			      	    String::New("Could not allocate event block buffers.")));
+	        return ;
+    	    }
+            for(i=0; i<eb->count; i++) eb->Was_reg[i] = 1;	    
+        }
+
 	if(isc_que_events(
     	    eb->status,
             eb->db,
@@ -655,6 +709,9 @@ public:
             String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
         }			      
         
+        printf("re_que_event %d\n",eb->event_id);    
+        
+        if(!use_vector) return;
 	Connection *conn = eb->conn;
 
 	for( i=0; i < count; i++){
@@ -670,12 +727,16 @@ public:
     static Handle<Value> 
     que_event(event_block *eb)
     { 
+    
       if(!eb->alloc_block()) {
     	    V8::LowMemoryNotification();
     	    return ThrowException(Exception::Error(
 			      	  String::New("Could not allocate event block buffers.")));
       }
-      
+     
+      printf("before que_event %d\n",eb->event_id);
+      eb->canceled = false;
+      for(int i=0; i<eb->count; i++) eb->Was_reg[i] = 1;
       if(isc_que_events(
          eb->status,
          eb->db,
@@ -688,7 +749,7 @@ public:
             return ThrowException(Exception::Error(
             String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
       }
-     
+     printf("que_event %d\n",eb->event_id);    
     //  if(eb->status[1]) return false;
       return Undefined();
     }
@@ -708,14 +769,16 @@ public:
       int len = strlen(Event);
       event_names[count] = (char*) calloc(1,len+1);
       if(!event_names[count]) return false;
-      Was_reg[count] = 1;
+      
       
       // copy event name
       char *p, *t;
       t = event_names[count];
       for(p=Event;(*p);){ *t++ = *p++; }
       *t = 0;
+      
       count++;
+      if(!lock) reg_count = count; 
       
       return true;
     }
@@ -723,10 +786,38 @@ public:
     void removeEvent(char *Event)
     { 
       int idx = hasEvent(Event); 
-      if(idx>=0) free(event_names[idx]);
-      else return ;
-      for(int i = idx;i < count;i++) event_names[i] = event_names[i+1];
-      count--;
+      if(idx<0) return;
+      if(!lock || (idx>=reg_count)){
+        free(event_names[idx]);
+        for(int i = idx;i < count;i++) event_names[i] = event_names[i+1];
+        reg_count--;
+        count--;
+      }
+      else{
+        for(int i = 0; i<del_count; i++) 
+         if(deleted[i]==idx) return ;
+        deleted[del_count] = idx;
+        del_count++;
+      }
+          
+    }
+    
+    void removeDeleted()
+    {
+      int i,j;
+      for(i=0; i<del_count; i++){
+        free(event_names[i]);
+        event_names[i] = NULL;
+      }
+      i=0;
+      while(i<count){
+         if(!event_names[i]){ 
+           for(j=i;j<count;j++) event_names[j] = event_names[j+1];
+           count--;
+         }  
+         i++;
+      }
+      del_count = 0;
     }
     
     static Handle<Value> 
@@ -768,6 +859,15 @@ public:
       // Set first element in chain if it is not set yet
       if(!*rootp) *rootp = res;
       
+      if(res->lock){
+        if(!res->addEvent(Event)) {
+    	    V8::LowMemoryNotification();
+    	    return ThrowException(Exception::Error(
+			      	  String::New("Could not allocate memory.")));
+        }
+        return Undefined();
+      }
+      
       // Cancel old queue is any 
       if(!res->cancel_events()){
     	    return ThrowException(Exception::Error(
@@ -780,7 +880,7 @@ public:
     	    return ThrowException(Exception::Error(
 			      	  String::New("Could not allocate memory.")));
       }
-      
+
       return event_block::que_event(res); 
 
     }
@@ -810,6 +910,7 @@ public:
     	}        
     	// Remove it from event list
         eb->removeEvent(Event);
+        if(eb->lock) return Undefined();
         if(!eb->count) {
          // If there is no more events in block
          // we can free it
@@ -840,6 +941,8 @@ public:
       conn = aconn;
       db = adb;
       count = 0;
+      reg_count = 0;
+      del_count = 0;
       next = NULL;
       prev = NULL;
       event_buffer = NULL;
@@ -848,6 +951,9 @@ public:
       event_id = 0;
       event_ = new ev_async();
       first_time = true;
+      bad = false;
+      canceled = false;
+      lock = false;
       memset(Was_reg,0,sizeof(Was_reg));
     }
     

@@ -54,15 +54,15 @@ exports.noEvent = function(test) {
   test.ok(conn.connected,"Connected to database");
   var eName = "Event1";
   conn.on("fbevent",function(event,count){
-    console.log("this should not be called in that test "+event+' '+count ); 
+//    console.log("this should not be called in that test "+event+' '+count ); 
     test.ok(event,"We got some event");
     test.ok(event==eName, "We got that event");
     test.ok(count==1,"One event");
   });  
   conn.addFBevent(eName);
-  console.log('after add Event1');
-  conn.addFBevent('another');
-  console.log('after add another');
+//  console.log('after add Event1');
+//  conn.addFBevent('another');
+//  console.log('after add another');
   // Wait 2 sec for event
   setTimeout(function(){
        conn.disconnect();
@@ -80,16 +80,12 @@ exports.oneEvent = function(test) {
   test.ok(conn.connected,"Connected to database");
   var eName = "Event1";
   conn.addFBevent(eName);
-  conn.addFBevent("strange");
   conn.on("fbevent",function(event,count){
-    console.log("event "+event+ ' ' + count); 
     test.ok(event==eName, "We got that event");
     test.ok(count==1,"One event");
   });  
   
-  console.log('before GenEvent');
   GenEvent(eName);
-  console.log('after GenEvent');
   
   // Wait 2 sec for event
   setTimeout(function(){
@@ -108,13 +104,10 @@ exports.oneEventBetween = function(test) {
   var eName = "Event1";
   conn.addFBevent(eName);
   
-  console.log('before GenEvent');
   GenEvent(eName);
-  console.log('after GenEvent');
 
   conn.addFBevent("strange");
   conn.on("fbevent",function(event,count){
-    console.log("event "+event+ ' ' + count); 
     test.ok(event==eName, "We got that event");
     test.ok(count==1,"One event");
   });  
@@ -129,3 +122,38 @@ exports.oneEventBetween = function(test) {
 }
 
 
+exports.TensOfEvents = function(test){
+  test.expect(2);
+  Init();
+  var conn = Connect();
+  test.ok(conn.connected,"Connected to database");
+  
+  var evcount = 0;
+  conn.on("fbevent", function(event,count){
+    console.log("->"+event+" "+count);
+    evcount++;
+  });
+  
+  var events = [];
+  var en;
+  for(var i = 0; i<40; i++){
+    en = 'Event'+i;
+    events.push(en);
+    conn.addFBevent(en);    
+  }
+  events = events.reverse();
+  for(var i = 0; i<40; i++){
+    setTimeout((function(idx){
+     return  function(){
+     GenEvent(events[idx]);
+     console.log("Gen "+events[idx]);
+    };})(i),0);
+  }
+  setTimeout(function(){
+    test.ok(evcount == 40, "We have 40 events");
+    conn.disconnect();
+    CleanUp();
+    test.done();
+  },5000);
+
+}
