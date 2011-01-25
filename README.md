@@ -4,7 +4,7 @@ Inspired by node-mysql-libmysql, node-postgress and other modules used as sample
 # Features
 
 * Synchronous and Asynchronous methods for connection, query and fetch data;
-* Support of Firebird Events (__post_event statement);
+* Support of Firebird Events (post_event statement);
 * Covered with tests in nodeunit.
 
 As for now in plans are:
@@ -23,11 +23,11 @@ You will need:
  
 Get Firebird:
  
- wget http://downloads.sourceforge.net/project/firebird/firebird-linux-i386/2.5-Release/FirebirdCS-2.5.0.26074-0.i686.rpm 
- rpm -ivh FirebirdCS-2.5.0.26074-0.i686.rpm 
+    wget http://downloads.sourceforge.net/project/firebird/firebird-linux-i386/2.5-Release/FirebirdCS-2.5.0.26074-0.i686.rpm 
+    rpm -ivh FirebirdCS-2.5.0.26074-0.i686.rpm 
 
 Update your path: 
- export PATH=$PATH:/opt/firebird/bin
+    export PATH=$PATH:/opt/firebird/bin
 
 Create some Database: 
     isql -user sysdba -password masterkey
@@ -44,7 +44,7 @@ Clone repository and build module
  
 Play with it from node:
 
-    var fb  = require("./firebird"),
+    var fb  = require("./firebird");
     sys = require("sys"); 
     var con = fb.createConnection();
     con.connectSync('test.fdb','sysdba','masterkey','');
@@ -181,9 +181,3 @@ If you specify more rowCount than available it will return only actual number of
 Asynchronously fetches rows one by one. 
 rowCallback is called for each fetched row. 
 eofCallback is called when whole operation is complete. eof indicates if end of result set was met.
-
-    
-
-
-
- 
