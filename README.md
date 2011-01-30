@@ -31,7 +31,7 @@ Update your path:
 
 Create some Database: 
     isql -user sysdba -password masterkey
-    CREATE DATABSE 'test.fdb';
+    CREATE DATABASE 'test.fdb';
     CONNECT 'test.fdb';
     CREATE TABLE TEST (id integer, name varchar(50));
     exit;
