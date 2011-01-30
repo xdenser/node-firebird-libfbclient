@@ -573,12 +573,84 @@ public:
     isc_db_handle *db;
     bool first_time, bad, canceled, lock;
     
+    void dump_buf(char* buf, int len){
+      printf("buff dump %d\n",len);
+      printf("buff[0] = %d\n", buf[0]);
+      buf++; len--;
+      int c;
+      char curr_name[127];
+      char* cn;
+      while(len > 0){
+        c = (unsigned char) buf[0];
+        printf("name len = %d\n",c);
+        buf++;len--;
+        for(cn = curr_name;c--;len--){
+          *cn++ = *buf++;
+        }
+        *cn++ = 0;
+        printf("event_name = %s\n",curr_name);
+        printf("count = %d\n",(uint32_t) *buf);
+        len = len - sizeof(uint32_t);
+        buf = buf + sizeof(uint32_t);
+      }
+    }
+    
+    void set_counts(char* buf, int len){
+      buf++;len--;
+      int c;
+      while(len>0){
+        c = (unsigned char) buf[0];
+        buf = buf + c  + 1;len =  len - c - 1;
+        *(buf++) = -1; *(buf++) = -1; *(buf++) = -1; *(buf++) = -1;
+        len = len - sizeof(uint32_t);
+      }
+    }
+    
+    void get_counts(ISC_ULONG* Vector){
+       char *eb, *rb;
+       long len = blength;
+       eb = (char*) event_buffer;
+       rb = (char*) result_buffer;
+       int idx = 0;
+       eb++;rb++;len--;
+       int c;
+       uint32_t vold;
+       uint32_t vnew;
+       while(len){
+         c = (unsigned char) rb[0];
+         eb =   eb  + c + 1;
+         rb =   rb  + c + 1;
+         len =  len - c - 1;
+         len = len - sizeof(uint32_t);
+         
+         vnew = (uint32_t) *rb;
+         vold = (uint32_t) *eb;
+         eb = eb + 4;
+         rb = rb + 4;
+         if(vnew > vold){
+           Vector[idx] = (int) vnew - vold;
+         }
+         else Vector[idx] = 0;
+         
+         idx++;
+       }
+       memcpy(event_buffer,result_buffer,blength);
+    }
+    
     bool alloc_block()
     {
       // allocate event buffers
       // we pass all event_names as there is no method to pass varargs dynamically
       // isc_event_block will not use more than count
       blength = isc_event_block(&event_buffer, &result_buffer, reg_count, EXP_15_VAR_ARGS(event_names));
+      set_counts((char*) event_buffer,blength);
+      memcpy(result_buffer,event_buffer,blength);
+      
+//      printf("-->event_buf\n");
+//      dump_buf((char*) event_buffer,blength);
+//      printf("-->result_buf\n");
+//      dump_buf((char*) result_buffer,blength);
+
       return event_buffer && result_buffer && blength;
     }
     
@@ -630,8 +702,12 @@ public:
       // copy updated to result buffer
       // or examples use loop
       // why not to use mmcpy ???
+//      printf("-->result_buf in call back !\n");
+//      eb->dump_buf((char*) updated,length);
+
       ISC_UCHAR *r = eb->result_buffer;
       while(length--) *r++ = *updated++;
+
       
       // schedule event_notification call
       ev_async_send(EV_DEFAULT_UC_ eb->event_);
@@ -648,8 +724,9 @@ public:
         // get event counts
         // but only if block is not marked as bad
         if(!eb->bad)
-	 isc_event_counts((ISC_ULONG*) Vector, eb->blength, eb->event_buffer,
-				      eb->result_buffer);
+           eb->get_counts((ISC_ULONG*) Vector);
+	 //isc_event_counts((ISC_ULONG*) Vector, eb->blength, eb->event_buffer,
+	//			      eb->result_buffer);
 	else 
 	{
 	 // do not use vector 
@@ -707,7 +784,7 @@ public:
 	        return ;
     	    }
     	    // set initial event count 
-            for(i=0; i<eb->count; i++) eb->Was_reg[i] = 1;	    
+            //for(i=0; i<eb->count; i++) eb->Was_reg[i] = 1;	    
         }
 
         // re queue event trap
@@ -751,7 +828,7 @@ public:
       }
      
       eb->canceled = false;
-      for(int i=0; i<eb->count; i++) eb->Was_reg[i] = 1;
+      //for(int i=0; i<eb->count; i++) eb->Was_reg[i] = 1;
       if(isc_que_events(
          eb->status,
          eb->db,

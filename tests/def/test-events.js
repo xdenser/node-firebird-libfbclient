@@ -102,15 +102,17 @@ exports.oneEventBetween = function(test) {
   var conn = Connect();
   test.ok(conn.connected,"Connected to database");
   var eName = "Event1";
+  conn.on("fbevent",function(event,count){
+    console.log('in event');
+    test.ok(event==eName, "We got that event");
+    test.ok(count==1,"One event");
+  });  
+
   conn.addFBevent(eName);
   
   GenEvent(eName);
 
   conn.addFBevent("strange");
-  conn.on("fbevent",function(event,count){
-    test.ok(event==eName, "We got that event");
-    test.ok(count==1,"One event");
-  });  
   
   
   // Wait 2 sec for event
