@@ -561,7 +561,7 @@ public:
     ISC_UCHAR *result_buffer;
     ISC_LONG event_id;
     ev_names event_names;
-    int count, reg_count, del_count;
+    int count;
     long blength;
     event_block *next, *prev;
     ev_async *event_;
@@ -569,10 +569,10 @@ public:
     
     ISC_STATUS_ARRAY status;
     char err_message[MAX_ERR_MSG_LEN];
-    ISC_STATUS_ARRAY Was_reg, deleted;
     isc_db_handle *db;
-    bool bad, canceled, lock, traped, queued;
+    bool traped, queued;
     
+#ifdef DEBUG    
     void dump_buf(char* buf, int len){
       printf("buff dump %d\n",len);
       printf("buff[0] = %d\n", buf[0]);
@@ -594,18 +594,11 @@ public:
         buf = buf + sizeof(uint32_t);
       }
     }
+#endif    
     
-    void set_counts(char* buf, int len){
-      buf++;len--;
-      int c;
-      while(len>0){
-        c = (unsigned char) buf[0];
-        buf = buf + c  + 1;len =  len - c - 1;
-        *(buf++) = -1; *(buf++) = -1; *(buf++) = -1; *(buf++) = -1;
-        len = len - sizeof(uint32_t);
-      }
-    }
-    
+    // calculates event counts
+    // as difference between result_buffer and event_buffer
+    // places result in Vector
     void get_counts(ISC_ULONG* Vector){
        char *eb, *rb;
        long len = blength;
@@ -637,34 +630,13 @@ public:
        memcpy(event_buffer,result_buffer,blength);
     }
     
-    bool alloc_block()
-    {
-      // allocate event buffers
-      // we pass all event_names as there is no method to pass varargs dynamically
-      // isc_event_block will not use more than count
-      blength = isc_event_block(&event_buffer, &result_buffer, reg_count, EXP_15_VAR_ARGS(event_names));
-      set_counts((char*) event_buffer,blength);
-      memcpy(result_buffer,event_buffer,blength);
-      
-//      printf("-->event_buf\n");
-//      dump_buf((char*) event_buffer,blength);
-//      printf("-->result_buf\n");
-//      dump_buf((char*) result_buffer,blength);
-
-      return event_buffer && result_buffer && blength;
-    }
-    
+    // queue event_buffer to trap event
     bool queue()
     {
       if(!queued)
       {
         traped = false;
         queued = true;
-        
-        //printf("before isc_que_events -->event_buf\n");
-      
-        //dump_buf((char*) event_buffer,blength);
-        //printf("eid %d\n",event_id);
         
         if(isc_que_events(
          status,
@@ -683,7 +655,7 @@ public:
       return true; 
     }
 
-    
+    // cancel previously queued trap
     bool cancel() 
     {
       if(queued)
@@ -706,27 +678,16 @@ public:
       // with updated == NULL, length==0
       // here we have potential race condition 
       // when cancel and callback get called simultanously .. hmm..
-      if( updated == 0 || aeb == 0 || length == 0) {
-      // in that case mark block as bad and exit;
-      //    eb->bad = true;
-        return;
-      }     
+      if( updated == 0 || aeb == 0 || length == 0) return;
       
       event_block* eb = static_cast<event_block*>(aeb);
-      // mark block as locked 
-      // to prevent reallocation of buffers when adding or deleting records to block
-      // potential race condition ????
-      // eb->lock = true;
-      // eb->bad = false;
       
       if(eb->queued)
       {
         // copy updated to result buffer
-        // or examples use loop
+        // all examples use loop
         // why not to use mmcpy ???
-        //printf("-->result_buf in call back !\n");
-    	//eb->dump_buf((char*) updated,length);
-    	
+	
         if((ISC_USHORT) eb->blength < length) length = (ISC_USHORT) eb->blength;
         ISC_UCHAR *r = eb->result_buffer;
         while(length--) *r++ = *updated++;
@@ -738,72 +699,41 @@ public:
         ev_async_send(EV_DEFAULT_UC_ eb->event_);
       }    
     }
-    
+    // this is event nitification proc
+    // here we emit node events 
     static void event_notification(EV_P_ ev_async *w, int revents){
         ISC_STATUS_ARRAY Vector;
-        bool use_vector = true;
         HandleScope scope;
 	Local<Value> argv[2];
 	
         event_block* eb = static_cast<event_block*>(w->data);
+        if(eb->count==0) return;
         
         // get event counts
-        // but only if block is not marked as bad
-        //if(eb->traped)
-           eb->get_counts((ISC_ULONG*) Vector);
-	//else 
-	{
-	 // do not use vector 
-	 // if block was not traped
-	 //use_vector = false;
-	} 
-	//printf("event notification traped=%d\n",eb->traped);
+        // in ibpp they check if event was traped
+        // we should not as if this proc was called - the event was trapped for sure
+        // get_counts takes care about first (intialization callback call)
+        // this is handled with proper buffer initialization with uint32_t(-1)
+        eb->get_counts((ISC_ULONG*) Vector);
 	
-	// use only previously queued events
 	int count = eb->count;
 	int i;
 	Local<Value> EvNames[MAX_EVENTS_PER_BLOCK];
-
-	// update Events Counts Vector
-	// when event first registered it is initialized with count = 1
-	// But if you register and than unregister event
-	// and after that register it again if will be inited with count = 2
-	// now it does not track event registration history
-	// may be it should ???
-	// all that "tracking" is reset on disconnect
-	if(use_vector)
-	for(i=0; i < count; i++){
-	  if(Vector[i]) EvNames[i] = String::New(eb->event_names[i]);
-	}
-	
-	// detect if we have added or deleted some events
-	// while block was locked
-/*	
-        if((eb->count!=eb->reg_count) || eb->del_count){
         
-    	    // if so - free buffers
-    	    eb->event_id = 0;
-    	    if(!eb->cancel_events()) {
-    	      ThrowException(Exception::Error(
-               String::Concat(String::New("While cancel_events - "),ERR_MSG(eb, event_block))));
-               return ;
-    	    }     
-    	    // update event list
-    	    if(eb->del_count) eb->removeDeleted();
-    	    eb->reg_count = eb->count;     
-            
-            // allocate new events
-    	    if(!eb->alloc_block()) {
-    		V8::LowMemoryNotification();
-    		ThrowException(Exception::Error(
-			      	    String::New("Could not allocate event block buffers.")));
-	        return ;
-    	    }
-    	    // set initial event count 
-            //for(i=0; i<eb->count; i++) eb->Was_reg[i] = 1;	    
-        }
-*/
-        // re queue event trap
+        bool emit_events = false;
+        // collect event names to emit
+        // do not emit here as in event callback 
+        // we may add or remove events
+        // or even close a connection
+        // so collect them, finish with firebird calls
+        // and then emit
+	for(i=0; i < count; i++){
+	  if(Vector[i]){
+	   EvNames[i] = String::New(eb->event_names[i]);
+	   emit_events = true;
+	  } 
+	}
+	// requeue events
 	if(!eb->queue()) {
             ThrowException(Exception::Error(
             String::Concat(String::New("While isc_que_events in event_notification - "),ERR_MSG(eb, event_block))));
@@ -811,7 +741,7 @@ public:
         
         // exit if block was marked as bad
         
-        if(!use_vector) return;
+        if(!emit_events) return;
 	Connection *conn = eb->conn;
 
         // emit events 
@@ -862,12 +792,7 @@ public:
       *t = 0;
       
       count++;
-      
-      // if block is locked 
-      // just add event_name
-      // but delay registration 
-      // until notification is called
-      //if(!lock) reg_count = count; 
+      // (re)allocate and fill buffer new event
       size_t prev_size = blength;
       size_t needed = ( (prev_size == 0) ? 1 : 0 ) + len + 5;
       event_buffer = (ISC_UCHAR*) realloc(event_buffer, prev_size + needed);
@@ -891,11 +816,11 @@ public:
     { 
       int idx = hasEvent(Event); 
       if(idx<0) return;
-      // delete event if block is not locked
-      // or if deleted event was not registered yet
       free(event_names[idx]);
       for(int i = idx;i < count;i++) event_names[i] = event_names[i+1];
       count--;
+      
+      // realocate buffers
       char *buf = (char*) event_buffer + 1;
       char *rb  = (char*) result_buffer + 1; 
       while(idx)
@@ -917,25 +842,6 @@ public:
       result_buffer = (ISC_UCHAR*) realloc(result_buffer, new_length);             
       blength = new_length;
           
-    }
-    
-    // removes events to be deleted
-    void removeDeleted()
-    {
-      int i,j;
-      for(i=0; i<del_count; i++){
-        free(event_names[i]);
-        event_names[i] = NULL;
-      }
-      i=0;
-      while(i<count){
-         if(!event_names[i]){ 
-           for(j=i;j<count;j++) event_names[j] = event_names[j+1];
-           count--;
-         }  
-         i++;
-      }
-      del_count = 0;
     }
     
     static Handle<Value> 
@@ -978,18 +884,7 @@ public:
       if(!*rootp) *rootp = res;
       
       
-/*      if(res->lock){
-        // if block is locked
-        // just add event name and exit
-        if(!res->addEvent(Event)) {
-    	    V8::LowMemoryNotification();
-    	    return ThrowException(Exception::Error(
-			      	  String::New("Could not allocate memory.")));
-        }
-        return Undefined();
-      }
-*/      
-      // Cancel old queue is any 
+      // Cancel old queue if any 
       if(!res->cancel()){
     	    return ThrowException(Exception::Error(
         	String::Concat(String::New("While cancel_events - "),ERR_MSG(res, event_block))));
@@ -1062,8 +957,6 @@ public:
       conn = aconn;
       db = adb;
       count = 0;
-      reg_count = 0;
-      del_count = 0;
       next = NULL;
       prev = NULL;
       event_buffer = NULL;
@@ -1071,20 +964,17 @@ public:
       blength = 0;
       event_id = 0;
       event_ = new ev_async();
-      bad = false;
-      canceled = true;
       
       queued = false;
       traped = false;
-      
-      lock = false;
-      memset(Was_reg,0,sizeof(Was_reg));
     }
     
     ~event_block()
     {
       cancel();
       for(int i=0;i<count;i++) free(event_names[i]);
+      free(event_buffer);
+      free(result_buffer);
       free(event_);
       if(next) free(next);
     }
