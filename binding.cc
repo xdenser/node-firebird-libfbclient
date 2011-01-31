@@ -571,7 +571,7 @@ public:
     char err_message[MAX_ERR_MSG_LEN];
     ISC_STATUS_ARRAY Was_reg, deleted;
     isc_db_handle *db;
-    bool first_time, bad, canceled, lock;
+    bool bad, canceled, lock, traped, queued;
     
     void dump_buf(char* buf, int len){
       printf("buff dump %d\n",len);
@@ -654,63 +654,89 @@ public:
       return event_buffer && result_buffer && blength;
     }
     
-    bool cancel_events() // or free_block ?
+    bool queue()
     {
-      // If event_id was set - we have queued events
-      // so cancel them
-      
-      if(event_id)
+      if(!queued)
       {
-       canceled = true;
+        traped = false;
+        queued = true;
+        
+        //printf("before isc_que_events -->event_buf\n");
+      
+        //dump_buf((char*) event_buffer,blength);
+        //printf("eid %d\n",event_id);
+        
+        if(isc_que_events(
+         status,
+         db,
+         &event_id,
+         blength,
+         event_buffer,
+         event_block::isc_ev_callback,
+         (char*)this))
+        {  
+          queued = false;
+          event_id = 0;
+          return false;
+        } 
+       }    
+      return true; 
+    }
+
+    
+    bool cancel() 
+    {
+      if(queued)
+      {
+       traped = false;
+       queued = false;  
+       //printf("isc_cancel_events \n");
        if(isc_cancel_events(status, db, &event_id)) return false; 
        event_id = 0;
       } 
-      // free buffers allocated by isc_event_block
-      if(blength)
-      { 
-       isc_free((ISC_SCHAR*) event_buffer);
-       event_buffer  = NULL;
-       isc_free((ISC_SCHAR*) result_buffer);
-       result_buffer  = NULL;
-       blength = 0;
-      }
       return true;
     }
     
     static void isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR *updated)
     {
       // this callback is called by libfbclient when event occures in FB
-      
-      event_block* eb = static_cast<event_block*>(aeb);
-      
+  
       // have not found that in documentation
       // but on isc_cancel_events this callback is called
       // with updated == NULL, length==0
       // here we have potential race condition 
       // when cancel and callback get called simultanously .. hmm..
-      if(!updated || eb->canceled || !length) {
+      if( updated == 0 || aeb == 0 || length == 0) {
       // in that case mark block as bad and exit;
-        eb->bad = true;
+      //    eb->bad = true;
         return;
       }     
+      
+      event_block* eb = static_cast<event_block*>(aeb);
       // mark block as locked 
       // to prevent reallocation of buffers when adding or deleting records to block
       // potential race condition ????
-      eb->lock = true;
-      eb->bad = false;
+      // eb->lock = true;
+      // eb->bad = false;
       
-      // copy updated to result buffer
-      // or examples use loop
-      // why not to use mmcpy ???
-//      printf("-->result_buf in call back !\n");
-//      eb->dump_buf((char*) updated,length);
-
-      ISC_UCHAR *r = eb->result_buffer;
-      while(length--) *r++ = *updated++;
-
+      if(eb->queued)
+      {
+        // copy updated to result buffer
+        // or examples use loop
+        // why not to use mmcpy ???
+        //printf("-->result_buf in call back !\n");
+    	//eb->dump_buf((char*) updated,length);
+    	
+        if((ISC_USHORT) eb->blength < length) length = (ISC_USHORT) eb->blength;
+        ISC_UCHAR *r = eb->result_buffer;
+        while(length--) *r++ = *updated++;
+        
+        eb->traped = true;
+	eb->queued = false;
       
-      // schedule event_notification call
-      ev_async_send(EV_DEFAULT_UC_ eb->event_);
+        // schedule event_notification call
+        ev_async_send(EV_DEFAULT_UC_ eb->event_);
+      }    
     }
     
     static void event_notification(EV_P_ ev_async *w, int revents){
@@ -723,24 +749,18 @@ public:
         
         // get event counts
         // but only if block is not marked as bad
-        if(!eb->bad)
+        //if(eb->traped)
            eb->get_counts((ISC_ULONG*) Vector);
-	 //isc_event_counts((ISC_ULONG*) Vector, eb->blength, eb->event_buffer,
-	//			      eb->result_buffer);
-	else 
+	//else 
 	{
 	 // do not use vector 
-	 // if block is bad
-	 use_vector = false;
+	 // if block was not traped
+	 //use_vector = false;
 	} 
-			
-	// we have event counts
-	// so we may unlock block
-	// race???			      
-	eb->lock  = false;
+	//printf("event notification traped=%d\n",eb->traped);
 	
 	// use only previously queued events
-	int count = eb->reg_count;
+	int count = eb->count;
 	int i;
 	Local<Value> EvNames[MAX_EVENTS_PER_BLOCK];
 
@@ -753,16 +773,12 @@ public:
 	// all that "tracking" is reset on disconnect
 	if(use_vector)
 	for(i=0; i < count; i++){
-	  if((Vector[i] - eb->Was_reg[i])>0) EvNames[i] = String::New(eb->event_names[i]);
-	  if(eb->Was_reg[i]){
-	    Vector[i]--;
-	    if(Vector[i]<0) Vector[i] = 0;
-	    else  eb->Was_reg[i] = 0;      
-	  }    
+	  if(Vector[i]) EvNames[i] = String::New(eb->event_names[i]);
 	}
 	
 	// detect if we have added or deleted some events
 	// while block was locked
+/*	
         if((eb->count!=eb->reg_count) || eb->del_count){
         
     	    // if so - free buffers
@@ -786,19 +802,11 @@ public:
     	    // set initial event count 
             //for(i=0; i<eb->count; i++) eb->Was_reg[i] = 1;	    
         }
-
+*/
         // re queue event trap
-	if(isc_que_events(
-    	    eb->status,
-            eb->db,
-            &(eb->event_id),
-            eb->blength,
-            eb->event_buffer,
-            event_block::isc_ev_callback,
-            eb          
-        )) {
+	if(!eb->queue()) {
             ThrowException(Exception::Error(
-            String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
+            String::Concat(String::New("While isc_que_events in event_notification - "),ERR_MSG(eb, event_block))));
         }			      
         
         // exit if block was marked as bad
@@ -817,27 +825,13 @@ public:
 
     }
     
+    
+    
     static Handle<Value> 
     que_event(event_block *eb)
     { 
     
-      if(!eb->alloc_block()) {
-    	    V8::LowMemoryNotification();
-    	    return ThrowException(Exception::Error(
-			      	  String::New("Could not allocate event block buffers.")));
-      }
-     
-      eb->canceled = false;
-      //for(int i=0; i<eb->count; i++) eb->Was_reg[i] = 1;
-      if(isc_que_events(
-         eb->status,
-         eb->db,
-         &(eb->event_id),
-         eb->blength,
-         eb->event_buffer,
-         event_block::isc_ev_callback,
-         eb          
-      )) {
+      if(!eb->queue()) {
             return ThrowException(Exception::Error(
             String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
       }
@@ -873,7 +867,22 @@ public:
       // just add event_name
       // but delay registration 
       // until notification is called
-      if(!lock) reg_count = count; 
+      //if(!lock) reg_count = count; 
+      size_t prev_size = blength;
+      size_t needed = ( (prev_size == 0) ? 1 : 0 ) + len + 5;
+      event_buffer = (ISC_UCHAR*) realloc(event_buffer, prev_size + needed);
+      if(!event_buffer) return false;
+      result_buffer = (ISC_UCHAR*) realloc(result_buffer, prev_size + needed);
+      if(!result_buffer) return false;
+      if(prev_size == 0){
+        event_buffer[0] = result_buffer[0] = 1;
+      }
+      char* buf = (char*) event_buffer + ( (prev_size == 0) ? 1 : prev_size );
+      *(buf++) = static_cast<char>(len);
+      for(p=Event;*p;){ *buf++ = *p++; };
+      *(buf++) = -1; *(buf++) = -1; *(buf++) = -1; *buf = -1;
+      blength = prev_size + needed;
+      memcpy(result_buffer+prev_size,event_buffer+prev_size,needed);
       
       return true;
     }
@@ -884,20 +893,29 @@ public:
       if(idx<0) return;
       // delete event if block is not locked
       // or if deleted event was not registered yet
-      if(!lock || (idx>=reg_count)){
-        free(event_names[idx]);
-        for(int i = idx;i < count;i++) event_names[i] = event_names[i+1];
-        reg_count--;
-        count--;
+      free(event_names[idx]);
+      for(int i = idx;i < count;i++) event_names[i] = event_names[i+1];
+      count--;
+      char *buf = (char*) event_buffer + 1;
+      char *rb  = (char*) result_buffer + 1; 
+      while(idx)
+      { 
+        buf = buf + (*(buf++)) + 4;
+        rb  = rb + (*(buf++)) + 4;
+        idx--;
       }
-      else{
-       // if block is locked mark events to be deleted
-       // when notification will be called
-        for(int i = 0; i<del_count; i++) 
-         if(deleted[i]==idx) return ;
-        deleted[del_count] = idx;
-        del_count++;
-      }
+      char sz = (*buf) + 5;
+      size_t new_length = blength - sz;
+      size_t tale_length = blength - (buf - (char*)event_buffer) - sz;    
+      if(tale_length){
+        memcpy(buf, buf+sz, tale_length);
+        memcpy(rb, rb+sz, tale_length);
+      }    
+      if(new_length==1) new_length = 0;
+      
+      event_buffer = (ISC_UCHAR*) realloc(event_buffer, new_length); 
+      result_buffer = (ISC_UCHAR*) realloc(result_buffer, new_length);             
+      blength = new_length;
           
     }
     
@@ -960,7 +978,7 @@ public:
       if(!*rootp) *rootp = res;
       
       
-      if(res->lock){
+/*      if(res->lock){
         // if block is locked
         // just add event name and exit
         if(!res->addEvent(Event)) {
@@ -970,9 +988,9 @@ public:
         }
         return Undefined();
       }
-      
+*/      
       // Cancel old queue is any 
-      if(!res->cancel_events()){
+      if(!res->cancel()){
     	    return ThrowException(Exception::Error(
         	String::Concat(String::New("While cancel_events - "),ERR_MSG(res, event_block))));
       }        
@@ -1007,13 +1025,13 @@ public:
       {
         // If we have found it
         // it was queued and should be canceled
-        if(!eb->cancel_events()){
+        if(!eb->cancel()){
     	    return ThrowException(Exception::Error(
         	    String::Concat(String::New("While cancel_events - "),ERR_MSG(eb, event_block))));
     	}        
     	// Remove it from event list
         eb->removeEvent(Event);
-        if(eb->lock) return Undefined();
+///        if(eb->lock) return Undefined();
         if(!eb->count) {
          // If there is no more events in block
          // we can free it
@@ -1053,16 +1071,19 @@ public:
       blength = 0;
       event_id = 0;
       event_ = new ev_async();
-      first_time = true;
       bad = false;
-      canceled = false;
+      canceled = true;
+      
+      queued = false;
+      traped = false;
+      
       lock = false;
       memset(Was_reg,0,sizeof(Was_reg));
     }
     
     ~event_block()
     {
-      cancel_events();
+      cancel();
       for(int i=0;i<count;i++) free(event_names[i]);
       free(event_);
       if(next) free(next);

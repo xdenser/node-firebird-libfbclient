@@ -9,6 +9,8 @@ var cfg = require("../config").cfg;
 // Require modules
 var
   fb_binding = require("../../build/default/binding");
+
+var zexports = {};  
  
 
 function Init()
@@ -84,7 +86,7 @@ exports.oneEvent = function(test) {
     test.ok(event==eName, "We got that event");
     test.ok(count==1,"One event");
   });  
-  
+
   GenEvent(eName);
   
   // Wait 2 sec for event
@@ -103,7 +105,6 @@ exports.oneEventBetween = function(test) {
   test.ok(conn.connected,"Connected to database");
   var eName = "Event1";
   conn.on("fbevent",function(event,count){
-    console.log('in event');
     test.ok(event==eName, "We got that event");
     test.ok(count==1,"One event");
   });  
@@ -111,7 +112,7 @@ exports.oneEventBetween = function(test) {
   conn.addFBevent(eName);
   
   GenEvent(eName);
-
+  
   conn.addFBevent("strange");
   
   

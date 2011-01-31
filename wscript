@@ -4,7 +4,7 @@ from os.path import exists
 
 srcdir = '.'
 blddir = 'build'
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 
 def set_options(opt):
   opt.tool_options('compiler_cxx')
@@ -35,11 +35,11 @@ def test(tst):
   else:
     Utils.exec_command(node_binary + ' ./tools/nodeunit/bin/nodeunit tests/def')
 
-def test_f(tstf):
+def test_current(tstc):
   node_binary = 'node'
   
   if not exists('./tools/nodeunit/bin/nodeunit'):
     print("\033[31mNodeunit doesn't exists.\033[39m\nYou should run `git submodule update --init` before run tests.")
     exit(1)
   else:
-    Utils.exec_command(node_binary + ' ./tools/nodeunit/bin/nodeunit tests/def'+' > test.res')
+    Utils.exec_command(node_binary + ' ./tools/nodeunit/bin/nodeunit tests/current')
