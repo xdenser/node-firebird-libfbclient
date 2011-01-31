@@ -41,6 +41,21 @@ function GenEvent(event){
 // console.log("GenEvent "+event); 
 }
 
+function WaitForFinish(finished,clean,timeout){
+  var timedout = false;
+  var tid = setTimeout(function(){
+    timedout = true;
+  },timeout);
+  process.nextTick(function loop(){
+     if(finished.call()||timedout){
+       clearTimeout(tid);
+       clean.call();
+     }
+     else process.nextTick(loop);
+  });
+  
+}
+
 function CleanUp(){
   var con = new fb_binding.Connection;
   con.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
@@ -65,12 +80,12 @@ exports.noEvent = function(test) {
 //  console.log('after add Event1');
 //  conn.addFBevent('another');
 //  console.log('after add another');
-  // Wait 2 sec for event
+// Wait 1 sec for event
   setTimeout(function(){
        conn.disconnect();
        CleanUp();
        test.done();    
-  }, 2000);
+  }, 1000);
   
 }
 
@@ -81,16 +96,19 @@ exports.oneEvent = function(test) {
   var conn = Connect();
   test.ok(conn.connected,"Connected to database");
   var eName = "Event1";
+  var finished = false;
   conn.addFBevent(eName);
   conn.on("fbevent",function(event,count){
     test.ok(event==eName, "We got that event");
     test.ok(count==1,"One event");
+    finished = true;
   });  
 
   GenEvent(eName);
   
   // Wait 2 sec for event
-  setTimeout(function(){
+  WaitForFinish(function(){ return finished; },
+  function(){
        conn.disconnect();
        CleanUp();
        test.done();    
@@ -104,9 +122,11 @@ exports.oneEventBetween = function(test) {
   var conn = Connect();
   test.ok(conn.connected,"Connected to database");
   var eName = "Event1";
+  var finished = false;
   conn.on("fbevent",function(event,count){
     test.ok(event==eName, "We got that event");
     test.ok(count==1,"One event");
+    finished = true;
   });  
 
   conn.addFBevent(eName);
@@ -114,10 +134,10 @@ exports.oneEventBetween = function(test) {
   GenEvent(eName);
   
   conn.addFBevent("strange");
-  
-  
+ 
   // Wait 2 sec for event
-  setTimeout(function(){
+  WaitForFinish(function(){ return finished; },
+  function(){
        conn.disconnect();
        CleanUp();
        test.done();    
@@ -132,6 +152,7 @@ exports.TensOfEvents = function(test){
   test.ok(conn.connected,"Connected to database");
   
   var evcount = 0;
+  var expected_count = 100; //400;?
   conn.on("fbevent", function(event,count){
     //console.log("->"+event+" "+count);
     evcount++;
@@ -139,24 +160,50 @@ exports.TensOfEvents = function(test){
   
   var events = [];
   var en;
-  for(var i = 0; i<40; i++){
+  for(var i = 0; i<expected_count; i++){
     en = 'Event'+i;
     events.push(en);
     conn.addFBevent(en);    
   }
   events = events.reverse();
-  for(var i = 0; i<40; i++){
+  for(var i = 0; i<expected_count; i++){
     setTimeout((function(idx){
      return  function(){
      GenEvent(events[idx]);
     // console.log("Gen "+events[idx]);
     };})(i),0);
   }
-  setTimeout(function(){
-    test.ok(evcount == 40, "We have 40 events");
-    conn.disconnect();
-    CleanUp();
-    test.done();
-  },5000);
 
+  WaitForFinish(function(){ return (evcount == expected_count); },
+  function(){
+       test.ok(evcount == expected_count, "We have "+ expected_count + " events");
+       conn.disconnect();
+       CleanUp();
+       test.done();    
+  }, expected_count*250);
+}
+
+exports.AddAndDelete = function(test){
+
+  test.expect(2);
+  Init();
+  var conn = Connect();
+  test.ok(conn.connected,"Connected to database");
+  var called = false;
+  conn.on("fbevent", function(event,count){
+    //console.log("->"+event+" "+count);
+    called = true;
+  });
+  var eN = 'eventName';
+  conn.addFBevent(eN);
+  conn.deleteFBevent(eN);
+  GenEvent(eN);
+  
+  setTimeout(function(){
+       test.ok(!called,"Event not called");
+       conn.disconnect();
+       CleanUp();
+       test.done();    
+  }, 1000);
+  
 }
