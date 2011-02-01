@@ -6,12 +6,13 @@ See license text in LICENSE file
 // Load configuration
 var cfg = require("../config").cfg;
 
+var zexports = {};
 // Require modules
 var
   fb_binding = require("../../build/default/binding");
 
 
-exports.TwoSmallQueries = function (test) {
+zexports.TwoSmallQueries = function (test) {
   test.expect(6);
   var conn = new fb_binding.Connection;
   conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(){
@@ -40,7 +41,7 @@ exports.TwoSmallQueries = function (test) {
   });
 }
 
-exports.AHundredOfQueries = function(test){
+zexports.AHundredOfQueries = function(test){
   var query_count = 200;
   test.expect(query_count*2+2);
   var conn = new fb_binding.Connection;

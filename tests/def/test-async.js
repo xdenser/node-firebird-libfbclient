@@ -23,6 +23,7 @@ exports.AsyncConnection = function (test) {
          test.ok(!conn.connected,"Disconnected to database");
          test.done();
      });
+
   });
 };
 
@@ -57,8 +58,30 @@ exports.AsyncFetch = function(test){
     test.ok(!err, "No error!"); 
     test.done();
   });
-  
 } 
+
+exports.InAsyncCallConnection = function(test){
+ test.expect(7);
+ var conn = new fb_binding.Connection;
+ conn.on("fbStartAsync",function(){
+   test.ok(true,"StartAsync Called");
+ });
+ conn.on("fbStopAsync",function(){
+   test.ok(true,"StopAsync Called");
+ });
+ 
+ test.ok(!conn.inAsyncCall,"not inAsyncCall initially");
+ conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(res){
+    conn.query("select * from rdb$relations", function(err,res){
+         conn.disconnect();
+         conn.once("fbStopAsync",function(){
+          test.done();
+         }); 
+    }); 
+    test.ok(conn.inAsyncCall,"inAsyncCall query");
+ });
+ test.ok(conn.inAsyncCall,"inAsyncCall connect");
+}
 
 
 

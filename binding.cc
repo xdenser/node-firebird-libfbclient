@@ -39,7 +39,45 @@ Local<External> VAR = Local<External>::Cast(args[I]);
 #define MAX_EVENTS_PER_BLOCK	15
 #define EXP_15_VAR_ARGS(x) x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11],x[12],x[13],x[14]
 
-class FBResult : public EventEmitter {
+static Persistent<String> start_async_symbol;
+static Persistent<String> stop_async_symbol;
+
+class FBEventEmitter : public EventEmitter {
+
+protected:
+  void start_async()
+  {
+    in_async = true;
+    Emit(start_async_symbol, 0, NULL);  
+  }
+  
+  void stop_async()
+  {
+    in_async = false;
+    Emit(stop_async_symbol, 0, NULL);  
+  }
+  
+  FBEventEmitter () : EventEmitter () 
+  {
+    in_async = false;  
+  }
+
+  static Handle<Value>
+  InAsyncGetter(Local<String> property,
+                      const AccessorInfo &info) 
+  {
+    HandleScope scope;
+    FBEventEmitter *fbee = ObjectWrap::Unwrap<FBEventEmitter>(info.Holder());
+
+    return scope.Close(Boolean::New(fbee->in_async));
+  }
+  
+  
+private:  
+  bool in_async; 
+};
+
+class FBResult : public FBEventEmitter {
 
 public:
 
@@ -65,6 +103,9 @@ public:
 
 
     instance_template->SetInternalFieldCount(1);
+    
+    Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
+    instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
     
     target->Set(String::NewSymbol("FBResult"), t->GetFunction());
   }
@@ -338,7 +379,7 @@ protected:
     
 //    if(j==1) js_result = res->Get(0);
 //    else 
-     js_result = res;
+    js_result = res;
     
     return scope.Close(js_result);
 
@@ -441,6 +482,7 @@ protected:
 
     f_req->rowCallback.Dispose();
     f_req->eofCallback.Dispose();
+    f_req->res->stop_async();
     f_req->res->Unref();
     free(f_req);
 
@@ -514,6 +556,7 @@ protected:
     f_req->res = res;
     f_req->eofCallback = Persistent<Function>::New(Local<Function>::Cast(args[3]));
     
+    res->start_async();
     eio_custom(EIO_Fetch, EIO_PRI_DEFAULT, EIO_After_Fetch, f_req);
     
     ev_ref(EV_DEFAULT_UC);
@@ -523,7 +566,7 @@ protected:
   }
 
   
-   FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp) : EventEmitter () 
+   FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp) : FBEventEmitter () 
   {
     sqldap = asqldap;
     stmt = *astmtp;
@@ -983,7 +1026,8 @@ public:
 
 Persistent<FunctionTemplate> FBResult::constructor_template;
 
-class Connection : public EventEmitter {
+
+class Connection : public FBEventEmitter {
  public:
   static void
   Initialize (v8::Handle<v8::Object> target)
@@ -1012,6 +1056,7 @@ class Connection : public EventEmitter {
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
     instance_t->SetAccessor(String::NewSymbol("connected"), ConnectedGetter);
     instance_t->SetAccessor(String::NewSymbol("inTransaction"), InTransactionGetter);
+    instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
     
     fbevent_symbol = NODE_PSYMBOL("fbevent");
     
@@ -1232,7 +1277,6 @@ class Connection : public EventEmitter {
   }
   
   
-  
  protected:
  
  static Handle<Value>
@@ -1311,6 +1355,7 @@ class Connection : public EventEmitter {
     }
 
     conn_req->callback.Dispose();
+    conn_req->conn->stop_async();
     conn_req->conn->Unref();
     free(conn_req);
 
@@ -1342,6 +1387,7 @@ class Connection : public EventEmitter {
     HandleScope scope;
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     
+    
     struct connect_request *conn_req =
          (struct connect_request *)calloc(1, sizeof(struct connect_request));
 
@@ -1364,6 +1410,8 @@ class Connection : public EventEmitter {
     conn_req->User     = new String::Utf8Value(args[1]->ToString());
     conn_req->Password = new String::Utf8Value(args[2]->ToString());
     conn_req->Role     = new String::Utf8Value(args[3]->ToString());
+    
+    conn->start_async();
     
     eio_custom(EIO_Connect, EIO_PRI_DEFAULT, EIO_After_Connect, conn_req);
     
@@ -1389,7 +1437,8 @@ class Connection : public EventEmitter {
   }
   
   static Handle<Value> ConnectedGetter(Local<String> property,
-                                      const AccessorInfo &info) {
+                                      const AccessorInfo &info) 
+  {
     HandleScope scope;
     Connection *connection = ObjectWrap::Unwrap<Connection>(info.Holder());
 
@@ -1405,7 +1454,7 @@ class Connection : public EventEmitter {
 
     return scope.Close(Boolean::New(connection->trans));
   }
-
+  
   static Handle<Value>
   CommitSync (const Arguments& args)
   {
@@ -1470,6 +1519,7 @@ class Connection : public EventEmitter {
     }
 
     tr_req->callback.Dispose();
+    tr_req->conn->stop_async();
     tr_req->conn->Unref();
     free(tr_req);
 
@@ -1510,6 +1560,7 @@ class Connection : public EventEmitter {
     tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
     tr_req->commit = true;
     
+    conn->start_async();
     eio_custom(EIO_TransactionRequest, EIO_PRI_DEFAULT, EIO_After_TransactionRequest, tr_req);
     
     ev_ref(EV_DEFAULT_UC);
@@ -1542,6 +1593,7 @@ class Connection : public EventEmitter {
     tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
     tr_req->commit = false;
     
+    conn->start_async();
     eio_custom(EIO_TransactionRequest, EIO_PRI_DEFAULT, EIO_After_TransactionRequest, tr_req);
     
     ev_ref(EV_DEFAULT_UC);
@@ -1624,6 +1676,7 @@ class Connection : public EventEmitter {
     }
 
     q_req->callback.Dispose();
+    q_req->conn->stop_async();
     q_req->conn->Unref();
     free(q_req);
 
@@ -1667,6 +1720,7 @@ class Connection : public EventEmitter {
     q_req->sqlda = NULL;
     q_req->stmt = 0;
     
+    conn->start_async();
     eio_custom(EIO_Query, EIO_PRI_DEFAULT, EIO_After_Query, q_req);
     
     ev_ref(EV_DEFAULT_UC);
@@ -1745,12 +1799,11 @@ class Connection : public EventEmitter {
   }
   
     
-   Connection () : EventEmitter () 
+   Connection () : FBEventEmitter () 
   {
     db = NULL;
     trans = NULL;
     fb_events = NULL;
-    in_async = false;
     connected = false;
   }
 
@@ -1762,10 +1815,6 @@ class Connection : public EventEmitter {
  
  
  private:
-    void Event (int revents)
-  {
-
-  }
 
   ISC_STATUS_ARRAY status;
   isc_db_handle db;
@@ -1782,6 +1831,10 @@ extern "C" void
 init (Handle<Object> target) 
 {
   HandleScope scope;
+  
+  start_async_symbol = NODE_PSYMBOL("fbStartAsync");
+  stop_async_symbol = NODE_PSYMBOL("fbStopAsync");
+
   FBResult::Initialize(target);
   Connection::Initialize(target);
 }
