@@ -42,6 +42,10 @@ Clone repository and build module
     node-waf configure build
     node-waf configure install
 
+To run tests update ./tests/config.js with your test database connection parameters and
+
+    git submodule update --init
+    node-waf test
  
 Play with it from node:
 
