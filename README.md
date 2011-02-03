@@ -9,7 +9,9 @@ Inspired by node-mysql-libmysql, node-postgress and other modules used as sample
 
 As for now in plans are:
 
-* adding blob field support;
+* blob field support;
+* prepared statements support;
+* connection pool support;
 * continous refactoring;
 * more tests.
 
