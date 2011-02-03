@@ -9,12 +9,12 @@ var cfg = require("../config").cfg;
 var zexports = {};
 // Require modules
 var
-  fb_binding = require("../../build/default/binding");
+  fb_binding = require("../../firebird");
 
 
-zexports.TwoSmallQueries = function (test) {
+exports.TwoSmallQueries = function (test) {
   test.expect(6);
-  var conn = new fb_binding.Connection;
+  var conn = fb_binding.createConnection();
   conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(){
      test.ok(conn.connected,"Connected to database");
      var queries = 0;
@@ -41,10 +41,10 @@ zexports.TwoSmallQueries = function (test) {
   });
 }
 
-zexports.AHundredOfQueries = function(test){
+exports.AHundredOfQueries = function(test){
   var query_count = 200;
   test.expect(query_count*2+2);
-  var conn = new fb_binding.Connection;
+  var conn = fb_binding.createConnection();;
   
   var queried = 0;
   function Finish(){
