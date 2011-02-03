@@ -31,7 +31,7 @@ Update your path:
 
 Create some Database: 
     isql -user sysdba -password masterkey
-    CREATE DATABSE 'test.fdb';
+    CREATE DATABASE 'test.fdb';
     CONNECT 'test.fdb';
     CREATE TABLE TEST (id integer, name varchar(50));
     exit;
@@ -40,6 +40,7 @@ Clone repository and build module
 
     git clone git://github.com/xdenser/node-firebird-libfbclient.git
     node-waf configure build
+    node-waf configure install
 
  
 Play with it from node:
@@ -49,7 +50,8 @@ Play with it from node:
     var con = fb.createConnection();
     con.connectSync('test.fdb','sysdba','masterkey','');
     con.querySync("insert into test (id,name) values (5, 'new one')");
-    var res = conn.querySync("select * from test");
+    var res = con.querySync("select * from test");
+    con.commitSync();
     var rows = res.fetchSync("all",true);
     console.log(sys.inspect(rows));
  
