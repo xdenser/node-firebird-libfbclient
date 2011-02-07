@@ -3,7 +3,7 @@ var sys = require("sys");
 
 
 var Connection =  binding.Connection;
-
+var FBResult   =  binding.FBResult;
 
 function MakeSafe(obj,meth){
   var super = obj.prototype[meth];
@@ -22,6 +22,9 @@ function MakeSafe(obj,meth){
 MakeSafe(Connection,"query");
 MakeSafe(Connection,"commit");
 MakeSafe(Connection,"rollback");
+MakeSafe(FBResult,"fetch");
+
+
 
 exports.createConnection = function () {
   var c = new Connection;
