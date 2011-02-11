@@ -20,10 +20,16 @@ def configure(conf):
   fb_includedir = popen("%s --cflags" % fb_config).readline().strip()
   conf.env.append_value("CPPPATH_FB", fb_includedir)
 
+def buildo(bldo):
+  obj = bldo.new_task_gen('cxx', 'shlib', 'node_addon')
+  obj.target = 'binding'
+  obj.source = "./src/binding.cc"
+  obj.uselib = "FB"
+  
 def build(bld):
   obj = bld.new_task_gen('cxx', 'shlib', 'node_addon')
   obj.target = 'binding'
-  obj.source = "binding.cc"
+  obj.source = "./src/fb-bindings.cc ./src/fb-bindings-connection.cc ./src/fb-bindings-eventblock.cc ./src/fb-bindings-fbeventemitter.cc ./src/fb-bindings-result.cc"
   obj.uselib = "FB"
 
 def test(tst):
