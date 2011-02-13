@@ -5,7 +5,12 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
+#include "./align.h"
+#include "./fb-bindings-fbresult.h"
 #include "./fb-bindings-connection.h" 
+
+
 
 void
   Connection::Initialize (v8::Handle<v8::Object> target)
@@ -35,8 +40,6 @@ void
     instance_t->SetAccessor(String::NewSymbol("connected"), ConnectedGetter);
     instance_t->SetAccessor(String::NewSymbol("inTransaction"), InTransactionGetter);
     instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
-    
-    fbevent_symbol = NODE_PSYMBOL("fbevent");
     
     target->Set(String::NewSymbol("Connection"), t->GetFunction());  
   }
@@ -255,7 +258,6 @@ bool Connection::rollback_transaction()
   }
   
   
- protected:
  
 Handle<Value>
   Connection::New (const Arguments& args)
@@ -322,12 +324,11 @@ int Connection::EIO_After_Connect(eio_req *req)
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
     }
-
+    
     conn_req->callback.Dispose();
     conn_req->conn->stop_async();
     conn_req->conn->Unref();
     free(conn_req);
-
     return 0;
     
   }
@@ -732,29 +733,6 @@ Handle<Value>
 
   }
   
-time_t 
-  Connection::get_gmt_delta()
-  {
-              int h1 = 0, h2 = 0, m1 = 0, m2 = 0, d1 = 0, d2 = 0;
-              time_t rawtime;
-              struct tm timeinfo;
-              time(&rawtime);
-              if (!localtime_r(&rawtime, &timeinfo)) {
-                  return 0;
-              }
-              h1 = timeinfo.tm_hour - (timeinfo.tm_isdst > 0 ? 1 : 0);
-              m1 = timeinfo.tm_min;
-              d1 = timeinfo.tm_mday;
-              if (!gmtime_r(&rawtime, &timeinfo)) {
-                  return 0;
-              }
-              h2 = timeinfo.tm_hour;
-              m2 = timeinfo.tm_min;
-              d2 = timeinfo.tm_mday;
-              return (((h1 - h2)%24)*60 + (m1-m2))*60;
-               
-  }
-  
     
    Connection::Connection () : FBEventEmitter () 
   {
@@ -765,7 +743,7 @@ time_t
   }
 
   Connection::~Connection ()
-  {
+  { 
     if(db!=NULL) Close();
     assert(db == NULL);
   }

@@ -6,6 +6,12 @@
 #ifndef SRC_FB_BINDINGS_FBRESULT_H_
 #define SRC_FB_BINDINGS_FBRESULT_H_
 
+#include <v8.h>
+#include <node.h>
+#include <ibase.h>
+#include "./fb-bindings.h"
+#include "./fb-bindings-fbeventemitter.h"
+
 
 class FBResult : public FBEventEmitter {
 

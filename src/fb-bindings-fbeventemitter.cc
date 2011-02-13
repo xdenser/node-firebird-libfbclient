@@ -3,8 +3,14 @@
  *
  * See license text in LICENSE file
  */
-
+#include <node.h>
 #include "./fb-bindings-fbeventemitter.h"
+
+void FBEventEmitter::Init()
+  {
+    start_async_symbol = NODE_PSYMBOL("fbStartAsync");
+    stop_async_symbol = NODE_PSYMBOL("fbStopAsync");
+  }
 
 void FBEventEmitter::start_async()
   {

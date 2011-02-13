@@ -12,6 +12,7 @@
 #include "./fb-bindings-connection.h"
 #include "./fb-bindings-fbresult.h"
 #include "./fb-bindings-fbeventemitter.h"
+#include "./fb-bindings-eventblock.h"
 
 /**
  * Init V8 structures
@@ -39,10 +40,9 @@ extern "C" void
 init (Handle<Object> target)
 {
   HandleScope scope;
-
-  start_async_symbol = NODE_PSYMBOL("fbStartAsync");
-  stop_async_symbol = NODE_PSYMBOL("fbStopAsync");
-
+  
+  event_block::Init();
+  FBEventEmitter::Init();
   FBResult::Initialize(target);
   Connection::Initialize(target);
 }

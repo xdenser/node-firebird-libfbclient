@@ -18,6 +18,8 @@ static Persistent<String> start_async_symbol;
 static Persistent<String> stop_async_symbol;
 
 class FBEventEmitter : public EventEmitter {
+public: 
+  static void Init();
 
 protected:
   void start_async();

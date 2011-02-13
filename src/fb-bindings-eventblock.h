@@ -8,6 +8,8 @@
 #define SRC_FB_BINDINGS_EVENTBLOCK_H_
 
 #include <ibase.h>
+#include <node.h>
+#include <v8.h>
 #include "./fb-bindings.h"
 
 
@@ -43,6 +45,8 @@ public:
     char err_message[MAX_ERR_MSG_LEN];
     isc_db_handle *db;
     bool traped, queued;
+    
+    static void Init();
     
 #ifdef DEBUG    
     void dump_buf(char* buf, int len);

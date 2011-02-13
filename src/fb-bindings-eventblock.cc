@@ -4,15 +4,24 @@
  * See license text in LICENSE file
  */
 
-#include "fb-bindings-eventblock.h"
+#include <stdlib.h>
+#include <string.h>
+#include <node_events.h>
+#include "./fb-bindings-eventblock.h"
+
 /*
 *	Class event_block 
 *   	Firebird accepts events in blocks by 15 event names.
 *	This class helps to organize linked list chain of such blocks
 *	to support "infinite" number of events.
 */
-static Persistent<String> fbevent_symbol;
 
+void event_block::Init()
+{
+  fbevent_symbol = NODE_PSYMBOL("fbevent");
+}
+
+#ifdef DEBUG    
 void event_block::dump_buf(char* buf, int len){
       printf("buff dump %d\n",len);
       printf("buff[0] = %d\n", buf[0]);
@@ -112,7 +121,6 @@ bool event_block::cancel()
 void event_block::isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR *updated)
     {
       // this callback is called by libfbclient when event occures in FB
-  
       // have not found that in documentation
       // but on isc_cancel_events this callback is called
       // with updated == NULL, length==0
@@ -142,12 +150,15 @@ void event_block::isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR 
     // this is event nitification proc
     // here we emit node events 
 void event_block::event_notification(EV_P_ ev_async *w, int revents){
+        
         ISC_STATUS_ARRAY Vector;
         HandleScope scope;
 	Local<Value> argv[2];
 	
         event_block* eb = static_cast<event_block*>(w->data);
         if(eb->count==0) return;
+        
+        
         
         // get event counts
         // in ibpp they check if event was traped
