@@ -5,6 +5,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <v8.h>
 #include <node.h>
 #include <ibase.h>
@@ -71,6 +72,8 @@
   } 
   
   
+  
+  
 Handle<Value>
   FBResult::New (const Arguments& args)
   {
@@ -89,7 +92,74 @@ Handle<Value>
     res->Wrap(args.This());
 
     return args.This();
-  } 
+  }
+  
+  bool FBResult::prepare_sqlda(XSQLDA *sqlda)
+  {
+    int i;
+    XSQLVAR* var;
+    for(i = 0, var = sqlda->sqlvar; i < sqlda->sqld;i++,var++)
+    {
+      switch(var->sqltype & ~1)
+      {
+        case SQL_ARRAY:
+        case SQL_BLOB:      var->sqldata = (char*) new ISC_QUAD;
+                            memset(var->sqldata, 0, sizeof(ISC_QUAD));
+                            break;
+        case SQL_TIMESTAMP: var->sqldata = (char*) new ISC_TIMESTAMP;
+                            memset(var->sqldata, 0, sizeof(ISC_TIMESTAMP));
+                            break;
+        case SQL_TYPE_TIME: var->sqldata = (char*) new ISC_TIME;
+                            memset(var->sqldata, 0, sizeof(ISC_TIME));
+                            break;                                 
+        case SQL_TYPE_DATE: var->sqldata = (char*) new ISC_DATE;
+                            memset(var->sqldata, 0, sizeof(ISC_DATE));
+                            break;                              
+        case SQL_TEXT:      var->sqldata = new char[var->sqllen + 1];
+                            memset(var->sqldata, ' ', var->sqllen);
+                            break;
+        case SQL_VARYING:   var->sqldata = new char[var->sqllen + 3];
+                            memset(var->sqldata, 0, 2);
+                            memset(var->sqldata + 2, ' ', var->sqllen);
+                            var->sqldata[var->sqllen + 2] = '\0';
+                            break;
+        case SQL_SHORT:     var->sqldata = (char *) new int16_t(0); break;
+        case SQL_LONG:      var->sqldata = (char *) new int32_t(0); break;
+        case SQL_INT64:     var->sqldata = (char *) new int64_t(0); break;
+        case SQL_FLOAT:     var->sqldata = (char *) new float(0.0); break;
+        case SQL_DOUBLE:    var->sqldata = (char *) new double(0.0); break;
+        default:            return false;                     
+      }
+      if(var->sqltype & 1) var->sqlind = new short(-1);
+    }
+    return true;
+  }
+  
+  void FBResult::clean_sqlda(XSQLDA *sqlda)
+  {
+    int i;
+    XSQLVAR* var;
+    for(i = 0, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
+    {
+      switch(var->sqltype & ~1)
+      {
+        case SQL_ARRAY:
+        case SQL_BLOB:      delete (ISC_QUAD*) var->sqldata; break;
+        case SQL_TIMESTAMP: delete (ISC_TIMESTAMP*) var->sqldata; break;
+        case SQL_TYPE_TIME: delete (ISC_TIME*) var->sqldata; break;                                 
+        case SQL_TYPE_DATE: delete (ISC_DATE*) var->sqldata; break;                              
+        case SQL_TEXT:      
+        case SQL_VARYING:   delete [] var->sqldata; break;
+        case SQL_SHORT:     delete (int16_t *) var->sqldata; break;
+        case SQL_LONG:      delete (int32_t *) var->sqldata; break;
+        case SQL_INT64:     delete (int64_t *) var->sqldata; break;
+        case SQL_FLOAT:     delete (float *) var->sqldata; break;
+        case SQL_DOUBLE:    delete (double *) var->sqldata; break;
+        default:            return;                     
+      }
+      if(var->sqlind != 0) delete var->sqlind;
+    }
+  }      
   
 Local<Value> 
   FBResult::GetFieldValue(XSQLVAR *var)
@@ -107,7 +177,7 @@ Local<Value>
     Local<Object> js_date;
     Local<Value> js_field = Local<Value>::New(Null());
     dtype = var->sqltype & ~1;
-    if ((var->sqltype & 1) && (*var->sqlind < 0))
+    if ((var->sqltype & 1) && (var->sqlind < 0))
     {
      // NULL PROCESSING
     }
@@ -235,6 +305,7 @@ Local<Value>
 Handle<Value>
   FBResult::FetchSync(const Arguments& args) 
   {
+  
     HandleScope scope;
     
     FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(args.This());
@@ -497,6 +568,7 @@ Handle<Value>
  FBResult::~FBResult()
   {
    if(sqldap) {
+     FBResult::clean_sqlda(sqldap);
      free(sqldap);
    }
    

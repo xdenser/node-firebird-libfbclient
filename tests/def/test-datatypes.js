@@ -16,6 +16,7 @@ var util = {
             getDataTypeResult: function(datatype,value){
               this.conn.querySync('create table DT_TEST_TABLE ( test_field '+datatype+')');
               this.conn.querySync('insert into DT_TEST_TABLE (test_field) values ('+value+')');
+              this.conn.commitSync();
               return this.conn.querySync('select first 1 test_field from DT_TEST_TABLE').fetchSync("all",false)[0][0];
             },
             quote:function(val){ return "'"+val+"'";}
@@ -53,11 +54,10 @@ module.exports = testCase({
          },
          charMAX:function(test){
             test.expect(1);
-            var len = 255;
+            var len = 32737;
             var Data = '';
             var chars = 'abcdefghABSD01234689q';
-            for(var i=0; i<len;i++) Data+=chars.charAt(Math.floor(Math.random(chars.length)));
-            console.log(Data.length);
+            for(var i=0; i<len;i++) Data+=chars.charAt(Math.floor(Math.random()*chars.length));
             var res = util.getDataTypeResult.call(this,'char('+len+')',util.quote(Data));
             test.equal(res,Data,'char('+len+')');
             test.done();

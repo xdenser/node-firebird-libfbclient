@@ -24,10 +24,14 @@ public:
   
  bool process_result(XSQLDA **sqldap, isc_stmt_handle *stmtp, Local<Array> res);
   
+ static bool prepare_sqlda(XSQLDA *sqlda);
+ static void clean_sqlda(XSQLDA *sqlda);
+  
 protected:  
  static Handle<Value>
   New (const Arguments& args);
   
+    
   static Local<Value> 
   GetFieldValue(XSQLVAR *var);
 

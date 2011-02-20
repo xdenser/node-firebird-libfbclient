@@ -106,7 +106,6 @@ bool Connection::Close(){
   
 bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp)
   {
-     int            buffer[1024];
      XSQLDA          *sqlda;
      XSQLVAR         *var;
      static char     stmt_info[] = { isc_info_sql_stmt_type };
@@ -200,30 +199,8 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
      /*
       *     Set up SQLDA.
       */
-     for (var = sqlda->sqlvar, offset = 0, i = 0; i < num_cols; var++, i++)
-     {
-        length = alignment = var->sqllen;
-        type = var->sqltype & ~1;
-
-        if (type == SQL_TEXT)
-            alignment = 1;
-        else if (type == SQL_VARYING)
-        {   
-            length += sizeof (short) + 1;
-            alignment = sizeof (short);
-        }
-        /* Comment from firebird sample: 
-        **  RISC machines are finicky about word alignment
-        **  So the output buffer values must be placed on
-        **  word boundaries where appropriate
-        */
-        offset = FB_ALIGN(offset, alignment);
-        var->sqldata = (char *) buffer + offset;
-        offset += length;
-        offset = FB_ALIGN(offset, sizeof (short));
-        var->sqlind = (short*) ((char *) buffer + offset);
-        offset += sizeof  (short);
-     }
+    if(!FBResult::prepare_sqlda(sqlda)) return false;
+      
 
     if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
     {
