@@ -19,7 +19,13 @@ var util = {
               this.conn.commitSync();
               return this.conn.querySync('select first 1 test_field from DT_TEST_TABLE').fetchSync("all",false)[0][0];
             },
-            quote:function(val){ return "'"+val+"'";}
+            quote:function(val){ return "'"+val+"'";},
+            JSDateToSQLDT: function(date){
+               return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds()+'.'+date.getMilliseconds();
+            },
+            JSDateToSQLD: function(date){
+               return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
+            }
          };
 
 
@@ -60,6 +66,13 @@ module.exports = testCase({
             for(var i=0; i<len;i++) Data+=chars.charAt(Math.floor(Math.random()*chars.length));
             var res = util.getDataTypeResult.call(this,'char('+len+')',util.quote(Data));
             test.equal(res,Data,'char('+len+')');
+            test.done();
+         },
+         DateMin:function(test){
+            test.expect(1);
+            var Data = new Date(100,0,1,0,0,0,0);
+            var res = util.getDataTypeResult.call(this,'DATE',util.quote(util.JSDateToSQLD(Data))); 
+            test.equal(res,Data,'DateMin');
             test.done();
          }
          

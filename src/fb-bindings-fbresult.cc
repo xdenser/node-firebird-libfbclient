@@ -9,7 +9,7 @@
 #include <v8.h>
 #include <node.h>
 #include <ibase.h>
-#include <time.h> 
+#include <ctime> 
 #include "./fb-bindings-fbresult.h"
  
 
@@ -159,7 +159,12 @@ Handle<Value>
       }
       if(var->sqlind != 0) delete var->sqlind;
     }
-  }      
+  }     
+   
+  double get_js_time(struct tm* times){
+     double res = 0;
+     
+  }
   
 Local<Value> 
   FBResult::GetFieldValue(XSQLVAR *var)
@@ -171,6 +176,8 @@ Local<Value>
     ISC_QUAD    bid;
     time_t      rawtime;
     double      time_val;
+    int 	days; 
+    
     
     HandleScope scope;
     
@@ -257,7 +264,7 @@ Local<Value>
             case SQL_TYPE_DATE:    
 	            	          
 	            isc_decode_sql_date((ISC_DATE *)var->sqldata, &times);
-	            rawtime = mktime(&times);// + Connection::get_gmt_delta();
+	            days = * (int *) var->sqldata ; 
 	            js_date = Object::New();
 	            js_date->Set(String::New("year"),
                              Integer::New(times.tm_year+1900));
@@ -265,7 +272,7 @@ Local<Value>
                              Integer::New(times.tm_mon+1));
                     js_date->Set(String::New("day"),
                              Integer::New(times.tm_mday));
-	            time_val = static_cast<double>(rawtime)*1000;
+	            time_val = (static_cast<double>(days) - 40587.0) * 86400 * 1000;
 	            js_date->Set(String::New("date"),
                              Date::New(time_val));
 	            js_field = js_date;
