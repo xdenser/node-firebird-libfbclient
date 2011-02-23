@@ -5,6 +5,7 @@ See license text in LICENSE file
 
 // Load configuration
 var cfg = require("../config").cfg;
+var sys = require("sys");
 
 // Require modules
 var
@@ -71,8 +72,26 @@ module.exports = testCase({
          DateMin:function(test){
             test.expect(1);
             var Data = new Date(100,0,1,0,0,0,0);
-            var res = util.getDataTypeResult.call(this,'DATE',util.quote(util.JSDateToSQLD(Data))); 
-            test.equal(res,Data,'DateMin');
+            var res = util.getDataTypeResult.call(this,'DATE',util.quote(util.JSDateToSQLD(Data)));
+            test.equal(res.toString(),Data.toString(),'DateMin');
+            test.done();
+         },
+         DateToday:function(test){
+            test.expect(1);
+            var Data = new Date();
+            Data.setHours(0);
+            Data.setMinutes(0);
+            Data.setSeconds(0);
+            Data.setMilliseconds(0);
+            var res = util.getDataTypeResult.call(this,'DATE',util.quote(util.JSDateToSQLD(Data)));
+            test.equal(res.toString(),Data.toString(),'DateToday');
+            test.done();
+         },
+         DateMax:function(test){
+            test.expect(1);
+            var Data = new Date(9999,11,31,0,0,0,0); // Interbase documentation claims max value for year is 32768, but insert with 32768-2-29 throws error 
+            var res = util.getDataTypeResult.call(this,'DATE',util.quote(util.JSDateToSQLD(Data)));
+            test.equal(res.toString(),Data.toString(),'DateMax');
             test.done();
          }
          

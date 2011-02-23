@@ -18,7 +18,7 @@ void
     
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
     
-    t->Inherit(EventEmitter::constructor_template);
+    t->Inherit(FBEventEmitter::constructor_template);
     t->InstanceTemplate()->SetInternalFieldCount(1);
     // Methods 
 

@@ -22,9 +22,10 @@
     
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
 
-    t->Inherit(EventEmitter::constructor_template);
+    t->Inherit(FBEventEmitter::constructor_template);
+    
     constructor_template = Persistent<FunctionTemplate>::New(t);
-    constructor_template->Inherit(EventEmitter::constructor_template);
+    constructor_template->Inherit(FBEventEmitter::constructor_template);
     constructor_template->SetClassName(String::NewSymbol("FBResult"));
 
     Local<ObjectTemplate> instance_template =
@@ -181,6 +182,9 @@ Local<Value>
     
     HandleScope scope;
     
+    Local<Function> con;
+    Local<Value> argv[7];
+    
     Local<Object> js_date;
     Local<Value> js_field = Local<Value>::New(Null());
     dtype = var->sqltype & ~1;
@@ -264,17 +268,36 @@ Local<Value>
             case SQL_TYPE_DATE:    
 	            	          
 	            isc_decode_sql_date((ISC_DATE *)var->sqldata, &times);
-	            days = * (int *) var->sqldata ; 
-	            js_date = Object::New();
+	            
+	            // days from 1 jan 1858 	            
+	            // days = * (int *) var->sqldata ; 
+	            
+	            js_date = Date::New(0)->ToObject();
+	            
+	            argv[0] = Integer::New(times.tm_year+1900);
+	            Local<Function>::Cast(js_date->Get( String::New("setFullYear") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_mon);
+	            Local<Function>::Cast(js_date->Get( String::New("setMonth") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_mday);
+	            Local<Function>::Cast(js_date->Get( String::New("setDate") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(0);
+	            Local<Function>::Cast(js_date->Get( String::New("setHours") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::New("setMinutes") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::New("setSeconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::New("setMilliseconds") ))->Call(js_date,1,argv);
+	            
+	            //js_field = con->Call(js_date, 3, argv);
+	            /*js_date = Object::New();
 	            js_date->Set(String::New("year"),
                              Integer::New(times.tm_year+1900));
                     js_date->Set(String::New("month"),
                              Integer::New(times.tm_mon+1));
                     js_date->Set(String::New("day"),
                              Integer::New(times.tm_mday));
+                             
 	            time_val = (static_cast<double>(days) - 40587.0) * 86400 * 1000;
 	            js_date->Set(String::New("date"),
-                             Date::New(time_val));
+                             Date::New(time_val));*/
 	            js_field = js_date;
 	            break;
 	            
