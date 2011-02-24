@@ -26,6 +26,9 @@ var util = {
             },
             JSDateToSQLD: function(date){
                return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
+            },
+            JSTimeToSQLT:function(time){
+              return time.getHours()+':'+time.getMinutes()+':'+time.getSeconds()+'.'+time.getMilliseconds();
             }
          };
 
@@ -93,6 +96,142 @@ module.exports = testCase({
             var res = util.getDataTypeResult.call(this,'DATE',util.quote(util.JSDateToSQLD(Data)));
             test.equal(res.toString(),Data.toString(),'DateMax');
             test.done();
-         }
-         
+         },
+         Decimal18_2min:function(test){
+            test.expect(1);
+            var Data = 0.01; 
+            var res = util.getDataTypeResult.call(this,'DECIMAL(18,2)',Data);
+            test.equal(res,Data,'DECIMAL(18,2) min');
+            test.done();
+         },
+         Decimal18_2max:function(test){
+            test.expect(1);
+            var Data = 9999999999999999.99; 
+            var res = util.getDataTypeResult.call(this,'DECIMAL(18,2)',Data);
+            test.equal(res,Data,'DECIMAL(18,2) max');
+            test.done();
+         },
+         Decimal18_18min:function(test){
+            test.expect(1);
+            var Data = 0.000000000000000001; 
+            var res = util.getDataTypeResult.call(this,'DECIMAL(18,2)',Data);
+            test.equal(res,Data,'DECIMAL(18,18) min');
+            test.done();
+         },
+         Decimal18_18max:function(test){
+            test.expect(1);
+//            var Data = 0.999999999999999999; 
+            var Data = 1;
+            var res = util.getDataTypeResult.call(this,'DECIMAL(18,2)',Data);
+            test.equal(res,Data,'DECIMAL(18,18) max');
+            test.done();
+         },
+         DoublePrecisionMin:function(test){
+            test.expect(1);
+            var Data = 2.225E-305; // IB DOC CLAIM  2.225E-305
+            var res = util.getDataTypeResult.call(this,'DOUBLE PRECISION',Data);
+            test.equal(res,Data,'DOUBLE PRECISION Min');
+            test.done();
+         },
+	 DoublePrecisionMax:function(test){
+            test.expect(1);
+            var Data = 1.797E+308; 
+            var res = util.getDataTypeResult.call(this,'DOUBLE PRECISION',Data);
+            test.equal(res,Data,'DOUBLE PRECISION Max');
+            test.done();
+         },
+         FloatMin:function(test){
+            test.expect(1);
+            var Data = 1.175E-38; 
+            var res = util.getDataTypeResult.call(this,'FLOAT',Data);
+            test.equal(res,Data,'Float Min');
+            test.done();
+         },
+         FloatMax:function(test){
+            test.expect(1);
+            var Data = 3.402E+38; 
+            var res = util.getDataTypeResult.call(this,'FLOAT',Data);
+            test.equal(res,Data,'Float Max');
+            test.done();
+         },
+         IntegerMin:function(test){
+            test.expect(1);
+            var Data = -2147483648; 
+            var res = util.getDataTypeResult.call(this,'INTEGER',Data);
+            test.equal(res,Data,'Integer Min');
+            test.done();
+         },
+         IntegerMax:function(test){
+            test.expect(1);
+            var Data = 2147483647; 
+            var res = util.getDataTypeResult.call(this,'INTEGER',Data);
+            test.equal(res,Data,'Integer Max');
+            test.done();
+         },
+         SmallIntMin:function(test){
+            test.expect(1);
+            var Data = -32768; 
+            var res = util.getDataTypeResult.call(this,'SMALLINT',Data);
+            test.equal(res,Data,'SmallInt Min');
+            test.done();
+         },
+         SmallIntMax:function(test){
+            test.expect(1);
+            var Data = 32767; 
+            var res = util.getDataTypeResult.call(this,'SMALLINT',Data);
+            test.equal(res,Data,'SmallInt Max');
+            test.done();
+         },
+         TimeMin:function(test){
+            test.expect(1);
+            var Data = new Date(0,0,0,0,0,0,0);
+            var res = util.getDataTypeResult.call(this,'TIME',util.quote(util.JSTimeToSQLT(Data)));
+            test.equal(res.toString(),Data.toString(),'TimeMin');
+            test.done();
+         },
+         TimeMax:function(test){
+            test.expect(1);
+            var Data = new Date(0,0,0,23,59,59,9999);
+            var res = util.getDataTypeResult.call(this,'TIME',util.quote(util.JSTimeToSQLT(Data)));
+            test.equal(res.toString(),Data.toString(),'TimeMax');
+            test.done();
+         },
+         TimeStampMin:function(test){
+            test.expect(1);
+            var Data = new Date(100,0,1,0,0,0,0);
+            var res = util.getDataTypeResult.call(this,'TIME',util.quote(util.JSDateToSQLDT(Data)));
+            test.equal(res.toString(),Data.toString(),'TimeStampMin');
+            test.done();
+         },
+         TimeStampMax:function(test){
+            test.expect(1);
+            var Data = new Date(9999,11,31,23,59,59,0);
+            var res = util.getDataTypeResult.call(this,'TIME',util.quote(util.JSDateToSQLDT(Data)));
+            test.equal(res.toString(),Data.toString(),'TimeStampMax');
+            test.done();
+         },
+         Varchar1:function(test){
+            test.expect(1); 
+            var Data = "Z";
+            var res = util.getDataTypeResult.call(this,'varchar(1)',util.quote(Data));
+            test.equal(res,Data,'char(1)');
+            test.done();
+         },
+         Varchar10:function(test){
+            test.expect(1);
+            var Data = "0123456789";
+            var res = util.getDataTypeResult.call(this,'varchar(10)',util.quote(Data));
+            test.equal(res,Data,'char(10)');
+            test.done();
+         },
+         VarcharMAX:function(test){
+            test.expect(1);
+            var len = 32737;
+            var Data = '';
+            var chars = 'abcdefghABSD01234689q';
+            for(var i=0; i<len;i++) Data+=chars.charAt(Math.floor(Math.random()*chars.length));
+            var res = util.getDataTypeResult.call(this,'varchar('+len+')',util.quote(Data));
+            test.equal(res,Data,'char('+len+')');
+            test.done();
+         }         
 });
