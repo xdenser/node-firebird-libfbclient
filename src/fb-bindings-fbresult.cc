@@ -236,14 +236,14 @@ Local<Value>
 		    {
 		    tens = 1;
 		    for (i = 0; i > dscale; i--) tens *= 10;
-                    js_field = Number::New(value / tens); 
+                    js_field = Number::New((double) value / tens); 
                     
 		    }
 		else if (dscale)
 		      {
 		       tens = 1;
 		       for (i = 0; i < dscale; i++) tens *= 10;
-		      js_field = Integer::New(value * tens); 
+		       js_field = Integer::New(value * tens); 
 	              }		    
 		else
 		      js_field = Integer::New( value);
@@ -251,7 +251,7 @@ Local<Value>
                 break;
 
             case SQL_FLOAT:
-                js_field = Number::New(*(float *) (var->sqldata));  
+                js_field = Number::New(double( *(float *) (var->sqldata) ));  
                 break;
 
             case SQL_DOUBLE:
@@ -260,9 +260,24 @@ Local<Value>
 
             case SQL_TIMESTAMP: 
 	            isc_decode_timestamp((ISC_TIMESTAMP *)var->sqldata, &times);
-	            rawtime = mktime(&times);// + Connection::get_gmt_delta();
-	            time_val = static_cast<double>(rawtime)*1000 + ((*((ISC_TIME *)var->sqldata)) % 10000)/10;
-	            js_field = Date::New(time_val);
+	            js_date = Date::New(0)->ToObject();
+	            argv[0] = Integer::New(times.tm_year+1900);
+	            Local<Function>::Cast(js_date->Get( String::New("setFullYear") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_mon);
+	            Local<Function>::Cast(js_date->Get( String::New("setMonth") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_mday);
+	            Local<Function>::Cast(js_date->Get( String::New("setDate") ))->Call(js_date,1,argv);
+	            
+	            argv[0] = Integer::New(times.tm_hour);
+	            Local<Function>::Cast(js_date->Get( String::New("setHours") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_min);
+	            Local<Function>::Cast(js_date->Get( String::New("setMinutes") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_sec);
+	            Local<Function>::Cast(js_date->Get( String::New("setSeconds") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
+	            Local<Function>::Cast(js_date->Get( String::New("setMilliseconds") ))->Call(js_date,1,argv);
+	            
+	            js_field = js_date;
 	            break;
 	            
             case SQL_TYPE_DATE:    
@@ -303,11 +318,25 @@ Local<Value>
 	            
            case SQL_TYPE_TIME:    
 	            isc_decode_sql_time((ISC_TIME *)var->sqldata, &times);
-	            time_val = (times.tm_hour*60*60 + 
-	                        times.tm_min*60 +
-	                        times.tm_sec)*1000 + 
-	                        ((*((ISC_TIME *)var->sqldata)) % 10000)/10;
-	            js_field = Date::New(time_val);            
+	            
+	            js_date = Date::New(0)->ToObject();
+	            argv[0] = Integer::New(times.tm_year+1900);
+	            Local<Function>::Cast(js_date->Get( String::New("setFullYear") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_mon);
+	            Local<Function>::Cast(js_date->Get( String::New("setMonth") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_mday);
+	            Local<Function>::Cast(js_date->Get( String::New("setDate") ))->Call(js_date,1,argv);
+	            
+	            argv[0] = Integer::New(times.tm_hour);
+	            Local<Function>::Cast(js_date->Get( String::New("setHours") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_min);
+	            Local<Function>::Cast(js_date->Get( String::New("setMinutes") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(times.tm_sec);
+	            Local<Function>::Cast(js_date->Get( String::New("setSeconds") ))->Call(js_date,1,argv);
+	            argv[0] = Integer::New(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
+	            Local<Function>::Cast(js_date->Get( String::New("setMilliseconds") ))->Call(js_date,1,argv);
+	            
+	            js_field = js_date;
 	            break;            
 
             case SQL_BLOB:

@@ -114,15 +114,15 @@ module.exports = testCase({
          Decimal18_18min:function(test){
             test.expect(1);
             var Data = 0.000000000000000001; 
-            var res = util.getDataTypeResult.call(this,'DECIMAL(18,2)',Data);
+            var res = util.getDataTypeResult.call(this,'DECIMAL(18,18)',Data);
             test.equal(res,Data,'DECIMAL(18,18) min');
             test.done();
          },
          Decimal18_18max:function(test){
             test.expect(1);
-//            var Data = 0.999999999999999999; 
-            var Data = 1;
-            var res = util.getDataTypeResult.call(this,'DECIMAL(18,2)',Data);
+            var Data = 0.999999999999999999; 
+//            var Data = 1;
+            var res = util.getDataTypeResult.call(this,'DECIMAL(18,18)',Data);
             test.equal(res,Data,'DECIMAL(18,18) max');
             test.done();
          },
@@ -144,14 +144,14 @@ module.exports = testCase({
             test.expect(1);
             var Data = 1.175E-38; 
             var res = util.getDataTypeResult.call(this,'FLOAT',Data);
-            test.equal(res,Data,'Float Min');
+            test.ok(Math.abs(res-Data)/res < 1e-3,'Float Min');
             test.done();
          },
          FloatMax:function(test){
             test.expect(1);
             var Data = 3.402E+38; 
             var res = util.getDataTypeResult.call(this,'FLOAT',Data);
-            test.equal(res,Data,'Float Max');
+            test.ok(Math.abs(res-Data)/res < 1e-3,'Float Max');
             test.done();
          },
          IntegerMin:function(test){
@@ -191,7 +191,7 @@ module.exports = testCase({
          },
          TimeMax:function(test){
             test.expect(1);
-            var Data = new Date(0,0,0,23,59,59,9999);
+            var Data = new Date(0,0,0,23,59,59,999);
             var res = util.getDataTypeResult.call(this,'TIME',util.quote(util.JSTimeToSQLT(Data)));
             test.equal(res.toString(),Data.toString(),'TimeMax');
             test.done();
@@ -199,14 +199,14 @@ module.exports = testCase({
          TimeStampMin:function(test){
             test.expect(1);
             var Data = new Date(100,0,1,0,0,0,0);
-            var res = util.getDataTypeResult.call(this,'TIME',util.quote(util.JSDateToSQLDT(Data)));
+            var res = util.getDataTypeResult.call(this,'TIMESTAMP',util.quote(util.JSDateToSQLDT(Data)));
             test.equal(res.toString(),Data.toString(),'TimeStampMin');
             test.done();
          },
          TimeStampMax:function(test){
             test.expect(1);
-            var Data = new Date(9999,11,31,23,59,59,0);
-            var res = util.getDataTypeResult.call(this,'TIME',util.quote(util.JSDateToSQLDT(Data)));
+            var Data = new Date(9999,11,31,23,59,59,999);
+            var res = util.getDataTypeResult.call(this,'TIMESTAMP',util.quote(util.JSDateToSQLDT(Data)));
             test.equal(res.toString(),Data.toString(),'TimeStampMax');
             test.done();
          },
