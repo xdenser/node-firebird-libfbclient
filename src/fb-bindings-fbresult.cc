@@ -349,9 +349,7 @@ Local<Value>
                              Integer::New(bid.gds_quad_high));
                 js_blob->Set(String::New("q_lo"),
                              Integer::NewFromUnsigned(bid.gds_quad_low));             
-
                 js_field = js_blob;
-                
                 break;
 
         }
