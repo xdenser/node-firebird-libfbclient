@@ -68,4 +68,12 @@ exports.FBResultBinding = function(test){
  test.done();
 }
 
+exports.FBblobBinding = function(test){
+ test.expect(2);
+ var blob = fb_binding.FBblob;
+ test.ok("readSync" in blob, 'read Sync');
+ test.ok("readSync" in blob, 'read Sync');
+ test.done();
+}
+
 

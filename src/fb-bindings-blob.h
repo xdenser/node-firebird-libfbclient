@@ -6,19 +6,21 @@
 #ifndef SRC_FB_BINDINGS_BLOB_H_
 #define SRC_FB_BINDINGS_BLOB_H_
 
-#include <ibase.h>
 #include <v8.h>
-#include <node.h>
-#include <node_buffer.h>
+//#include <node.h>
+//#include <node_buffer.h>
+#include <ibase.h>
+#include "./fb-bindings.h"
 #include "./fb-bindings-fbeventemitter.h"
+// #include "./fb-bindings-connection.h"
 
 
-using namespace v8;
-using namespace node;
+class FBblob : public FBEventEmitter {
 
-
-class Blob : public FBEventEmitter {
- public:
+public:
+ 
+  static Persistent<FunctionTemplate> constructor_template;
+  
   static void
   Initialize (v8::Handle<v8::Object> target);
   
@@ -32,7 +34,7 @@ class Blob : public FBEventEmitter {
   
   struct read_request {
      Persistent<Function> callback;
-     Blob *blob;
+     FBblob *blob;
      size_t length;
   };
   
@@ -44,13 +46,13 @@ class Blob : public FBEventEmitter {
   static Handle<Value>
   Read(const Arguments& args);
   
-  
+  FBblob(ISC_QUAD *id, Connection *conn);
+  ~FBblob();
   
  private: 
   ISC_QUAD blob_id; 
-  isc_db_handle db;
-  isc_tr_handle trans;
+  Connection *connection;
   
-}  
+};  
 
 #endif

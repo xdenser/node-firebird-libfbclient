@@ -29,6 +29,9 @@ class Connection : public FBEventEmitter {
   bool commit_transaction();
     
   bool rollback_transaction();
+  
+  isc_db_handle get_DB_Handle();
+  isc_tr_handle get_Def_Tr_Handle();
  
  protected:
  

@@ -10,6 +10,7 @@
 #include <node.h>
 #include <ibase.h>
 #include <ctime> 
+#include "./fb-bindings-connection.h"
 #include "./fb-bindings-fbresult.h"
  
 
@@ -83,13 +84,16 @@ Handle<Value>
     
     REQ_EXT_ARG(0, js_sqldap);
     REQ_EXT_ARG(1, js_stmtp);
+    REQ_EXT_ARG(2, js_connection);
     
     XSQLDA *asqldap;
     asqldap = static_cast<XSQLDA *>(js_sqldap->Value());
     isc_stmt_handle *astmtp;
     astmtp = static_cast<isc_stmt_handle *>(js_stmtp->Value()); 
+    Connection  *conn;
+    conn = static_cast<Connection *>(js_connection->Value()); 
     
-    FBResult *res = new FBResult(asqldap, astmtp);
+    FBResult *res = new FBResult(asqldap, astmtp, conn);
     res->Wrap(args.This());
 
     return args.This();
@@ -616,10 +620,12 @@ Handle<Value>
   }
 
   
- FBResult::FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp) : FBEventEmitter () 
+ FBResult::FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp, Connection *conn) : FBEventEmitter () 
   {
     sqldap = asqldap;
     stmt = *astmtp;
+    connection = conn;
+    //conn->Ref();
   }
   
  FBResult::~FBResult()
@@ -628,6 +634,6 @@ Handle<Value>
      FBResult::clean_sqlda(sqldap);
      free(sqldap);
    }
-   
+   //connection->Unref();
   }
   

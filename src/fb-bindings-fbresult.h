@@ -54,7 +54,7 @@ protected:
   static Handle<Value>
   Fetch(const Arguments& args);
   
-  FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp); 
+  FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp, Connection *conn); 
   
   ~FBResult();
   
@@ -62,6 +62,7 @@ protected:
   char err_message[MAX_ERR_MSG_LEN];
   XSQLDA *sqldap;
   isc_stmt_handle stmt;
+  Connection *connection;
 
 };
 

@@ -233,6 +233,15 @@ bool Connection::rollback_transaction()
     return true;
   }
   
+isc_db_handle Connection::get_DB_Handle()
+  {
+    return db;
+  }
+  
+isc_tr_handle Connection::get_Def_Tr_Handle()
+  {
+    return trans;
+  }    
   
  
 Handle<Value>
@@ -567,12 +576,13 @@ Handle<Value>
     
     
 
-    Local<Value> argv[2];
+    Local<Value> argv[3];
 
     argv[0] = External::New(sqlda);
     argv[1] = External::New(&stmt);
+    argv[2] = External::New(connection);
     Persistent<Object> js_result(FBResult::constructor_template->
-                                     GetFunction()->NewInstance(2, argv));
+                                     GetFunction()->NewInstance(3, argv));
 
     return scope.Close(js_result); 
         
@@ -585,7 +595,7 @@ int Connection::EIO_After_Query(eio_req *req)
     HandleScope scope;
     struct query_request *q_req = (struct query_request *)(req->data);
 
-    Local<Value> argv[2];
+    Local<Value> argv[3];
     
     if (!req->result) {
        argv[0] = Exception::Error(
@@ -595,8 +605,11 @@ int Connection::EIO_After_Query(eio_req *req)
     else{
      argv[0] = External::New(q_req->sqlda);
      argv[1] = External::New(&q_req->stmt);
+     argv[2] = External::New(q_req->conn);
+     
      Persistent<Object> js_result(FBResult::constructor_template->
-                                     GetFunction()->NewInstance(2, argv));
+                                     GetFunction()->NewInstance(3, argv));
+                                     
      argv[1] = Local<Value>::New(scope.Close(js_result));    
      argv[0] = Local<Value>::New(Null());
     }
