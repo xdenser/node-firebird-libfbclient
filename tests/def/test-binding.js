@@ -70,9 +70,9 @@ exports.FBResultBinding = function(test){
 
 exports.FBblobBinding = function(test){
  test.expect(2);
- var blob = fb_binding.FBblob;
+ var blob = fb_binding.FBblob.prototype;
  test.ok("readSync" in blob, 'read Sync');
- test.ok("readSync" in blob, 'read Sync');
+ test.ok("read" in blob, 'read Sync');
  test.done();
 }
 

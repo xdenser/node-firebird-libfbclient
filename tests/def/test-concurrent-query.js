@@ -44,7 +44,9 @@ exports.TwoSmallQueries = function (test) {
 exports.AHundredOfQueries = function(test){
   var query_count = 200;
   test.expect(query_count*2+2);
-  var conn = fb_binding.createConnection();;
+  var conn = fb_binding.createConnection();
+  conn.addListener('z',function(){});
+  conn.setMaxListeners(0);
   
   var queried = 0;
   function Finish(){

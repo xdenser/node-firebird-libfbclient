@@ -46,14 +46,14 @@ function WaitForFinish(finished,clean,timeout){
   var tid = setTimeout(function(){
     timedout = true;
   },timeout);
+  
   process.nextTick(function loop(){
      if(finished.call()||timedout){
        clearTimeout(tid);
        clean.call();
      }
-     else process.nextTick(loop);
-  });
-  
+     else  process.nextTick(loop);
+  });     
 }
 
 function CleanUp(){
@@ -112,7 +112,7 @@ exports.oneEvent = function(test) {
        conn.disconnect();
        CleanUp();
        test.done();    
-  }, 2000);
+  }, 5000);
 }
 
 exports.oneEventBetween = function(test) {
@@ -141,7 +141,7 @@ exports.oneEventBetween = function(test) {
        conn.disconnect();
        CleanUp();
        test.done();    
-  }, 2000);
+  }, 5000);
 }
 
 
