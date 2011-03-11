@@ -69,10 +69,12 @@ exports.FBResultBinding = function(test){
 }
 
 exports.FBblobBinding = function(test){
- test.expect(2);
+ test.expect(4);
  var blob = fb_binding.FBblob.prototype;
- test.ok("readSync" in blob, 'read Sync');
- test.ok("read" in blob, 'read Sync');
+ test.ok("_readSync" in blob, 'readSync');
+ test.ok("_read" in blob, 'read');
+ test.ok("_openSync" in blob, '_openSync');
+ test.ok("_closeSync" in blob, '_closeSync');
  test.done();
 }
 

@@ -17,6 +17,10 @@ using namespace node;
 
 class Connection : public FBEventEmitter {
  public:
+  isc_db_handle db;
+  isc_tr_handle trans;
+
+ 
   static void
   Initialize (v8::Handle<v8::Object> target);
  
@@ -32,6 +36,7 @@ class Connection : public FBEventEmitter {
   
   isc_db_handle get_DB_Handle();
   isc_tr_handle get_Def_Tr_Handle();
+  
  
  protected:
  
@@ -124,10 +129,9 @@ class Connection : public FBEventEmitter {
  private:
 
   ISC_STATUS_ARRAY status;
-  isc_db_handle db;
   event_block* fb_events;
   bool connected; 
-  isc_tr_handle trans;
+  
   bool in_async;
   char err_message[MAX_ERR_MSG_LEN];
   

@@ -12,6 +12,7 @@
 #include <ctime> 
 #include "./fb-bindings-connection.h"
 #include "./fb-bindings-fbresult.h"
+#include "./fb-bindings-blob.h"
  
 
  Persistent<FunctionTemplate> FBResult::constructor_template;
@@ -65,7 +66,7 @@
         js_result_row = Array::New();
         for (i = 0; i < num_cols; i++)
         {
-            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i]);
+            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i], connection);
             js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
         }
         res->Set(Integer::NewFromUnsigned(j++), js_result_row);
@@ -172,7 +173,7 @@ Handle<Value>
   }
   
 Local<Value> 
-  FBResult::GetFieldValue(XSQLVAR *var)
+  FBResult::GetFieldValue(XSQLVAR *var, Connection* conn)
   {
     short       dtype;  
     PARAMVARY   *vary2;
@@ -346,13 +347,13 @@ Local<Value>
             case SQL_BLOB:
             case SQL_ARRAY:
                 /* Print the blob id on blobs or arrays */
-                Local<Object> js_blob;
                 bid = *(ISC_QUAD *) var->sqldata;
-                js_blob = Object::New();
-                js_blob->Set(String::New("q_hi"),
-                             Integer::New(bid.gds_quad_high));
-                js_blob->Set(String::New("q_lo"),
-                             Integer::NewFromUnsigned(bid.gds_quad_low));             
+                
+                argv[0] = External::New(&bid);
+		argv[1] = External::New(conn);
+                Local<Object> js_blob(FBblob::constructor_template->
+                                     GetFunction()->NewInstance(2, argv));
+
                 js_field = js_blob;
                 break;
 
@@ -423,7 +424,7 @@ Handle<Value>
         
         for (i = 0; i < num_cols; i++)
         {
-            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i]);
+            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i], fb_res->connection);
             if(rowAsObject)
             { 
               js_result_row->Set(String::New(sqlda->sqlvar[i].sqlname), js_field);
@@ -472,7 +473,7 @@ int FBResult::EIO_After_Fetch(eio_req *req)
     
 	for (i = 0; i < num_cols; i++)
 	{
-    	    js_field = FBResult::GetFieldValue((XSQLVAR *) &f_req->res->sqldap->sqlvar[i]);
+    	    js_field = FBResult::GetFieldValue((XSQLVAR *) &f_req->res->sqldap->sqlvar[i], f_req->res->connection);
     	    if(f_req->rowAsObject)
     	    { 
         	js_result_row->Set(String::New(f_req->res->sqldap->sqlvar[i].sqlname), js_field);

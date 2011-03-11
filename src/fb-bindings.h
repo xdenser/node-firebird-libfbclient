@@ -11,6 +11,10 @@
 #define ERR_MSG(obj,class) \
 String::New(ErrorMessage(obj->status,obj->err_message,sizeof(obj->err_message)))
 
+#define ERR_MSG_STAT(status,class) \
+String::New(ErrorMessage(status,class::err_message,sizeof(class::err_message)))
+
+
 #define REQ_EXT_ARG(I, VAR) \
 if (args.Length() <= (I) || !args[I]->IsExternal()) \
 return ThrowException(Exception::TypeError( \

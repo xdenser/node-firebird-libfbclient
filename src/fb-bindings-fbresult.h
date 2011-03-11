@@ -33,7 +33,7 @@ protected:
   
     
   static Local<Value> 
-  GetFieldValue(XSQLVAR *var);
+  GetFieldValue(XSQLVAR *var, Connection* conn);
 
   static Handle<Value>
   FetchSync(const Arguments& args);
