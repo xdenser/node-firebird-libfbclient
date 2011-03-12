@@ -50,5 +50,18 @@ module.exports = testCase({
            res._closeSync();
            test.equal(buf.toString('utf8',0,len),Data,'blob ');
            test.done();
+         },
+         asyncRead: function(test){
+           test.expect(2);
+           Data = 'some data for async blob';
+           var res = util.getDataTypeResult.call(this,'BLOB SUB_TYPE 1',util.quote(Data));
+           var buf = new Buffer(1024);
+           res._openSync();
+           res._read(buf,function(err,b,len){
+        	 test.ifError(err);
+                 res._closeSync();
+        	 test.equal(b.toString('utf8',0,len),Data,'blob ');
+        	 test.done();	 
+           });
          }
 }); 

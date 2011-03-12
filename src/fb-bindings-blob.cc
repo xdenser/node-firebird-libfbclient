@@ -93,17 +93,29 @@ int FBblob::EIO_After_Read(eio_req *req)
     ev_unref(EV_DEFAULT_UC);
     HandleScope scope;
     struct read_request *r_req = (struct read_request *)(req->data);
-    Local<Value> argv[2];
+    Local<Value> argv[3];
+    int argc;
     
     Buffer *slowBuffer = Buffer::New(r_req->buffer, (size_t) r_req->length);
     Local<Object> global = Context::GetCurrent()->Global();
     Local<Function> bufferConstructor =  Local<Function>::Cast(global->Get(String::New("Buffer")));
     Handle<Value> cArgs[3] = {slowBuffer->handle_, Integer::New(r_req->length), Integer::New(0) };
-        
-    argv[0] = bufferConstructor->NewInstance(3,cArgs);
-    argv[1] = Integer::New(r_req->res);
     
-    r_req->callback->Call(global, 2, argv);
+    if(r_req->res!=-1)
+    {
+      argv[0] = Local<Value>::New(Null());
+      argv[1] = bufferConstructor->NewInstance(3,cArgs);
+      argv[2] = Integer::New(r_req->res);
+      argc = 3;
+    }
+    else
+    {
+      argv[0] =  Exception::Error(
+            String::Concat(String::New("While query - "),ERR_MSG_STAT(r_req->status, FBblob)));
+      argc = 1;        
+    }  
+    
+    r_req->callback->Call(global, argc, argv);
     
     r_req->callback.Dispose();
     r_req->blob->stop_async();
@@ -119,8 +131,7 @@ int FBblob::EIO_After_Read(eio_req *req)
 int FBblob::EIO_Read(eio_req *req)
   {
     struct read_request *r_req = (struct read_request *)(req->data);
-    ISC_STATUS_ARRAY status;
-    r_req->res = r_req->blob->read(status,r_req->buffer,(unsigned short) r_req->length);
+    r_req->res = r_req->blob->read(r_req->status,r_req->buffer,(unsigned short) r_req->length);
     return 0;
   }
 

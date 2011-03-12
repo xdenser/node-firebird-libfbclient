@@ -37,6 +37,7 @@ public:
      char* buffer;
      size_t length;
      int res;
+     ISC_STATUS_ARRAY status;
   };
   
   static int EIO_After_Read(eio_req *req);

@@ -25,6 +25,65 @@ MakeSafe(Connection,"rollback");
 MakeSafe(FBResult,"fetch");
 
 
+binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
+  if(initialSize instanceof Function)
+   {
+     callback = initialSize;
+     chunkSize = null;
+     initialSize = null;
+   }
+  else 
+  if(chunkSize instanceof Function)
+   {
+     callback = chunkSize;
+     chunkSize = null;
+   } 
+   
+  if(!chunkSize) chunkSize = 1024;
+  if(!initialSize) initialSize = 0;
+  
+  var chunk = new Buffer(chunkSize);   
+  var res = new Buffer(initialSize);
+  var cPos = 0;
+  
+  
+  if(callback)
+   { 
+     this._openSync();
+     var blob = this;
+     this._read(chunk,function receiver(err,b,len){
+         if(err)
+         {
+           blob.Emit('error',err);
+         }
+         else
+         if(len>0)
+         { 
+           
+           blob.Emit('drain', chunk, len);
+           if(res.length<=(cPos+len))
+           {
+             var nr = new Buffer(cPos+len);
+             res.copy(nr);
+             res = nr;
+           }    
+           chunk.copy(res,cPos,0,len);
+           cPos = cPos + len;
+           blob._read(chunk,receiver);
+         } 
+         else 
+         {
+          blob.Emit('end',res,cPos);
+          callback(null, res, cPos);
+         } 
+     });
+     
+     this._closeSync();           
+   }     
+   
+  
+}
+
 
 exports.createConnection = function () {
   var c = new Connection;
