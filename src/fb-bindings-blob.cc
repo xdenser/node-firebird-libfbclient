@@ -111,7 +111,7 @@ int FBblob::EIO_After_Read(eio_req *req)
     else
     {
       argv[0] =  Exception::Error(
-            String::Concat(String::New("While query - "),ERR_MSG_STAT(r_req->status, FBblob)));
+            String::Concat(String::New("FBblob::EIO_After_Read - "),ERR_MSG_STAT(r_req->status, FBblob)));
       argc = 1;        
     }  
     

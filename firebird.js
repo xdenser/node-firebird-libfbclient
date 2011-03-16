@@ -50,17 +50,16 @@ binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
   if(callback)
    { 
      this._openSync();
-     var blob = this;
+     var self = this;
      this._read(chunk,function receiver(err,b,len){
          if(err)
          {
-           blob.Emit('error',err);
+           self.emit('error',err);
          }
          else
          if(len>0)
          { 
-           
-           blob.Emit('drain', chunk, len);
+           self.emit('drain', chunk, len);
            if(res.length<=(cPos+len))
            {
              var nr = new Buffer(cPos+len);
@@ -69,16 +68,15 @@ binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
            }    
            chunk.copy(res,cPos,0,len);
            cPos = cPos + len;
-           blob._read(chunk,receiver);
+           self._read(chunk,receiver);
          } 
          else 
          {
-          blob.Emit('end',res,cPos);
+          self._closeSync();           
+          self.emit('end',res,cPos);
           callback(null, res, cPos);
          } 
      });
-     
-     this._closeSync();           
    }     
    
   

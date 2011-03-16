@@ -53,15 +53,31 @@ module.exports = testCase({
          },
          asyncRead: function(test){
            test.expect(2);
-           Data = 'some data for async blob';
+           //Data = 'some data for async blob';
+           chars = '0123456789abcdefgh';
+           for(var i=0; i < 2000; i++) Data+=chars.charAt(Math.floor(Math.random()*chars.length));                
+
            var res = util.getDataTypeResult.call(this,'BLOB SUB_TYPE 1',util.quote(Data));
-           var buf = new Buffer(1024);
+           var buf = new Buffer(2048);
            res._openSync();
            res._read(buf,function(err,b,len){
         	 test.ifError(err);
+        	 
                  res._closeSync();
         	 test.equal(b.toString('utf8',0,len),Data,'blob ');
         	 test.done();	 
+           });
+         },
+         readAll:function(test){
+           test.expect(2);
+           Data = '';
+           chars = '0123456789abcdefgh';
+           for(var i=0; i < 10000; i++) Data+=chars.charAt(Math.floor(Math.random()*chars.length));                
+           var res = util.getDataTypeResult.call(this,'BLOB SUB_TYPE 1',util.quote(Data));
+           res._readAll(0,function(err,res,len){
+              test.ifError(err);
+              test.equal(res.toString('utf8',0,len),Data,'equal Data');
+              test.done();
            });
          }
 }); 
