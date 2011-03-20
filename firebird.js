@@ -47,11 +47,9 @@ binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
   var cPos = 0;
   
   
-  if(callback)
-   { 
-     this._openSync();
-     var self = this;
-     this._read(chunk,function receiver(err,b,len){
+  this._openSync();
+  var self = this;
+  this._read(chunk,function receiver(err,b,len){
          if(err)
          {
            self.emit('error',err);
@@ -74,10 +72,9 @@ binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
          {
           self._closeSync();           
           self.emit('end',res,cPos);
-          callback(null, res, cPos);
+          if(callback) callback(null, res, cPos);
          } 
-     });
-   }     
+ });
    
   
 }

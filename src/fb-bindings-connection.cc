@@ -208,7 +208,94 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
     return true;
 
   }
-  
+
+bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *query, isc_stmt_handle *stmtp)
+  {
+     XSQLDA          *in_sqlda;
+     XSQLDA          *out_sqlda;
+     short 	     num_params, num_cols;
+     
+     in_sqlda = *insqlda;
+     if(!in_sqlda)
+     {
+          in_sqlda = (XSQLDA *) malloc(XSQLDA_LENGTH (10));
+          in_sqlda->sqln = 10;
+          in_sqlda->version = 1;
+          *insqlda = in_sqlda;
+     }      
+
+     out_sqlda = *outsqlda;
+     if(!out_sqlda)
+     {
+          out_sqlda = (XSQLDA *) malloc(XSQLDA_LENGTH (10));
+          out_sqlda->sqln = 10;
+          out_sqlda->version = 1;
+          *outsqlda = out_sqlda;
+     }      
+     
+     
+    /* Allocate a statement */
+     if(!*stmtp) {
+      if (isc_dsql_allocate_statement(status, &db, stmtp)) return false;
+     } 
+     
+     // Start Default Transaction If None Active
+     if(!trans) 
+     {
+      if (isc_start_transaction(status, &trans, 1, &db, 0, NULL)) return false;
+     }
+     
+     // Prepare Statement
+     if (isc_dsql_prepare(status, &trans, stmtp, 0, query, SQL_DIALECT_V6, out_sqlda)) return false;
+     
+     // Describe bind
+     if (isc_dsql_describe_bind(status, stmtp, 1, in_sqlda)) return false;
+     
+     /* Need more room. */
+     if (in_sqlda->sqln < in_sqlda->sqld)
+     {
+        num_params = in_sqlda->sqld;
+        
+        *insqlda = in_sqlda = (XSQLDA *) realloc(in_sqlda,
+                                                XSQLDA_LENGTH (num_params));
+        in_sqlda->sqln = num_params;
+        in_sqlda->version = 1;
+        
+        // Describe bind again
+        if (isc_dsql_describe_bind(status, stmtp, 1, in_sqlda)) return false;
+
+        num_params = in_sqlda->sqld;
+     }
+     
+    /*
+     *     Set up SQLDA.
+     */
+    if(!FBResult::prepare_sqlda(in_sqlda)) return false;
+     
+     /* Need more room. */
+    if (out_sqlda->sqln < out_sqlda->sqld)
+     {
+        num_cols = out_sqlda->sqld;  
+        *outsqlda = out_sqlda = (XSQLDA *) realloc(out_sqlda,
+                                                XSQLDA_LENGTH (num_cols));
+        out_sqlda->sqln = num_cols;
+        out_sqlda->version = 1;
+
+        if (isc_dsql_describe(status, stmtp, SQL_DIALECT_V6, out_sqlda))
+        {
+            return false;
+        }
+
+        num_cols = out_sqlda->sqld;
+     }
+     
+    /*
+     *     Set up SQLDA.
+     */
+    if(!FBResult::prepare_sqlda(out_sqlda)) return false;
+         
+     
+  }  
 
   
 bool Connection::commit_transaction()

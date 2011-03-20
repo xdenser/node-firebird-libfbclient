@@ -29,6 +29,8 @@ class Connection : public FBEventEmitter {
   bool Close();
   
   bool process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp);
+  
+  bool prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *query, isc_stmt_handle *stmtp);
  
   bool commit_transaction();
     
