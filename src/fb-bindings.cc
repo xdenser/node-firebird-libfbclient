@@ -14,6 +14,7 @@
 #include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-eventblock.h"
 #include "./fb-bindings-blob.h"
+#include "./fb-bindings-statement.h"
 
 /**
  * Init V8 structures
@@ -47,4 +48,5 @@ init (Handle<Object> target)
   FBResult::Initialize(target);
   Connection::Initialize(target);
   FBblob::Initialize(target);
+  FBStatement::Initialize (target);
 }

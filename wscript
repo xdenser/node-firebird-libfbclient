@@ -29,7 +29,7 @@ def buildo(bldo):
 def build(bld):
   obj = bld.new_task_gen('cxx', 'shlib', 'node_addon')
   obj.target = 'binding'
-  obj.source = "./src/fb-bindings.cc ./src/fb-bindings-connection.cc ./src/fb-bindings-eventblock.cc ./src/fb-bindings-fbeventemitter.cc ./src/fb-bindings-fbresult.cc ./src/fb-bindings-blob.cc"
+  obj.source = "./src/fb-bindings.cc ./src/fb-bindings-connection.cc ./src/fb-bindings-eventblock.cc ./src/fb-bindings-fbeventemitter.cc ./src/fb-bindings-fbresult.cc ./src/fb-bindings-blob.cc ./src/fb-bindings-statement.cc"
   obj.uselib = "FB"
 
 def test(tst):

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "./fb-bindings-fbresult.h"
+#include "./fb-bindings-statement.h" 
 #include "./fb-bindings-connection.h" 
 
 
@@ -33,6 +34,7 @@ void
     NODE_SET_PROTOTYPE_METHOD(t, "rollback", Rollback);
     NODE_SET_PROTOTYPE_METHOD(t, "addFBevent", addEvent);
     NODE_SET_PROTOTYPE_METHOD(t, "deleteFBevent", deleteEvent);
+    NODE_SET_PROTOTYPE_METHOD(t, "prepareSync", PrepareSync);
     
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
@@ -809,7 +811,43 @@ Handle<Value>
 
   }
   
+Handle<Value>
+  Connection::PrepareSync (const Arguments& args)
+  {
+    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
     
+    HandleScope scope;
+        
+    if (args.Length() < 1 || !args[0]->IsString()){
+       return ThrowException(Exception::Error(
+            String::New("Expecting a string query argument.")));
+    }
+    
+    String::Utf8Value Query(args[0]->ToString());
+    
+    XSQLDA *insqlda = NULL;
+    XSQLDA *outsqlda = NULL;
+    isc_stmt_handle stmt = NULL;
+    bool r = connection->prepare_statement(&insqlda,&outsqlda,*Query, &stmt);
+    
+    if(!r) {
+      return ThrowException(Exception::Error(
+            String::Concat(String::New("In prepareSync - "),ERR_MSG(connection, Connection))));
+    }
+    
+    Local<Value> argv[4];
+
+    argv[0] = External::New(insqlda);
+    argv[1] = External::New(outsqlda);
+    argv[2] = External::New(&stmt);
+    argv[3] = External::New(connection);
+    Persistent<Object> js_result(FBStatement::constructor_template->
+                                     GetFunction()->NewInstance(4, argv));
+
+    return scope.Close(js_result); 
+  }
+
+  
    Connection::Connection () : FBEventEmitter () 
   {
     db = NULL;

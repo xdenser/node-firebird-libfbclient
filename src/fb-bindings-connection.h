@@ -121,6 +121,9 @@ class Connection : public FBEventEmitter {
   static Handle<Value>
   deleteEvent(const Arguments& args);
   
+  static Handle<Value>
+  PrepareSync (const Arguments& args);
+  
   static time_t 
   get_gmt_delta();
 
