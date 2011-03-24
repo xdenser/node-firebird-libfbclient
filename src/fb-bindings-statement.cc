@@ -68,12 +68,34 @@ Handle<Value>
 
 Handle<Value>
  FBStatement::ExecSync (const Arguments& args)
- {
+ { 
+    HandleScope scope;
+    
+    FBStatement *fb_stmt = ObjectWrap::Unwrap<FBStatement>(args.This());
+    
+    if (isc_dsql_execute(fb_stmt->status, &fb_stmt->conn->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+    {
+      return ThrowException(Exception::Error(
+         String::Concat(String::New("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement))));
+    }
+    
+    Local<Value> argv[3];
+
+    argv[0] = External::New(fb_stmt->out_sqlda);
+    argv[1] = External::New(&fb_stmt->stmt);
+    argv[2] = External::New(fb_stmt->conn);
+    Persistent<Object> js_result(FBResult::constructor_template->
+                                     GetFunction()->NewInstance(3, argv));
+
+    return scope.Close(js_result); 
+
+    
  }
  
 Handle<Value>
  FBStatement::Exec (const Arguments& args)
  {
+ 
  }
  
  

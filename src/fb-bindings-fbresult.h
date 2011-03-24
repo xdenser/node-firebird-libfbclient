@@ -26,6 +26,7 @@ public:
   
  static bool prepare_sqlda(XSQLDA *sqlda);
  static void clean_sqlda(XSQLDA *sqlda);
+ static Handle<Value> set_params(XSQLDA *sqlda, const Arguments& args);
   
 protected:  
  static Handle<Value>
@@ -54,7 +55,7 @@ protected:
   static Handle<Value>
   Fetch(const Arguments& args);
   
-  FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp, Connection *conn); 
+  FBResult(XSQLDA *asqldap, isc_stmt_handle *astmtp, Connection *conn); 
   
   ~FBResult();
   

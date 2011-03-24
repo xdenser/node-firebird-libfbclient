@@ -137,7 +137,7 @@ class Connection : public FBEventEmitter {
   event_block* fb_events;
   bool connected; 
   
-  bool in_async;
+//  bool in_async;
   char err_message[MAX_ERR_MSG_LEN];
   
 

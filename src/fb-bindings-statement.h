@@ -38,6 +38,9 @@ private:
  XSQLDA *in_sqlda;
  XSQLDA *out_sqlda;
  isc_stmt_handle stmt;
+ 
+ ISC_STATUS_ARRAY status;
+ char err_message[MAX_ERR_MSG_LEN];
 
 };
 

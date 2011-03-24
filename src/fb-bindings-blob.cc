@@ -40,6 +40,24 @@ void FBblob::Initialize (v8::Handle<v8::Object> target)
     target->Set(String::NewSymbol("FBblob"), t->GetFunction());
 
   }
+
+bool FBblob::HasInstance(v8::Handle<v8::Value> val)
+   { 
+       if (!val->IsObject()) return false;
+       v8::Local<v8::Object> obj = val->ToObject();
+/*
+  if (obj->GetIndexedPropertiesExternalArrayDataType() == kExternalUnsignedByteArray)
+    return true;
+*/
+       if (constructor_template->HasInstance(obj))
+        return true;
+
+       return false;
+   }  
+void FBblob::getId(ISC_QUAD* Idp)
+  {
+    *Idp = blob_id;
+  }    
   
 Handle<Value> FBblob::New(const Arguments& args)
   {

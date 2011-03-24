@@ -172,6 +172,90 @@ Handle<Value>
      
   }
   
+char* errmsg1f(char* buf,const char* msg, int arg)
+{
+  sprintf(buf,msg,arg);
+  return buf;
+}  
+
+char* errmsg2f(char* buf,const char* msg, int arg1, int arg2)
+{
+  sprintf(buf,msg,arg1,arg2);
+  return buf;
+}  
+
+void get_date(struct tm* times, Local<Object> js_date, int* msp)
+{
+  HandleScope scope;
+  Local<Value> val;
+  
+  val = Local<Function>::Cast(js_date->Get( String::New("getFullYear") ))->Call(js_date,0,NULL);
+  times->tm_year = (int) (val->Int32Value()) - 1900;
+  
+  val = Local<Function>::Cast(js_date->Get( String::New("getMonth") ))->Call(js_date,0,NULL);
+  times->tm_mon = val->Int32Value();
+
+  val = Local<Function>::Cast(js_date->Get( String::New("getDate") ))->Call(js_date,0,NULL);
+  times->tm_mday = val->Int32Value();
+
+  val = Local<Function>::Cast(js_date->Get( String::New("getHours") ))->Call(js_date,0,NULL);
+  times->tm_hour = val->Int32Value();
+  
+  val = Local<Function>::Cast(js_date->Get( String::New("getMinutes") ))->Call(js_date,0,NULL);
+  times->tm_min = val->Int32Value();
+
+  val = Local<Function>::Cast(js_date->Get( String::New("getSeconds") ))->Call(js_date,0,NULL);
+  times->tm_sec = val->Int32Value();
+  
+  val = Local<Function>::Cast(js_date->Get( String::New("getMilliseconds") ))->Call(js_date,0,NULL);
+  *msp = val->Int32Value();
+  
+}
+
+  
+Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
+  {
+    HandleScope scope;
+    int i;
+    XSQLVAR* var;
+    FBblob *blob; 
+    Local<Object> obj;
+    char errm[512];
+    double date_num;
+    struct tm  times;
+    int m_sec;
+    
+    if( sqlda->sqld >  args.Length() ) return ThrowException(Exception::Error(
+                                                             String::New(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld,(int)args.Length()))));
+    for(i = 0, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
+    {
+      
+      switch(var->sqltype & ~1)
+      { 
+        case SQL_ARRAY:
+        case SQL_BLOB:      
+                            if(!FBblob::HasInstance(args[i])) 
+                              return ThrowException(Exception::Error(
+                                                       String::New(errmsg1f(errm,"Expecting FBblob as %d argument.",i))));
+                            obj = args[i]->ToObject();  
+                            blob = ObjectWrap::Unwrap<FBblob>(obj);  
+                            //memcpy(dest,src,size); 
+                            blob->getId((ISC_QUAD*)var->sqldata);
+                            break;
+                            
+        case SQL_TIMESTAMP: 
+                            if(!args[i]->IsDate()) 
+                              return ThrowException(Exception::Error(
+                                                       String::New(errmsg1f(errm,"Expecting Date as %d argument.",i))));
+                                                
+                            get_date( &times, args[i]->ToObject(), &m_sec);                            
+                            isc_encode_timestamp(&times, (ISC_TIMESTAMP *)var->sqldata);
+                            ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time = ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time + m_sec*10;
+                            break;          
+      }
+    }
+  }
+  
 Local<Value> 
   FBResult::GetFieldValue(XSQLVAR *var, Connection* conn)
   {

@@ -24,6 +24,9 @@ public:
   static void
   Initialize (v8::Handle<v8::Object> target);
   
+  static bool HasInstance(v8::Handle<v8::Value> val);
+  void getId(ISC_QUAD* Idp); 
+  
  protected:
   static Handle<Value>
   New(const Arguments& args);
@@ -59,6 +62,8 @@ public:
   bool open(ISC_STATUS *status);
   int read(ISC_STATUS *status,char *buf, unsigned short len);
   bool close(ISC_STATUS *status);
+  
+  
   
  private: 
   ISC_QUAD blob_id; 
