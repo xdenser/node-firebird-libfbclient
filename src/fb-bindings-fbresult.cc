@@ -44,7 +44,7 @@
     
     target->Set(String::NewSymbol("FBResult"), t->GetFunction());
   }
-  
+/*  
  bool FBResult::process_result(XSQLDA **sqldap, isc_stmt_handle *stmtp, Local<Array> res)
   {
     int            fetch_stat;
@@ -73,7 +73,7 @@
     }
     return true;
   } 
-  
+  */
   
   
   
@@ -136,7 +136,9 @@ Handle<Value>
         case SQL_DOUBLE:    var->sqldata = (char *) new double(0.0); break;
         default:            return false;                     
       }
-      if(var->sqltype & 1) var->sqlind = new short(-1);
+      if(var->sqltype & 1){
+       var->sqlind = new short(-1);
+      }
     }
     return true;
   }
@@ -252,6 +254,29 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
                             isc_encode_timestamp(&times, (ISC_TIMESTAMP *)var->sqldata);
                             ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time = ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time + m_sec*10;
                             break;          
+        case SQL_TYPE_TIME:  
+                            if(!args[i]->IsDate()) 
+                              return ThrowException(Exception::Error(
+                                                       String::New(errmsg1f(errm,"Expecting Date as %d argument.",i))));
+                            get_date( &times, args[i]->ToObject(), &m_sec);                            
+                            isc_encode_sql_time(&times, (ISC_TIME *)var->sqldata);
+                            *((ISC_TIME *)var->sqldata) = *((ISC_TIME *)var->sqldata) + m_sec*10;
+                            break;                                          
+        case SQL_TYPE_DATE:  
+                            if(!args[i]->IsDate()) 
+                              return ThrowException(Exception::Error(
+                                                       String::New(errmsg1f(errm,"Expecting Date as %d argument.",i))));
+                            get_date( &times, args[i]->ToObject(), &m_sec);                            
+                            isc_encode_sql_date(&times, (ISC_DATE *)var->sqldata);
+                            break;                               
+        case SQL_TEXT:      
+                            if(!args[i]->IsString()) 
+                              return ThrowException(Exception::Error(
+                                                       String::New(errmsg1f(errm,"Expecting String as %d argument.",i))));
+                                                       
+                            String::Utf8Value Query(args[i]->ToString());                         
+                            
+			    break;
       }
     }
   }
@@ -277,7 +302,7 @@ Local<Value>
     Local<Object> js_date;
     Local<Value> js_field = Local<Value>::New(Null());
     dtype = var->sqltype & ~1;
-    if ((var->sqltype & 1) && (var->sqlind < 0))
+    if ((var->sqltype & 1) && (*var->sqlind < 0))
     {
      // NULL PROCESSING
     }

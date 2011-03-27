@@ -22,7 +22,7 @@ public:
  static void
    Initialize (v8::Handle<v8::Object> target);
   
- bool process_result(XSQLDA **sqldap, isc_stmt_handle *stmtp, Local<Array> res);
+// bool process_result(XSQLDA **sqldap, isc_stmt_handle *stmtp, Local<Array> res);
   
  static bool prepare_sqlda(XSQLDA *sqlda);
  static void clean_sqlda(XSQLDA *sqlda);

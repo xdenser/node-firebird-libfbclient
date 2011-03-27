@@ -1,4 +1,4 @@
-var fb=require('firebird');
+var fb=require('../../firebird');
 var http=require('http');
 var sys =require('sys');
 // Create Firebird Connection Object
