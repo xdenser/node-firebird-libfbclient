@@ -113,13 +113,16 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
      char            info_buffer[20];
      short           l, num_cols, i, length, alignment, type, offset;
      int             statement_type;
+     int 	     sqlda_size;	
      
      
      sqlda = *sqldap;
      
      if(!sqlda)
      {
-          sqlda = (XSQLDA *) malloc(XSQLDA_LENGTH (20));
+          sqlda_size = XSQLDA_LENGTH (20);
+          sqlda = (XSQLDA *) malloc(sqlda_size);
+          memset(sqlda,0,sqlda_size);
           sqlda->sqln = 20;
           sqlda->version = 1;
           *sqldap = sqlda;
@@ -184,8 +187,9 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
      /* Need more room. */
      if (sqlda->sqln < num_cols)
      {
-        *sqldap = sqlda = (XSQLDA *) realloc(sqlda,
-                                                XSQLDA_LENGTH (num_cols));
+        sqlda_size = XSQLDA_LENGTH (num_cols);
+        *sqldap = sqlda = (XSQLDA *) realloc( sqlda, sqlda_size);
+        memset(sqlda,0,sqlda_size);                                        
         sqlda->sqln = num_cols;
         sqlda->version = 1;
 
