@@ -10,9 +10,7 @@
 #include <node.h>
 #include <ibase.h>
 #include <ctime> 
-#include "./fb-bindings-connection.h"
 #include "./fb-bindings-fbresult.h"
-#include "./fb-bindings-blob.h"
  
 
  Persistent<FunctionTemplate> FBResult::constructor_template;
@@ -44,7 +42,7 @@
     
     target->Set(String::NewSymbol("FBResult"), t->GetFunction());
   }
-/*  
+  
  bool FBResult::process_result(XSQLDA **sqldap, isc_stmt_handle *stmtp, Local<Array> res)
   {
     int            fetch_stat;
@@ -66,14 +64,14 @@
         js_result_row = Array::New();
         for (i = 0; i < num_cols; i++)
         {
-            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i], connection);
+            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i]);
             js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
         }
         res->Set(Integer::NewFromUnsigned(j++), js_result_row);
     }
     return true;
   } 
-  */
+  
   
   
   
@@ -85,16 +83,13 @@ Handle<Value>
     
     REQ_EXT_ARG(0, js_sqldap);
     REQ_EXT_ARG(1, js_stmtp);
-    REQ_EXT_ARG(2, js_connection);
     
     XSQLDA *asqldap;
     asqldap = static_cast<XSQLDA *>(js_sqldap->Value());
     isc_stmt_handle *astmtp;
     astmtp = static_cast<isc_stmt_handle *>(js_stmtp->Value()); 
-    Connection  *conn;
-    conn = static_cast<Connection *>(js_connection->Value()); 
     
-    FBResult *res = new FBResult(asqldap, astmtp, conn);
+    FBResult *res = new FBResult(asqldap, astmtp);
     res->Wrap(args.This());
 
     return args.This();
@@ -138,9 +133,7 @@ Handle<Value>
         case SQL_DOUBLE:    var->sqldata = (char *) new double(0.0); break;
         default:            return false;                     
       }
-      if(var->sqltype & 1){
-       var->sqlind = new short(-1);
-      }
+      if(var->sqltype & 1) var->sqlind = new short(-1);
     }
     return true;
   }
@@ -176,115 +169,8 @@ Handle<Value>
      
   }
   
-char* errmsg1f(char* buf,const char* msg, int arg)
-{
-  sprintf(buf,msg,arg);
-  return buf;
-}  
-
-char* errmsg2f(char* buf,const char* msg, int arg1, int arg2)
-{
-  sprintf(buf,msg,arg1,arg2);
-  return buf;
-}  
-
-void get_date(struct tm* times, Local<Object> js_date, int* msp)
-{
-  HandleScope scope;
-  Local<Value> val;
-  
-  val = Local<Function>::Cast(js_date->Get( String::New("getFullYear") ))->Call(js_date,0,NULL);
-  times->tm_year = (int) (val->Int32Value()) - 1900;
-  
-  val = Local<Function>::Cast(js_date->Get( String::New("getMonth") ))->Call(js_date,0,NULL);
-  times->tm_mon = val->Int32Value();
-
-  val = Local<Function>::Cast(js_date->Get( String::New("getDate") ))->Call(js_date,0,NULL);
-  times->tm_mday = val->Int32Value();
-
-  val = Local<Function>::Cast(js_date->Get( String::New("getHours") ))->Call(js_date,0,NULL);
-  times->tm_hour = val->Int32Value();
-  
-  val = Local<Function>::Cast(js_date->Get( String::New("getMinutes") ))->Call(js_date,0,NULL);
-  times->tm_min = val->Int32Value();
-
-  val = Local<Function>::Cast(js_date->Get( String::New("getSeconds") ))->Call(js_date,0,NULL);
-  times->tm_sec = val->Int32Value();
-  
-  val = Local<Function>::Cast(js_date->Get( String::New("getMilliseconds") ))->Call(js_date,0,NULL);
-  *msp = val->Int32Value();
-  
-}
-
-  
-Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
-  {
-    HandleScope scope;
-    int i;
-    XSQLVAR* var;
-    FBblob *blob; 
-    Local<Object> obj;
-    char errm[512];
-    double date_num;
-    struct tm  times;
-    int m_sec;
-    
-    if( sqlda->sqld >  args.Length() ) return ThrowException(Exception::Error(
-                                                             String::New(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld,(int)args.Length()))));
-    for(i = 0, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
-    {
-      
-      switch(var->sqltype & ~1)
-      { 
-        case SQL_ARRAY:
-        case SQL_BLOB:      
-                            if(!FBblob::HasInstance(args[i])) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting FBblob as %d argument.",i))));
-                            obj = args[i]->ToObject();  
-                            blob = ObjectWrap::Unwrap<FBblob>(obj);  
-                            //memcpy(dest,src,size); 
-                            blob->getId((ISC_QUAD*)var->sqldata);
-                            break;
-                            
-        case SQL_TIMESTAMP: 
-                            if(!args[i]->IsDate()) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting Date as %d argument.",i))));
-                                                
-                            get_date( &times, args[i]->ToObject(), &m_sec);                            
-                            isc_encode_timestamp(&times, (ISC_TIMESTAMP *)var->sqldata);
-                            ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time = ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time + m_sec*10;
-                            break;          
-        case SQL_TYPE_TIME:  
-                            if(!args[i]->IsDate()) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting Date as %d argument.",i))));
-                            get_date( &times, args[i]->ToObject(), &m_sec);                            
-                            isc_encode_sql_time(&times, (ISC_TIME *)var->sqldata);
-                            *((ISC_TIME *)var->sqldata) = *((ISC_TIME *)var->sqldata) + m_sec*10;
-                            break;                                          
-        case SQL_TYPE_DATE:  
-                            if(!args[i]->IsDate()) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting Date as %d argument.",i))));
-                            get_date( &times, args[i]->ToObject(), &m_sec);                            
-                            isc_encode_sql_date(&times, (ISC_DATE *)var->sqldata);
-                            break;                               
-        case SQL_TEXT:      
-                            if(!args[i]->IsString()) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting String as %d argument.",i))));
-                                                       
-                            String::Utf8Value Query(args[i]->ToString());                         
-                            
-			    break;
-      }
-    }
-  }
-  
 Local<Value> 
-  FBResult::GetFieldValue(XSQLVAR *var, Connection* conn)
+  FBResult::GetFieldValue(XSQLVAR *var)
   {
     short       dtype;  
     PARAMVARY   *vary2;
@@ -459,14 +345,16 @@ Local<Value>
             case SQL_BLOB:
             case SQL_ARRAY:
                 /* Print the blob id on blobs or arrays */
+                Local<Object> js_blob;
                 bid = *(ISC_QUAD *) var->sqldata;
-                
-                argv[0] = External::New(&bid);
-		argv[1] = External::New(conn);
-                Local<Object> js_blob(FBblob::constructor_template->
-                                     GetFunction()->NewInstance(2, argv));
+                js_blob = Object::New();
+                js_blob->Set(String::New("q_hi"),
+                             Integer::New(bid.gds_quad_high));
+                js_blob->Set(String::New("q_lo"),
+                             Integer::NewFromUnsigned(bid.gds_quad_low));             
 
                 js_field = js_blob;
+                
                 break;
 
         }
@@ -536,11 +424,7 @@ Handle<Value>
         
         for (i = 0; i < num_cols; i++)
         {
-<<<<<<< HEAD
-            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i], fb_res->connection);
-=======
             js_field = FBResult::GetFieldValue((XSQLVAR *) &(sqlda->sqlvar[i]));
->>>>>>> master
             if(rowAsObject)
             { 
               js_result_row->Set(String::New(sqlda->sqlvar[i].sqlname), js_field);
@@ -589,7 +473,7 @@ int FBResult::EIO_After_Fetch(eio_req *req)
     
 	for (i = 0; i < num_cols; i++)
 	{
-    	    js_field = FBResult::GetFieldValue((XSQLVAR *) &f_req->res->sqldap->sqlvar[i], f_req->res->connection);
+    	    js_field = FBResult::GetFieldValue((XSQLVAR *) &f_req->res->sqldap->sqlvar[i]);
     	    if(f_req->rowAsObject)
     	    { 
         	js_result_row->Set(String::New(f_req->res->sqldap->sqlvar[i].sqlname), js_field);
@@ -737,12 +621,10 @@ Handle<Value>
   }
 
   
- FBResult::FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp, Connection *conn) : FBEventEmitter () 
+ FBResult::FBResult (XSQLDA *asqldap, isc_stmt_handle *astmtp) : FBEventEmitter () 
   {
     sqldap = asqldap;
     stmt = *astmtp;
-    connection = conn;
-    //conn->Ref();
   }
   
  FBResult::~FBResult()
@@ -752,6 +634,6 @@ Handle<Value>
      free(sqldap);
      sqldap = NULL;
    }
-   //connection->Unref();
+   
   }
   

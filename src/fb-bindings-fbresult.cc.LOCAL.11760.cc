@@ -104,7 +104,6 @@ Handle<Value>
   {
     int i;
     XSQLVAR* var;
-    sqlda->sqln = sqlda->sqld;
     for(i = 0, var = sqlda->sqlvar; i < sqlda->sqld;i++,var++)
     {
       switch(var->sqltype & ~1)
@@ -124,7 +123,6 @@ Handle<Value>
                             break;                              
         case SQL_TEXT:      var->sqldata = new char[var->sqllen + 1];
                             memset(var->sqldata, ' ', var->sqllen);
-                            var->sqldata[var->sqllen] = '\0';
                             break;
         case SQL_VARYING:   var->sqldata = new char[var->sqllen + 3];
                             memset(var->sqldata, 0, 2);
@@ -313,8 +311,7 @@ Local<Value>
         switch (dtype)
         {
             case SQL_TEXT:
-                //js_field = String::New(var->sqldata,var->sqllen);
-                js_field = String::New(var->sqldata);
+                js_field = String::New(var->sqldata,var->sqllen);
                 break;
 
             case SQL_VARYING:
@@ -536,11 +533,7 @@ Handle<Value>
         
         for (i = 0; i < num_cols; i++)
         {
-<<<<<<< HEAD
             js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i], fb_res->connection);
-=======
-            js_field = FBResult::GetFieldValue((XSQLVAR *) &(sqlda->sqlvar[i]));
->>>>>>> master
             if(rowAsObject)
             { 
               js_result_row->Set(String::New(sqlda->sqlvar[i].sqlname), js_field);
@@ -750,7 +743,6 @@ Handle<Value>
    if(sqldap) {
      FBResult::clean_sqlda(sqldap);
      free(sqldap);
-     sqldap = NULL;
    }
    //connection->Unref();
   }
