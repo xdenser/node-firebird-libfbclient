@@ -300,7 +300,7 @@ bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *qu
      */
     if(!FBResult::prepare_sqlda(out_sqlda)) return false;
          
-     
+    return true;     
   }  
 
   

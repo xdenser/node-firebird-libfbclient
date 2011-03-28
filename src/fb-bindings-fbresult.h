@@ -64,6 +64,9 @@ protected:
   XSQLDA *sqldap;
   isc_stmt_handle stmt;
   Connection *connection;
+  
+private:
+  static const double dscales[19];
 
 };
 

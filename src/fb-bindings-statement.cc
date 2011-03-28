@@ -73,6 +73,8 @@ Handle<Value>
     
     FBStatement *fb_stmt = ObjectWrap::Unwrap<FBStatement>(args.This());
     
+    FBResult::set_params(fb_stmt->in_sqlda, args);
+    
     if (isc_dsql_execute(fb_stmt->status, &fb_stmt->conn->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
     {
       return ThrowException(Exception::Error(

@@ -9,6 +9,7 @@
 #include <v8.h>
 #include <node.h>
 #include <ibase.h>
+#include <math.h>
 #include <ctime> 
 #include "./fb-bindings-connection.h"
 #include "./fb-bindings-fbresult.h"
@@ -17,9 +18,12 @@
 
  Persistent<FunctionTemplate> FBResult::constructor_template;
  
+ const double FBResult::dscales[19] =  { 1, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6, 1E7, 1E8, 1E9, 1E10,
+                    1E11, 1E12, 1E13, 1E14, 1E15, 1E16, 1E17, 1E18 };
  void
    FBResult::Initialize (v8::Handle<v8::Object> target)
   {
+    
     HandleScope scope;
     
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
@@ -222,12 +226,17 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
     HandleScope scope;
     int i;
     XSQLVAR* var;
+    PARAMVARY   *vary2;
     FBblob *blob; 
     Local<Object> obj;
     char errm[512];
     double date_num;
+    double double_val;
     struct tm  times;
     int m_sec;
+    int16_t s_len;
+    int64_t int_val;
+    char *txt;
     
     if( sqlda->sqld >  args.Length() ) return ThrowException(Exception::Error(
                                                              String::New(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld,(int)args.Length()))));
@@ -276,11 +285,62 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
                               return ThrowException(Exception::Error(
                                                        String::New(errmsg1f(errm,"Expecting String as %d argument.",i))));
                                                        
-                            String::Utf8Value Query(args[i]->ToString());                         
-                            
+                            txt = *String::Utf8Value(args[i]->ToString());  
+                            s_len = strlen(txt);
+                            if(s_len > var->sqllen) s_len = var->sqllen;                             
+                            strncpy(var->sqldata, txt, s_len);
+                            while(s_len < var->sqllen) var->sqldata[s_len++] = ' ';
 			    break;
+
+	case SQL_VARYING:		    
+	                    if(!args[i]->IsString()) 
+                              return ThrowException(Exception::Error(
+                                                       String::New(errmsg1f(errm,"Expecting String as %d argument.",i))));
+                                                       
+                            txt = *String::Utf8Value(args[i]->ToString());  
+                            s_len = strlen(txt);
+                            if(s_len > var->sqllen) s_len = var->sqllen;
+                            vary2 = (PARAMVARY*) var->sqldata;
+                            vary2->vary_length = s_len;                            
+                            strncpy((char*) vary2->vary_string, txt, s_len);
+			    break;
+        case SQL_SHORT:			    
+                            int_val = args[i]->IntegerValue();
+                            *(int16_t *) var->sqldata = (int16_t) int_val;
+                            break;
+        case SQL_LONG:      
+                            int_val = args[i]->IntegerValue();
+                            *(int32_t *) var->sqldata = (int32_t) int_val;
+                            break;                     
+        case SQL_INT64:                        
+                            if(args[i]->IsNumber())
+                            {
+                              double multiplier = FBResult::dscales[-var->sqlscale];
+                              double_val = args[i]->NumberValue();
+                              *(int64_t *) var->sqldata = (int64_t) floor(double_val * multiplier + 0.5);
+                            }
+                            else 
+                            {
+                              int_val = args[i]->IntegerValue();
+                              *(int64_t *) var->sqldata = int_val;
+                            }  
+                            break;                      
+        case SQL_FLOAT:     
+                            double_val = args[i]->NumberValue();
+                            *(float *) var->sqldata = (float) double_val;
+                            break;
+        case SQL_DOUBLE:                    
+                            double_val = args[i]->NumberValue();  
+                            if( var->sqlscale != 0 )
+                            {
+                              double multiplier = FBResult::dscales[-var->sqlscale];
+                              *(double *) var->sqldata = floor(double_val * multiplier + 0.5) / multiplier;
+                            } 
+                            else  *(double *) var->sqldata = double_val;
+                            break;
       }
     }
+    return Undefined();
   }
   
 Local<Value> 
