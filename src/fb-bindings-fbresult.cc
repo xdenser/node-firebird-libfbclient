@@ -99,6 +99,7 @@ Handle<Value>
   {
     int i;
     XSQLVAR* var;
+    sqlda->sqln = sqlda->sqld;
     for(i = 0, var = sqlda->sqlvar; i < sqlda->sqld;i++,var++)
     {
       switch(var->sqltype & ~1)
@@ -631,6 +632,7 @@ Handle<Value>
    if(sqldap) {
      FBResult::clean_sqlda(sqldap);
      free(sqldap);
+     sqldap = NULL;
    }
    
   }
