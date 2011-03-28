@@ -536,11 +536,7 @@ Handle<Value>
         
         for (i = 0; i < num_cols; i++)
         {
-<<<<<<< HEAD
             js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i], fb_res->connection);
-=======
-            js_field = FBResult::GetFieldValue((XSQLVAR *) &(sqlda->sqlvar[i]));
->>>>>>> master
             if(rowAsObject)
             { 
               js_result_row->Set(String::New(sqlda->sqlvar[i].sqlname), js_field);
