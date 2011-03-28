@@ -118,6 +118,7 @@ Handle<Value>
                             break;                              
         case SQL_TEXT:      var->sqldata = new char[var->sqllen + 1];
                             memset(var->sqldata, ' ', var->sqllen);
+                            var->sqldata[var->sqllen] = '\0';
                             break;
         case SQL_VARYING:   var->sqldata = new char[var->sqllen + 3];
                             memset(var->sqldata, 0, 2);
@@ -188,7 +189,7 @@ Local<Value>
     Local<Object> js_date;
     Local<Value> js_field = Local<Value>::New(Null());
     dtype = var->sqltype & ~1;
-    if ((var->sqltype & 1) && (var->sqlind < 0))
+    if ((var->sqltype & 1) && (*var->sqlind < 0))
     {
      // NULL PROCESSING
     }
@@ -197,7 +198,8 @@ Local<Value>
         switch (dtype)
         {
             case SQL_TEXT:
-                js_field = String::New(var->sqldata,var->sqllen);
+                //js_field = String::New(var->sqldata,var->sqllen);
+                js_field = String::New(var->sqldata);
                 break;
 
             case SQL_VARYING:
@@ -421,7 +423,7 @@ Handle<Value>
         
         for (i = 0; i < num_cols; i++)
         {
-            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i]);
+            js_field = FBResult::GetFieldValue((XSQLVAR *) &(sqlda->sqlvar[i]));
             if(rowAsObject)
             { 
               js_result_row->Set(String::New(sqlda->sqlvar[i].sqlname), js_field);
