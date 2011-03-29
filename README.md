@@ -156,6 +156,12 @@ Synchronously rollbacks current transaction. Read notes in `commitSync();`.
 Asynchronously rollbacks current transaction. Read notes in `commitSync();`.
 
 * * *
+    function prepareSync(sql);
+* `sql` - string, an SQL query to prepare.
+
+Synchronously prepares SQL statement and returns FBStatement object.
+    
+* * *
     inTransaction;
 
 A boolean readonly property indicating if connection is in started transaction state.
@@ -163,7 +169,26 @@ A boolean readonly property indicating if connection is in started transaction s
 * * *
 ## FBResult object
 
-Represents results of SQL query if any. 
+Represents results of SQL query if any. You should use this object to fetch rows from database.
+Each row may be represented as array of field values or as object with named fields.
+
+### Data types
+Here is Interbase to Node data type accordance:
+
+Firebird		Node
+DATE	->	Date
+TIME	->	Date
+TIMESTAMP	->	Date
+CHAR	->	String
+VARCHAR	->	String
+SMALLINT	->	Integer
+INTEGER	->	Integer
+NUMERIC	->	Integer, Number (depends on scale)
+DECIMAL	->	Integer, Number (depends on scale)
+FLOAT	->	Number
+DOUBLE	->	Number
+BLOB	->	FBblob
+
     
 ### FBResult object members
 
@@ -189,3 +214,58 @@ If you specify more rowCount than available it will return only actual number of
 Asynchronously fetches rows one by one. 
 rowCallback is called for each fetched row. 
 eofCallback is called when whole operation is complete. eof indicates if end of result set was met.
+
+* * *
+## FBStatement object
+
+Represents prepared SQL query (returned by `Connection.prepare()` and `Connection.prepareSync()`). 
+    
+### FBStatement object members
+
+* * *
+    function execSync(param1, param2, ..., paramN);
+* `param1, param2, ..., paramN` - parameters of prepared statement in the same order as in SQL and with appropriate types.
+
+Synchronously executes prepared statement with given parameters.
+
+* * *
+## FBblob object
+
+Represents BLOB data type.
+
+### FBblob object members
+
+* * *
+    function _openSync();
+    
+Synchronously opens blob for reading.
+
+* * *
+    function _closeSync();
+    
+Synchronously closes previously opened blob.
+
+* * *
+    function _readSync(buffer);
+
+* `buffer` - Node buffer to fill with data.
+
+Synchronously reads BLOB segment (chunk) into buffer. Tries to fill whole buffer with data. 
+Returns actual number of bytes read. 
+
+* * *
+    function _read(buffer, callback);
+
+* `buffer` - Node buffer to fill with data.
+* `callback` - function(err,buffer,len), err - Error object in case of error, or null;buffer - buffer filled with data; len - actual data length.
+
+Asynchronously reads BLOB segment (chunk) into buffer. Tries to fill whole buffer with data. 
+
+* * *
+    function _readAll([[initialSize], [[chunkSize], [callback]]]);
+
+* `initialSize` - optional, initial result buffer to allocate, default = 0;
+* `chunkSize` - optional, size of chunk used to read data, default = 1024;
+* `callback` - optional, function (err, buffer, len), err - Error object in case of error, or null;buffer - buffer filled with data; len - actual data length. 
+
+Asynchronously reads all data from BLOB field. Object emits events while reading data `error`, `drain', `end`.
