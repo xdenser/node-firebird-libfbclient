@@ -236,12 +236,17 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
     int m_sec;
     int16_t s_len;
     int64_t int_val;
-    char *txt;
+//    char *txt;
     
     if( sqlda->sqld >  args.Length() ) return ThrowException(Exception::Error(
                                                              String::New(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld,(int)args.Length()))));
     for(i = 0, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
     {
+      
+      if(args[i]->IsNull() && (var->sqltype & 1)){
+       *var->sqlind = -1;
+       continue;
+      }
       
       switch(var->sqltype & ~1)
       { 
@@ -249,7 +254,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
         case SQL_BLOB:      
                             if(!FBblob::HasInstance(args[i])) 
                               return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting FBblob as %d argument.",i))));
+                                                       String::New(errmsg1f(errm,"Expecting FBblob as argument #%d.",i+1))));
                             obj = args[i]->ToObject();  
                             blob = ObjectWrap::Unwrap<FBblob>(obj);  
                             //memcpy(dest,src,size); 
@@ -259,7 +264,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
         case SQL_TIMESTAMP: 
                             if(!args[i]->IsDate()) 
                               return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting Date as %d argument.",i))));
+                                                       String::New(errmsg1f(errm,"Expecting Date as argument #%d.",i+1))));
                                                 
                             get_date( &times, args[i]->ToObject(), &m_sec);                            
                             isc_encode_timestamp(&times, (ISC_TIMESTAMP *)var->sqldata);
@@ -268,7 +273,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
         case SQL_TYPE_TIME:  
                             if(!args[i]->IsDate()) 
                               return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting Date as %d argument.",i))));
+                                                       String::New(errmsg1f(errm,"Expecting Date as argument #%d.",i+1))));
                             get_date( &times, args[i]->ToObject(), &m_sec);                            
                             isc_encode_sql_time(&times, (ISC_TIME *)var->sqldata);
                             *((ISC_TIME *)var->sqldata) = *((ISC_TIME *)var->sqldata) + m_sec*10;
@@ -276,35 +281,39 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
         case SQL_TYPE_DATE:  
                             if(!args[i]->IsDate()) 
                               return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting Date as %d argument.",i))));
+                                                       String::New(errmsg1f(errm,"Expecting Date as argument #%d.",i+1))));
                             get_date( &times, args[i]->ToObject(), &m_sec);                            
                             isc_encode_sql_date(&times, (ISC_DATE *)var->sqldata);
                             break;                               
         case SQL_TEXT:      
                             if(!args[i]->IsString()) 
                               return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting String as %d argument.",i))));
-                                                       
-                            txt = *String::Utf8Value(args[i]->ToString());  
-                            s_len = strlen(txt);
+                                                       String::New(errmsg1f(errm,"Expecting String as argument #%d.",i+1))));
+                            {                           
+                            String::Utf8Value txt(args[i]->ToString());  
+                            s_len = strlen(*txt);
                             if(s_len > var->sqllen) s_len = var->sqllen;                             
-                            strncpy(var->sqldata, txt, s_len);
+                            strncpy(var->sqldata, *txt, s_len);
                             while(s_len < var->sqllen) var->sqldata[s_len++] = ' ';
+                            }
 			    break;
 
 	case SQL_VARYING:		    
+	                    
 	                    if(!args[i]->IsString()) 
                               return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting String as %d argument.",i))));
-                                                       
-                            txt = *String::Utf8Value(args[i]->ToString());  
-                            s_len = strlen(txt);
+                                                       String::New(errmsg1f(errm,"Expecting String as  argument #%d.",i+1))));
+                            {                           
+                            String::Utf8Value txt(args[i]->ToString());  
+                            
+                            s_len = strlen(*txt);
                             if(s_len > var->sqllen) s_len = var->sqllen;
                             vary2 = (PARAMVARY*) var->sqldata;
                             vary2->vary_length = s_len;                            
-                            strncpy((char*) vary2->vary_string, txt, s_len);
+                            strncpy((char*) vary2->vary_string, *txt, s_len);
+                            }
 			    break;
-        case SQL_SHORT:			    
+        case SQL_SHORT:	
                             int_val = args[i]->IntegerValue();
                             *(int16_t *) var->sqldata = (int16_t) int_val;
                             break;
@@ -339,6 +348,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
                             else  *(double *) var->sqldata = double_val;
                             break;
       }
+      if(var->sqltype & 1) *var->sqlind = 0;
     }
     return Undefined();
   }
