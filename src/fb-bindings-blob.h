@@ -55,8 +55,11 @@ public:
   
   static Handle<Value>
   CloseSync(const Arguments& args);
-    
-  FBblob(ISC_QUAD *id, Connection *conn);
+  
+  static Handle<Value>
+  WriteSync(const Arguments& args);
+      
+  FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status);
   ~FBblob();
   
   bool open(ISC_STATUS *status);

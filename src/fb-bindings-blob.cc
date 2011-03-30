@@ -30,6 +30,7 @@ void FBblob::Initialize (v8::Handle<v8::Object> target)
     NODE_SET_PROTOTYPE_METHOD(t, "_read", Read);
     NODE_SET_PROTOTYPE_METHOD(t, "_openSync", OpenSync);
     NODE_SET_PROTOTYPE_METHOD(t, "_closeSync", CloseSync);
+    NODE_SET_PROTOTYPE_METHOD(t, "_writeSync", WriteSync);
 
 
     instance_template->SetInternalFieldCount(1);
@@ -63,18 +64,26 @@ Handle<Value> FBblob::New(const Arguments& args)
   {
     HandleScope scope;
 
-    ISC_QUAD *quad;
+    ISC_QUAD *quad = NULL;
     Connection  *conn = NULL;
+    ISC_STATUS_ARRAY status;
     
-    REQ_EXT_ARG(0, js_quad);
-    quad = static_cast<ISC_QUAD *>(js_quad->Value());
+    if((args.Length() > 0) && !args[0]->IsNull()){
+      REQ_EXT_ARG(0, js_quad);
+      quad = static_cast<ISC_QUAD *>(js_quad->Value());
+    }
     
     if(args.Length() > 1) {
       REQ_EXT_ARG(1, js_connection);
       conn = static_cast<Connection *>(js_connection->Value()); 
     }
-    
-    FBblob *res = new FBblob(quad, conn);
+
+    status[1] = 0;
+    FBblob *res = new FBblob(quad, conn, status);
+    if(status[1]) 
+     return ThrowException(Exception::Error(
+         String::Concat(String::New("In FBblob::New - "),ERR_MSG_STAT(status, FBblob))));
+         
     res->Wrap(args.This());
 
     return args.This();
@@ -232,12 +241,45 @@ FBblob::CloseSync(const Arguments& args)
     return Undefined();
   }
   
-  
-FBblob::FBblob(ISC_QUAD *id, Connection *conn): FBEventEmitter () 
+Handle<Value>
+FBblob::WriteSync(const Arguments& args)
   {
-    blob_id = *id; 
+    HandleScope scope;
+    FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());  
+    ISC_STATUS_ARRAY status;     
+    
+    
+    if( (args.Length() > 0) && !Buffer::HasInstance(args[0])) {
+        return ThrowException(Exception::Error(
+                String::New("First argument needs to be a buffer")));
+    }
+        
+    Local<Object> buffer_obj = args[0]->ToObject();
+    char *buf = Buffer::Data(buffer_obj);
+    size_t len = Buffer::Length(buffer_obj);
+    
+    if( (args.Length() > 1) && args[1]->IsInt32() )
+    {
+      int16_t alen = (int16_t) args[1]->IntegerValue();
+      if(alen < len) len = alen;
+    }
+    
+    if(isc_put_segment(status, &blob->handle, len, buf))
+      return ThrowException(Exception::Error(
+         String::Concat(String::New("In FBblob::_writeSync - "),ERR_MSG_STAT(status, FBblob))));
+         
+    return scope.Close(Integer::New(len));     
+  }  
+  
+FBblob::FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status): FBEventEmitter () 
+  {
+    if(id) blob_id = *id; 
     connection = conn;
-    handle = NULL;
+    if((id == 0) && (connection != 0)) 
+    {
+      isc_create_blob2(status, &(connection->db), &(connection->trans), &handle, &blob_id, 0, NULL); 
+    }
+    else handle = NULL;
   }
 
 FBblob::~FBblob()
