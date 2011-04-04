@@ -1,5 +1,8 @@
 var binding = require("./build/default/binding");
 var sys = require("sys");
+var stream = require("stream");
+var util = require("util");
+var SchunkSize = 4*1024;
 
 
 var Connection =  binding.Connection;
@@ -57,7 +60,7 @@ binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
          else
          if(len>0)
          { 
-           self.emit('drain', chunk, len);
+           self.emit('data', chunk, len);
            if(res.length<=(cPos+len))
            {
              var nr = new Buffer(cPos+len);
@@ -88,4 +91,81 @@ exports.createConnection = function () {
 
 exports.createConnectionPool = function(settings){
    
+};
+
+var buf = null;
+function allocBuf(){
+  buf = new Buffer(SchunkSize);   
 }
+
+function ReadStream(strm) {
+  if(buf == null) allocBuf();
+  
+  strm._blob._read(buf,function s_rcv(err, b, len){
+  
+         if(err)
+         {
+           strm.emit('error',err);
+         }
+         else
+         if(len>0)
+         { 
+           strm.emit('data', b, len);
+           if(!strm._paused) strm._blob._read(buf,s_rcv);
+         }
+         else  
+         {
+           strm.emit('end');
+         }
+  });  
+};
+
+function Stream(blob){
+ if(!(blob instanceof binding.FBblob )) throw new Error('Expecting blob');
+ stream.Stream.call(this);
+ this._blob = blob;
+ this.readable = false;
+ this.writeable = false;
+ 
+ if(blob.isReadable)
+ {
+   this._openSync();         
+   this.readable = true;
+   this._paused = true;
+ } 
+ else 
+   this.writeable = true;
+};
+
+util.inherits(Stream, stream.Stream);
+exports.Stream = Stream;
+
+Stream.prototype.pause = function(){
+ this._paused = true;
+};
+
+Stream.prototype.resume = function(){
+ this._paused = false;
+ ReadStream(this);
+};
+
+Stream.prototype.destroy = function(){
+ this._blob._closeSync();
+ this.emit('close');
+};
+
+Stream.prototype.write = function(data, encoding, fd) {
+  if (typeof data != 'string') {
+  };
+  this._blob._writeSync(data);
+  this.emit('drain');
+}
+
+Stream.prototype.end = function(data, encoding, fd) {
+ 
+}
+
+
+
+
+

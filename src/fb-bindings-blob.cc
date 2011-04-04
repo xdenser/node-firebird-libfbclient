@@ -37,6 +37,7 @@ void FBblob::Initialize (v8::Handle<v8::Object> target)
     
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
     instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
+    instance_t->SetAccessor(String::NewSymbol("isReadable"),IsReadGetter);
     
     target->Set(String::NewSymbol("FBblob"), t->GetFunction());
 
@@ -271,13 +272,24 @@ FBblob::WriteSync(const Arguments& args)
     return scope.Close(Integer::New(len));     
   }  
   
+Handle<Value>
+FBblob::IsReadGetter(Local<String> property,
+                      const AccessorInfo &info)
+  {
+    HandleScope scope;
+    FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());  
+    return scope.Close(Boolean::New(blob->is_read));
+  }                        
+  
 FBblob::FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status): FBEventEmitter () 
   {
     if(id) blob_id = *id; 
     connection = conn;
+    is_read = true;
     if((id == 0) && (connection != 0)) 
     {
       isc_create_blob2(status, &(connection->db), &(connection->trans), &handle, &blob_id, 0, NULL); 
+      is_read = false;
     }
     else handle = NULL;
   }

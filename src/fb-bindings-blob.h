@@ -58,6 +58,11 @@ public:
   
   static Handle<Value>
   WriteSync(const Arguments& args);
+  
+  static Handle<Value>
+  IsReadGetter(Local<String> property,
+                      const AccessorInfo &info);
+
       
   FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status);
   ~FBblob();
@@ -72,7 +77,9 @@ public:
   ISC_QUAD blob_id; 
   Connection *connection;
   isc_blob_handle handle;
+  bool is_read;
   static char err_message[MAX_ERR_MSG_LEN];
+  
   
 };  
 
