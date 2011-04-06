@@ -234,7 +234,9 @@ FBblob::CloseSync(const Arguments& args)
     FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());
     
     ISC_STATUS_ARRAY status;
-    if(!blob->close(status)){
+    status[1] = 0;
+    blob->close(status);
+    if(status[1]){
        return ThrowException(Exception::Error(
          String::Concat(String::New("In FBblob::_closeSync - "),ERR_MSG_STAT(status, FBblob))));
     } 
@@ -277,7 +279,7 @@ FBblob::IsReadGetter(Local<String> property,
                       const AccessorInfo &info)
   {
     HandleScope scope;
-    FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());  
+    FBblob *blob = ObjectWrap::Unwrap<FBblob>(info.Holder());  
     return scope.Close(Boolean::New(blob->is_read));
   }                        
   
@@ -288,7 +290,11 @@ FBblob::FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status): FBEventEmitt
     is_read = true;
     if((id == 0) && (connection != 0)) 
     {
+      printf("creating new blob\n");
+      handle  = 0;
+      //blob_id = 0;
       isc_create_blob2(status, &(connection->db), &(connection->trans), &handle, &blob_id, 0, NULL); 
+      printf("created blob %d\n",handle); 
       is_read = false;
     }
     else handle = NULL;
@@ -320,12 +326,9 @@ int FBblob::read(ISC_STATUS *status,char *buf, unsigned short len)
   
 bool FBblob::close(ISC_STATUS *status)
   {
+    printf("closing blob %d\n",handle); 
     if( handle == 0 ) return true;
-    if(isc_close_blob(status, &handle))
-	{
-	  handle = 0;
-          return false;
-        }  
+    isc_close_blob(status, &handle);
     handle = 0;
     return true;
   }

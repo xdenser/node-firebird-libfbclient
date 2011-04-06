@@ -124,6 +124,9 @@ class Connection : public FBEventEmitter {
   static Handle<Value>
   PrepareSync (const Arguments& args);
   
+  static Handle<Value>
+  NewBlobSync (const Arguments& args);
+  
   static time_t 
   get_gmt_delta();
 

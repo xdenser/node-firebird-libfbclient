@@ -9,6 +9,7 @@
 #include "./fb-bindings-fbresult.h"
 #include "./fb-bindings-statement.h" 
 #include "./fb-bindings-connection.h" 
+#include "./fb-bindings-blob.h"
 
 
 
@@ -35,6 +36,7 @@ void
     NODE_SET_PROTOTYPE_METHOD(t, "addFBevent", addEvent);
     NODE_SET_PROTOTYPE_METHOD(t, "deleteFBevent", deleteEvent);
     NODE_SET_PROTOTYPE_METHOD(t, "prepareSync", PrepareSync);
+    NODE_SET_PROTOTYPE_METHOD(t, "newBlobSync", NewBlobSync);
     
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
@@ -851,6 +853,20 @@ Handle<Value>
     return scope.Close(js_result); 
   }
 
+Handle<Value>
+  Connection::NewBlobSync (const Arguments& args)
+  {
+    HandleScope scope;
+    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    Local<Value> argv[2];
+    
+    argv[0] = Local<Value>::New(Null());
+    argv[1] = External::New(conn);
+    
+    Local<Object> js_blob(FBblob::constructor_template->
+                                     GetFunction()->NewInstance(2, argv));
+    return scope.Close(js_blob);
+  }
   
    Connection::Connection () : FBEventEmitter () 
   {

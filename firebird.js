@@ -121,7 +121,10 @@ function ReadStream(strm) {
 };
 
 function Stream(blob){
- if(!(blob instanceof binding.FBblob )) throw new Error('Expecting blob');
+ if(!(blob instanceof binding.FBblob )) {
+    throw new Error('Expecting blob');
+    //blob = new binding.FBblob();
+ }     
  stream.Stream.call(this);
  this._blob = blob;
  this.readable = false;
@@ -129,7 +132,7 @@ function Stream(blob){
  
  if(blob.isReadable)
  {
-   this._openSync();         
+   this._blob._openSync();         
    this.readable = true;
    this._paused = true;
  } 
@@ -150,6 +153,7 @@ Stream.prototype.resume = function(){
 };
 
 Stream.prototype.destroy = function(){
+ console.log('destroy');
  this._blob._closeSync();
  this.emit('close');
 };
@@ -162,7 +166,8 @@ Stream.prototype.write = function(data, encoding, fd) {
 }
 
 Stream.prototype.end = function(data, encoding, fd) {
- 
+  if(data) this._blob._writeSync(data);
+  this.destroy();
 }
 
 
