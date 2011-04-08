@@ -266,7 +266,7 @@ FBblob::WriteSync(const Arguments& args)
       int16_t alen = (int16_t) args[1]->IntegerValue();
       if(alen < len) len = alen;
     }
-    
+
     if(isc_put_segment(status, &blob->handle, len, buf))
       return ThrowException(Exception::Error(
          String::Concat(String::New("In FBblob::_writeSync - "),ERR_MSG_STAT(status, FBblob))));
@@ -290,11 +290,9 @@ FBblob::FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status): FBEventEmitt
     is_read = true;
     if((id == 0) && (connection != 0)) 
     {
-      printf("creating new blob\n");
       handle  = 0;
       //blob_id = 0;
       isc_create_blob2(status, &(connection->db), &(connection->trans), &handle, &blob_id, 0, NULL); 
-      printf("created blob %d\n",handle); 
       is_read = false;
     }
     else handle = NULL;
@@ -326,7 +324,6 @@ int FBblob::read(ISC_STATUS *status,char *buf, unsigned short len)
   
 bool FBblob::close(ISC_STATUS *status)
   {
-    printf("closing blob %d\n",handle); 
     if( handle == 0 ) return true;
     isc_close_blob(status, &handle);
     handle = 0;

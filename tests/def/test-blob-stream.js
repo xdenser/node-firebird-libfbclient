@@ -14,6 +14,8 @@ var
   testCase = require("../../tools/nodeunit").testCase;  
 var 
   fs = require('fs');  
+var 
+  sys = require("sys");
 
 
 var util = {
@@ -43,14 +45,19 @@ module.exports = testCase({
            test.expect(1);
            util.createTestTable.call(this,'BLOB SUB_TYPE 0');
            var stmt = this.conn.prepareSync('insert into BLOB_TEST_TABLE ( test_field ) values (?)');
-           console.log(' before new blob stream created');
-           strm = new fb_binding.Stream(this.conn.newBlobSync());
-           console.log('after new blob stream created');
+           
+           var strm = new fb_binding.Stream(this.conn.newBlobSync());
            test.ok(strm,'There is stream');
            var fstrm = fs.createReadStream('tests/testdata/image.gif');
+           fstrm.resume();
            fstrm.pipe(strm);
-           stmt.execSync(strm._blob);
-           this.conn.commitSync();
-           test.done();
+                      
+           var self= this;
+           strm.on("close",function(){
+              stmt.execSync(strm._blob);
+              self.conn.commitSync();
+              test.done();
+           });
+           
          }
 });

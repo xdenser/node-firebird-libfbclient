@@ -137,7 +137,7 @@ function Stream(blob){
    this._paused = true;
  } 
  else 
-   this.writeable = true;
+   this.writable = true;
 };
 
 util.inherits(Stream, stream.Stream);
@@ -153,7 +153,6 @@ Stream.prototype.resume = function(){
 };
 
 Stream.prototype.destroy = function(){
- console.log('destroy');
  this._blob._closeSync();
  this.emit('close');
 };
@@ -162,7 +161,6 @@ Stream.prototype.write = function(data, encoding, fd) {
   if (typeof data != 'string') {
   };
   this._blob._writeSync(data);
-  this.emit('drain');
 }
 
 Stream.prototype.end = function(data, encoding, fd) {

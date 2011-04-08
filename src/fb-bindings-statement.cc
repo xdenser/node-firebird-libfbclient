@@ -88,7 +88,7 @@ Handle<Value>
     argv[2] = External::New(fb_stmt->conn);
     Persistent<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
-
+    fb_stmt->out_sqlda = NULL; // this will be handled by FBResult now
     return scope.Close(js_result); 
 
     
@@ -116,6 +116,7 @@ Handle<Value>
      free(in_sqlda);
    }
    if(out_sqlda) {
+     // should be freed by FBresult but in case  it is not ...   
      FBResult::clean_sqlda(out_sqlda);
      free(out_sqlda);
    }

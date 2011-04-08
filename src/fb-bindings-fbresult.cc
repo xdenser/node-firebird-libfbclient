@@ -257,8 +257,10 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
                                                        String::New(errmsg1f(errm,"Expecting FBblob as argument #%d.",i+1))));
                             obj = args[i]->ToObject();  
                             blob = ObjectWrap::Unwrap<FBblob>(obj);  
+                            
                             //memcpy(dest,src,size); 
                             blob->getId((ISC_QUAD*)var->sqldata);
+                            // printf("setting blob param %d,%d\n",((ISC_QUAD*)var->sqldata)->gds_quad_high,((ISC_QUAD*)var->sqldata)->gds_quad_low);
                             break;
                             
         case SQL_TIMESTAMP: 
