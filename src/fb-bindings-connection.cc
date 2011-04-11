@@ -37,6 +37,7 @@ void
     NODE_SET_PROTOTYPE_METHOD(t, "deleteFBevent", deleteEvent);
     NODE_SET_PROTOTYPE_METHOD(t, "prepareSync", PrepareSync);
     NODE_SET_PROTOTYPE_METHOD(t, "newBlobSync", NewBlobSync);
+    NODE_SET_PROTOTYPE_METHOD(t, "startTransactionSync", StartSync);
     
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
@@ -327,6 +328,23 @@ bool Connection::rollback_transaction()
     trans = 0;
     return true;
   }
+
+bool Connection::start_transaction()
+  {
+    if(!trans) 
+      {
+        if (isc_start_transaction(status, &trans, 1, &db, 0, NULL))
+        {
+          trans = 0;
+          ERR_MSG(this,Connection);
+          return false;
+        }
+        return true;  
+      }
+      
+    strncpy(err_message, "Old transaction should be commited or rolled back.", MAX_ERR_MSG_LEN);
+    return false;  
+  }
   
 isc_db_handle Connection::get_DB_Handle()
   {
@@ -539,6 +557,24 @@ Handle<Value>
     
     return Undefined();
   } 
+  
+Handle<Value>
+  Connection::StartSync (const Arguments& args)
+  {
+    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+
+    HandleScope scope;
+    
+    bool r = connection->start_transaction();
+
+    if (!r) {
+      return ThrowException(Exception::Error(
+            String::New(connection->err_message)));
+    }
+    
+    return Undefined();
+  }
+  
   
 int Connection::EIO_After_TransactionRequest(eio_req *req)
   {

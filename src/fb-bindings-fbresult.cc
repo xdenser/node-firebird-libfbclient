@@ -48,37 +48,6 @@
     
     target->Set(String::NewSymbol("FBResult"), t->GetFunction());
   }
-/*  
- bool FBResult::process_result(XSQLDA **sqldap, isc_stmt_handle *stmtp, Local<Array> res)
-  {
-    int            fetch_stat;
-    short 	   i, num_cols;	
-    XSQLDA         *sqlda;
-    
-    uint32_t       j = 0;
-    sqlda = *sqldap;
-    if(!sqlda){ return true;}
-    num_cols = (*sqldap)->sqld;
-    
-    HandleScope scope;
-    
-    Local<Object> js_result_row;
-    Local<Value> js_field;
-    
-    while ((fetch_stat = isc_dsql_fetch(status, stmtp, SQL_DIALECT_V6, *sqldap)) == 0)
-    {
-        js_result_row = Array::New();
-        for (i = 0; i < num_cols; i++)
-        {
-            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqlda->sqlvar[i], connection);
-            js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
-        }
-        res->Set(Integer::NewFromUnsigned(j++), js_result_row);
-    }
-    return true;
-  } 
-  */
-  
   
   
 Handle<Value>
@@ -178,6 +147,15 @@ Handle<Value>
   double get_js_time(struct tm* times){
      double res = 0;
      
+  }
+bool FBResult::clone_sqlda(XSQLDA *src_sqlda,XSQLDA **dest_sqlda)
+  {
+     int size = XSQLDA_LENGTH (src_sqlda->sqln);
+     XSQLDA *out_sqlda = (XSQLDA *) malloc(size);
+     *dest_sqlda = out_sqlda;
+     if(!out_sqlda) return false;
+     memcpy(out_sqlda,src_sqlda,size); 
+     return prepare_sqlda(out_sqlda);
   }
   
 char* errmsg1f(char* buf,const char* msg, int arg)

@@ -4,6 +4,7 @@
  * See license text in LICENSE file
  */
 #include <stdlib.h>
+#include <string.h>
 #include <v8.h>
 #include <node.h>
 #include <ibase.h>
@@ -75,20 +76,50 @@ Handle<Value>
     
     FBResult::set_params(fb_stmt->in_sqlda, args);
     
+        
     if (isc_dsql_execute(fb_stmt->status, &fb_stmt->conn->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
     {
       return ThrowException(Exception::Error(
          String::Concat(String::New("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement))));
     }
     
-    Local<Value> argv[3];
+    if(!fb_stmt->out_sqlda->sqld) 
+      return Undefined();
+      
+    if(fb_stmt->retres) 
+    {
+      printf("closing cursor\n");
+      isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
+      if (fb_stmt->status[1])
+      {
+        return ThrowException(Exception::Error(
+           String::Concat(String::New("In FBStatement::execSync, free_statement - "),ERR_MSG(fb_stmt, FBStatement))));
+      }
+    }
+    printf("set cursor name\n"); 
+    isc_dsql_set_cursor_name(fb_stmt->status, &fb_stmt->stmt,fb_stmt->cursor,0);
+    if (fb_stmt->status[1])
+    {
+      return ThrowException(Exception::Error(
+      String::Concat(String::New("In FBStatement::execSync, set_cursor_name - "),ERR_MSG(fb_stmt, FBStatement))));
+    }
 
-    argv[0] = External::New(fb_stmt->out_sqlda);
+        
+    Local<Value> argv[3];
+    XSQLDA *sqlda = 0;
+    if(!FBResult::clone_sqlda(fb_stmt->out_sqlda,&sqlda))
+    {
+      if(sqlda) free(sqlda);
+      return ThrowException(Exception::Error(
+         String::New("In FBStatement::execSync - cant clone SQLDA")));
+    }
+    argv[0] = External::New(sqlda);
     argv[1] = External::New(&fb_stmt->stmt);
     argv[2] = External::New(fb_stmt->conn);
     Persistent<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
-    fb_stmt->out_sqlda = NULL; // this will be handled by FBResult now
+    fb_stmt->retres = true;                                
+//    fb_stmt->out_sqlda = NULL; // this will be handled by FBResult now
     return scope.Close(js_result); 
 
     
@@ -107,6 +138,8 @@ Handle<Value>
    in_sqlda = insqlda;
    out_sqlda = outsqlda;
    stmt = *astmtp;
+   retres = false;
+   strncpy(cursor, "test_cursor", sizeof(cursor));
  } 
  
  FBStatement::~FBStatement()
@@ -116,7 +149,6 @@ Handle<Value>
      free(in_sqlda);
    }
    if(out_sqlda) {
-     // should be freed by FBresult but in case  it is not ...   
      FBResult::clean_sqlda(out_sqlda);
      free(out_sqlda);
    }

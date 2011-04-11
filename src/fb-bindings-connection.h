@@ -36,6 +36,8 @@ class Connection : public FBEventEmitter {
     
   bool rollback_transaction();
   
+  bool start_transaction();
+  
   isc_db_handle get_DB_Handle();
   isc_tr_handle get_Def_Tr_Handle();
   
@@ -81,6 +83,9 @@ class Connection : public FBEventEmitter {
   static Handle<Value>
   RollbackSync (const Arguments& args);
   
+  static Handle<Value>
+  StartSync (const Arguments& args);
+    
   struct transaction_request {
      Persistent<Function> callback;
      Connection *conn;

@@ -12,7 +12,7 @@ var
   safe_con   = require("../../firebird.js");
 
 exports.ConnectionBinding = function (test) {
-  test.expect(17);
+  test.expect(19);
   test.ok("Connection" in fb_binding, "Connection");
   var conn = new fb_binding.Connection;
   test.ok(conn, "Connection created");
@@ -31,6 +31,8 @@ exports.ConnectionBinding = function (test) {
   test.ok("rollbackSync" in conn, "rollbackSync");
   test.ok("prepareSync" in conn, "prepareSync");
   test.ok("inAsyncCall" in conn, "inAsyncCall");
+  test.ok("startTransactionSync" in conn, "startTransactionSync");
+  test.ok("newBlobSync" in conn, "newBlobSync");
   test.done();
 };
 

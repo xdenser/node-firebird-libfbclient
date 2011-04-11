@@ -31,7 +31,7 @@ module.exports = testCase({
            conn.disconnect();
            callback();
          },
-         prepare: function(test){
+         commitAll: function(test){
            var data = [
             [1,'string 1'],
             [2,'string 2'],
@@ -57,5 +57,42 @@ module.exports = testCase({
             test.equal(data[i][1],rows[i][1],'second field');
            }
            test.done();
+         },
+         commitEvery:function(test){
+            var data = [
+            [1,'string 1'],
+            [2,'string 2'],
+            [3,'string 3'],
+            [4,null]
+           ];
+           
+           test.expect(2+data.length*2);
+           var stmt = this.conn.prepareSync('insert into PREPARED_TEST_TABLE (test_field1, test_field2) values (?,?)');
+           test.ok(stmt, 'statement returned');
+           var i;
+           for(i=0;i<data.length;i++)
+           {
+            if(!this.conn.inTransaction) this.conn.startTransactionSync();
+            stmt.execSync.apply(stmt,data[i]);
+            this.conn.commitSync();
+           }; 
+           
+
+           var stmt = this.conn.prepareSync('select test_field2 from PREPARED_TEST_TABLE where test_field1=?');
+           
+           test.ok(stmt, 'statement returned');
+           
+           if(!this.conn.inTransaction) this.conn.startTransactionSync();
+           test.ok(this.conn.inTransaction, 'inTransaction');
+           for(i=0;i<data.length;i++)
+           {
+            var res = stmt.execSync(data[i][0]);
+            var row = res.fetchSync("all",true);
+            test.ok(row, 'row returned');
+            console.log(sys.inspect(row));
+            test.equal(data[i][1],row[0].TEST_FIELD2,'test_field2 equal');
+           }
+           test.done();
+             
          }
 });
