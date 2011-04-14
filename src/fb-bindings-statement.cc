@@ -75,6 +75,18 @@ Handle<Value>
     FBStatement *fb_stmt = ObjectWrap::Unwrap<FBStatement>(args.This());
     
     FBResult::set_params(fb_stmt->in_sqlda, args);
+
+    if(fb_stmt->retres) 
+    //if(fb_stmt->stmt)
+    {
+//      printf("closing cursor\n");
+      isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
+      if (fb_stmt->status[1])
+      {
+        return ThrowException(Exception::Error(
+           String::Concat(String::New("In FBStatement::execSync, free_statement - "),ERR_MSG(fb_stmt, FBStatement))));
+      }
+    }
     
         
     if (isc_dsql_execute(fb_stmt->status, &fb_stmt->conn->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
@@ -86,17 +98,8 @@ Handle<Value>
     if(!fb_stmt->out_sqlda->sqld) 
       return Undefined();
       
-    if(fb_stmt->retres) 
-    {
-      printf("closing cursor\n");
-      isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
-      if (fb_stmt->status[1])
-      {
-        return ThrowException(Exception::Error(
-           String::Concat(String::New("In FBStatement::execSync, free_statement - "),ERR_MSG(fb_stmt, FBStatement))));
-      }
-    }
-    printf("set cursor name\n"); 
+//    printf("set cursor name\n"); 
+    fb_stmt->status[1]=0;
     isc_dsql_set_cursor_name(fb_stmt->status, &fb_stmt->stmt,fb_stmt->cursor,0);
     if (fb_stmt->status[1])
     {

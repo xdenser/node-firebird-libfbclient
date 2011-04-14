@@ -66,7 +66,7 @@ module.exports = testCase({
             [4,null]
            ];
            
-           test.expect(2+data.length*2);
+           test.expect(3+data.length*2);
            var stmt = this.conn.prepareSync('insert into PREPARED_TEST_TABLE (test_field1, test_field2) values (?,?)');
            test.ok(stmt, 'statement returned');
            var i;
@@ -89,7 +89,7 @@ module.exports = testCase({
             var res = stmt.execSync(data[i][0]);
             var row = res.fetchSync("all",true);
             test.ok(row, 'row returned');
-            console.log(sys.inspect(row));
+            //console.log(sys.inspect(row));
             test.equal(data[i][1],row[0].TEST_FIELD2,'test_field2 equal');
            }
            test.done();
