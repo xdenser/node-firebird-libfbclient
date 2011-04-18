@@ -94,5 +94,32 @@ module.exports = testCase({
            }
            test.done();
              
+         },
+         badArgNum:function(test){
+           test.expect(2);
+           var stmt = this.conn.prepareSync('insert into PREPARED_TEST_TABLE (test_field1, test_field2) values (?,?)');
+           test.ok(stmt, 'statement returned');
+           test.throws(function(){
+             stmt.execSync(0);
+           },'wrong number of arguments');
+           test.done();
+         },
+         asyncExec:function(test){
+           test.expect(3);
+           var stmt = this.conn.prepareSync('insert into PREPARED_TEST_TABLE (test_field1, test_field2) values (?,?)');
+           var data = [1,'boo'];
+           stmt.exec(data[0],data[1]);
+           var self = this;
+           stmt.once('result',function(err){
+                test.ok(!err,'no error on insert');
+        	var stmt = self.conn.prepareSync('select test_field2 from PREPARED_TEST_TABLE');                          
+        	stmt.exec();
+        	stmt.once('result',function(err,res){
+        	  test.ok(!err,'no error on select');
+        	  var row = res.fetchSync("all",false); 
+        	  test.equal(data[1],row[0][0],'returned data equal');
+        	  test.done();
+        	});
+           });
          }
 });

@@ -679,7 +679,7 @@ int FBResult::EIO_After_Fetch(eio_req *req)
     if(f_req->fetchStat!=100L){
           argc = 1;
           argv[0] = Exception::Error(
-            String::Concat(String::New("While connecting - "),ERR_MSG(f_req->res,FBResult)));
+            String::Concat(String::New("While fetching - "),ERR_MSG(f_req->res,FBResult)));
     }
     else
     {

@@ -11,6 +11,8 @@
 #include "./fb-bindings-connection.h"
 #include "./fb-bindings-fbeventemitter.h"
 
+static Persistent<String> error_symbol;
+static Persistent<String> result_symbol;
 
 class FBStatement : public FBEventEmitter {
 public:
@@ -25,6 +27,14 @@ protected:
  
  static Handle<Value>
  ExecSync (const Arguments& args);
+ 
+ struct exec_request {
+     FBStatement *statement;
+ };
+ 
+ static int EIO_After_Exec(eio_req *req);
+    
+ static int EIO_Exec(eio_req *req);
  
  static Handle<Value>
  Exec (const Arguments& args);

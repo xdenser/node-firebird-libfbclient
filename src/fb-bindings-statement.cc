@@ -18,6 +18,9 @@ void
  {
     HandleScope scope;
     
+    error_symbol = NODE_PSYMBOL("error");
+    result_symbol= NODE_PSYMBOL("result");
+    
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
 
     t->Inherit(FBEventEmitter::constructor_template);
@@ -77,9 +80,7 @@ Handle<Value>
     FBResult::set_params(fb_stmt->in_sqlda, args);
 
     if(fb_stmt->retres) 
-    //if(fb_stmt->stmt)
     {
-//      printf("closing cursor\n");
       isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
       if (fb_stmt->status[1])
       {
@@ -98,7 +99,6 @@ Handle<Value>
     if(!fb_stmt->out_sqlda->sqld) 
       return Undefined();
       
-//    printf("set cursor name\n"); 
     fb_stmt->status[1]=0;
     isc_dsql_set_cursor_name(fb_stmt->status, &fb_stmt->stmt,fb_stmt->cursor,0);
     if (fb_stmt->status[1])
@@ -122,19 +122,132 @@ Handle<Value>
     Persistent<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
     fb_stmt->retres = true;                                
-//    fb_stmt->out_sqlda = NULL; // this will be handled by FBResult now
     return scope.Close(js_result); 
 
     
  }
  
+int FBStatement::EIO_After_Exec(eio_req *req)
+ {
+   ev_unref(EV_DEFAULT_UC);
+   HandleScope scope;
+   
+   struct exec_request *e_req = (struct exec_request *)(req->data);
+   FBStatement *fb_stmt = e_req->statement;
+   Local<Value> argv[3];
+   Handle<String> event;
+   int argc = 0;
+   if(!req->result)
+   {
+     argv[0] = Exception::Error(
+         String::Concat(String::New("In FBStatement::EIO_After_Exec - "),ERR_MSG(fb_stmt, FBStatement)));
+     argc = 0;
+     event = error_symbol;     
+     //((EventEmitter*) fb_stmt)->Emit(error_symbol,1,argv);           
+   }
+   else
+   {
+	if(!fb_stmt->out_sqlda->sqld) 
+	{
+    	    argc = 0; 
+    	    event = result_symbol;     
+        }
+        else
+        {
+    	    fb_stmt->status[1]=0;
+	    isc_dsql_set_cursor_name(fb_stmt->status, &fb_stmt->stmt,fb_stmt->cursor,0);
+	    if (fb_stmt->status[1])
+	    {		
+    		argv[0] = Exception::Error(
+    		String::Concat(String::New("In FBStatement::EIO_After_Exec, set_cursor_name - "),ERR_MSG(fb_stmt, FBStatement)));
+    		argc = 1;
+    		event = error_symbol;     
+	    }
+	    else
+	    {
+		XSQLDA *sqlda = 0;
+		if(!FBResult::clone_sqlda(fb_stmt->out_sqlda,&sqlda))
+		{
+    		    if(sqlda) free(sqlda);
+    		    argv[0] = Exception::Error(
+        	       String::New("In FBStatement::EIO_After_Exec - cant clone SQLDA"));
+		}
+	        else
+	        {
+	    	        argv[0] = External::New(sqlda);
+			argv[1] = External::New(&fb_stmt->stmt);
+			argv[2] = External::New(fb_stmt->conn);
+			Persistent<Object> js_result(FBResult::constructor_template->
+                                    		      GetFunction()->NewInstance(3, argv));
+			fb_stmt->retres = true; 
+			argv[0] = Local<Value>::New(Null());
+			argv[1] = Local<Value>::New(js_result);
+			argc = 2;      
+			event = result_symbol;                             
+	        }	
+	    }
+        }
+       
+   }
+   ((EventEmitter*) fb_stmt)->Emit(event,argc,argv);           
+    fb_stmt->stop_async();
+    fb_stmt->Unref();
+    free(e_req);
+    return 0;
+ }
+    
+int FBStatement::EIO_Exec(eio_req *req)
+ {
+    struct exec_request *e_req = (struct exec_request *)(req->data);
+    FBStatement *fb_stmt = e_req->statement;
+    
+    if (isc_dsql_execute(fb_stmt->status, &fb_stmt->conn->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+      req->result = false;
+    else 
+      req->result = true;
+    
+    return 0;
+ }
+ 
 Handle<Value>
  FBStatement::Exec (const Arguments& args)
  {
+    HandleScope scope;
+    FBStatement *fb_stmt = ObjectWrap::Unwrap<FBStatement>(args.This());
+    
+    struct exec_request *e_req =
+         (struct exec_request *)calloc(1, sizeof(struct exec_request));
+
+    if (!e_req) {
+      V8::LowMemoryNotification();
+      return ThrowException(Exception::Error(
+            String::New("Could not allocate memory.")));
+    }
+    
+    FBResult::set_params(fb_stmt->in_sqlda, args);
+
+    if(fb_stmt->retres) 
+    {
+      isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
+      if (fb_stmt->status[1])
+      {
+        return ThrowException(Exception::Error(
+           String::Concat(String::New("In FBStatement::exec, free_statement - "),ERR_MSG(fb_stmt, FBStatement))));
+      }
+    }
+    
+    e_req->statement = fb_stmt;
+    
+    fb_stmt->start_async();
+    eio_custom(EIO_Exec, EIO_PRI_DEFAULT, EIO_After_Exec, e_req);
+    
+    ev_ref(EV_DEFAULT_UC);
+    fb_stmt->Ref();
+    
+    return Undefined();
  
  }
- 
- 
+  
  FBStatement::FBStatement(XSQLDA *insqlda, XSQLDA *outsqlda, isc_stmt_handle *astmtp, Connection* aconn) : FBEventEmitter ()
  {
    conn = aconn;
