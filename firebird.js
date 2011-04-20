@@ -5,8 +5,9 @@ var util = require("util");
 var SchunkSize = 4*1024;
 
 
-var Connection =  binding.Connection;
-var FBResult   =  binding.FBResult;
+var Connection  =  binding.Connection;
+var FBResult    =  binding.FBResult;
+var FBStatement =  binding.FBStatement;
 
 function MakeSafe(obj,meth){
   var super = obj.prototype[meth];
@@ -26,6 +27,7 @@ MakeSafe(Connection,"query");
 MakeSafe(Connection,"commit");
 MakeSafe(Connection,"rollback");
 MakeSafe(FBResult,"fetch");
+MakeSafe(FBStatement,"exec");
 
 
 binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){

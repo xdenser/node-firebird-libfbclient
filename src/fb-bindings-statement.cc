@@ -23,10 +23,10 @@ void
     
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
 
-    t->Inherit(FBEventEmitter::constructor_template);
+    t->Inherit(FBResult::constructor_template);
     
     constructor_template = Persistent<FunctionTemplate>::New(t);
-    constructor_template->Inherit(FBEventEmitter::constructor_template);
+    constructor_template->Inherit(FBResult::constructor_template);
     constructor_template->SetClassName(String::NewSymbol("FBStatement"));
 
     Local<ObjectTemplate> instance_template =
@@ -38,8 +38,8 @@ void
 
     instance_template->SetInternalFieldCount(1);
     
-    Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
-    instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
+//    Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
+//    instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
     
     target->Set(String::NewSymbol("FBStatement"), t->GetFunction());
    
@@ -90,13 +90,13 @@ Handle<Value>
     }
     
         
-    if (isc_dsql_execute(fb_stmt->status, &fb_stmt->conn->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+    if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
     {
       return ThrowException(Exception::Error(
          String::Concat(String::New("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement))));
     }
     
-    if(!fb_stmt->out_sqlda->sqld) 
+    if(!fb_stmt->sqldap->sqld) 
       return Undefined();
       
     fb_stmt->status[1]=0;
@@ -107,7 +107,7 @@ Handle<Value>
       String::Concat(String::New("In FBStatement::execSync, set_cursor_name - "),ERR_MSG(fb_stmt, FBStatement))));
     }
 
-        
+    /*    
     Local<Value> argv[3];
     XSQLDA *sqlda = 0;
     if(!FBResult::clone_sqlda(fb_stmt->out_sqlda,&sqlda))
@@ -121,9 +121,11 @@ Handle<Value>
     argv[2] = External::New(fb_stmt->conn);
     Persistent<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
-    fb_stmt->retres = true;                                
+                                    
     return scope.Close(js_result); 
-
+    */
+    fb_stmt->retres = true;
+    return Undefined();
     
  }
  
@@ -147,7 +149,7 @@ int FBStatement::EIO_After_Exec(eio_req *req)
    }
    else
    {
-	if(!fb_stmt->out_sqlda->sqld) 
+	if(!fb_stmt->sqldap->sqld) 
 	{
     	    argc = 0; 
     	    event = result_symbol;     
@@ -165,7 +167,7 @@ int FBStatement::EIO_After_Exec(eio_req *req)
 	    }
 	    else
 	    {
-		XSQLDA *sqlda = 0;
+		/*XSQLDA *sqlda = 0;
 		if(!FBResult::clone_sqlda(fb_stmt->out_sqlda,&sqlda))
 		{
     		    if(sqlda) free(sqlda);
@@ -184,7 +186,10 @@ int FBStatement::EIO_After_Exec(eio_req *req)
 			argv[1] = Local<Value>::New(js_result);
 			argc = 2;      
 			event = result_symbol;                             
-	        }	
+	        }*/
+	        argv[0] = Local<Value>::New(Null());	
+	        argc = 1;      
+		event = result_symbol;                             
 	    }
         }
        
@@ -201,7 +206,7 @@ int FBStatement::EIO_Exec(eio_req *req)
     struct exec_request *e_req = (struct exec_request *)(req->data);
     FBStatement *fb_stmt = e_req->statement;
     
-    if (isc_dsql_execute(fb_stmt->status, &fb_stmt->conn->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+    if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
       req->result = false;
     else 
       req->result = true;
@@ -248,12 +253,13 @@ Handle<Value>
  
  }
   
- FBStatement::FBStatement(XSQLDA *insqlda, XSQLDA *outsqlda, isc_stmt_handle *astmtp, Connection* aconn) : FBEventEmitter ()
+ FBStatement::FBStatement(XSQLDA *insqlda, XSQLDA *outsqlda, isc_stmt_handle *astmtp, Connection* aconn) : 
+              FBResult (outsqlda,astmtp,aconn)
  {
-   conn = aconn;
+//   conn = aconn;
    in_sqlda = insqlda;
-   out_sqlda = outsqlda;
-   stmt = *astmtp;
+ //  out_sqlda = outsqlda;
+ //  stmt = *astmtp;
    retres = false;
    strncpy(cursor, "test_cursor", sizeof(cursor));
  } 
@@ -264,10 +270,10 @@ Handle<Value>
      FBResult::clean_sqlda(in_sqlda);
      free(in_sqlda);
    }
-   if(out_sqlda) {
+ /*  if(out_sqlda) {
      FBResult::clean_sqlda(out_sqlda);
      free(out_sqlda);
-   }
+   } */
  }
  
 

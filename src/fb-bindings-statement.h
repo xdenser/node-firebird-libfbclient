@@ -10,11 +10,12 @@
 #include "./fb-bindings.h"
 #include "./fb-bindings-connection.h"
 #include "./fb-bindings-fbeventemitter.h"
+#include "./fb-bindings-fbresult.h"
 
 static Persistent<String> error_symbol;
 static Persistent<String> result_symbol;
 
-class FBStatement : public FBEventEmitter {
+class FBStatement : public FBResult {
 public:
  static Persistent<FunctionTemplate> constructor_template; 
 
@@ -44,14 +45,14 @@ protected:
  ~FBStatement(); 
 
 private: 
- Connection* conn;
+// Connection* conn;
  XSQLDA *in_sqlda;
- XSQLDA *out_sqlda;
- isc_stmt_handle stmt;
+// XSQLDA *out_sqlda;
+// isc_stmt_handle stmt;
  bool retres;
  
- ISC_STATUS_ARRAY status;
- char err_message[MAX_ERR_MSG_LEN];
+// ISC_STATUS_ARRAY status;
+// char err_message[MAX_ERR_MSG_LEN];
  char cursor[50];
 
 };

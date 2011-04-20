@@ -86,8 +86,8 @@ module.exports = testCase({
            test.ok(this.conn.inTransaction, 'inTransaction');
            for(i=0;i<data.length;i++)
            {
-            var res = stmt.execSync(data[i][0]);
-            var row = res.fetchSync("all",true);
+            stmt.execSync(data[i][0]);
+            var row = stmt.fetchSync("all",true);
             test.ok(row, 'row returned');
             //console.log(sys.inspect(row));
             test.equal(data[i][1],row[0].TEST_FIELD2,'test_field2 equal');
@@ -114,9 +114,9 @@ module.exports = testCase({
                 test.ok(!err,'no error on insert');
         	var stmt = self.conn.prepareSync('select test_field2 from PREPARED_TEST_TABLE');                          
         	stmt.exec();
-        	stmt.once('result',function(err,res){
+        	stmt.once('result',function(err){
         	  test.ok(!err,'no error on select');
-        	  var row = res.fetchSync("all",false); 
+        	  var row = stmt.fetchSync("all",false); 
         	  test.equal(data[1],row[0][0],'returned data equal');
         	  test.done();
         	});

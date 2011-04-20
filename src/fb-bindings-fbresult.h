@@ -58,7 +58,7 @@ protected:
   
   FBResult(XSQLDA *asqldap, isc_stmt_handle *astmtp, Connection *conn); 
   
-  ~FBResult();
+  virtual ~FBResult();
   
   ISC_STATUS_ARRAY status;
   char err_message[MAX_ERR_MSG_LEN];
