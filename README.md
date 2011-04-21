@@ -167,6 +167,13 @@ Synchronously prepares SQL statement and returns FBStatement object.
 A boolean readonly property indicating if connection is in started transaction state.
     
 * * *
+
+    function newBlobSync();
+
+Creates new FBblob object and opens it for write. After finishing write operation and closing blob
+one may insert it in database passing as parameter to exec, execSync methods of FBStatement object.
+
+* * *    
 ## FBResult object
 
 Represents results of SQL query if any. You should use this object to fetch rows from database.
@@ -219,6 +226,7 @@ eofCallback is called when whole operation is complete. eof indicates if end of 
 ## FBStatement object
 
 Represents prepared SQL query (returned by `Connection.prepare()` and `Connection.prepareSync()`). 
+FBStatement is derived form FBResult class. So it can fetch rows just like FBresult object after call to execSync, exec methods.
     
 ### FBStatement object members
 
@@ -226,7 +234,14 @@ Represents prepared SQL query (returned by `Connection.prepare()` and `Connectio
     function execSync(param1, param2, ..., paramN);
 * `param1, param2, ..., paramN` - parameters of prepared statement in the same order as in SQL and with appropriate types.
 
-Synchronously executes prepared statement with given parameters.
+Synchronously executes prepared statement with given parameters. You may fetch rows with methods inherited from FBResult.
+
+* * *
+    function exec(param1, param2, ..., paramN);
+* `param1, param2, ..., paramN` - parameters of prepared statement in the same order as in SQL and with appropriate types.
+
+Asynchronously executes prepared statement with given parameters. FBStatement emits 'result' or 'error' event. 
+You may fetch rows with methods inherited from FBResult after 'result' event emitted.
 
 * * *
 ## FBblob object
@@ -269,3 +284,23 @@ Asynchronously reads BLOB segment (chunk) into buffer. Tries to fill whole buffe
 * `callback` - optional, function (err, buffer, len), err - Error object in case of error, or null;buffer - buffer filled with data; len - actual data length. 
 
 Asynchronously reads all data from BLOB field. Object emits events while reading data `error`, `drain', `end`.
+
+* * *
+    function _writeSync(buffer,[len]);
+
+* `buffer` - Node buffer to write from to blob;
+* `len` - optional length parameter, if specified only len bytes from buffer will be writen.
+
+Synchronously writes BLOB segment (chunk) from buffer.
+Returns number of bytes actually writen.
+
+* * *
+    function _write(buffer,[len],[callback]);
+
+* `buffer` - Node buffer to write from to blob;
+* `len` - optional length parameter, if specified only len bytes from buffer will be writen.
+* `callback` - function(err), err - Error object in case of error, or null;
+
+Asynchronously writes BLOB segment (chunk) from buffer and calls callback function if any.
+
+

@@ -31,6 +31,7 @@ void FBblob::Initialize (v8::Handle<v8::Object> target)
     NODE_SET_PROTOTYPE_METHOD(t, "_openSync", OpenSync);
     NODE_SET_PROTOTYPE_METHOD(t, "_closeSync", CloseSync);
     NODE_SET_PROTOTYPE_METHOD(t, "_writeSync", WriteSync);
+    NODE_SET_PROTOTYPE_METHOD(t, "_write", Write);
 
 
     instance_template->SetInternalFieldCount(1);
@@ -120,7 +121,7 @@ int FBblob::EIO_After_Read(eio_req *req)
   {
     ev_unref(EV_DEFAULT_UC);
     HandleScope scope;
-    struct read_request *r_req = (struct read_request *)(req->data);
+    struct rw_request *r_req = (struct rw_request *)(req->data);
     Local<Value> argv[3];
     int argc;
     
@@ -151,14 +152,11 @@ int FBblob::EIO_After_Read(eio_req *req)
     free(r_req);
 
     return 0;
-
-    
-    return 0;
   }
   
 int FBblob::EIO_Read(eio_req *req)
   {
-    struct read_request *r_req = (struct read_request *)(req->data);
+    struct rw_request *r_req = (struct rw_request *)(req->data);
     r_req->res = r_req->blob->read(r_req->status,r_req->buffer,(unsigned short) r_req->length);
     return 0;
   }
@@ -171,7 +169,7 @@ Handle<Value> FBblob::Read(const Arguments& args)
         
     if (args.Length() != 2){
        return ThrowException(Exception::Error(
-            String::New("Expecting 4 arguments")));
+            String::New("Expecting 2 arguments")));
     }
     
     if (!Buffer::HasInstance(args[0])) {
@@ -188,8 +186,8 @@ Handle<Value> FBblob::Read(const Arguments& args)
             String::New("Expecting Function as second argument")));
     }
         
-    struct read_request *r_req =
-         (struct read_request *)calloc(1, sizeof(struct read_request));
+    struct rw_request *r_req =
+         (struct rw_request *)calloc(1, sizeof(struct rw_request));
 
     if (!r_req) {
       V8::LowMemoryNotification();
@@ -273,6 +271,98 @@ FBblob::WriteSync(const Arguments& args)
          
     return scope.Close(Integer::New(len));     
   }  
+  
+int FBblob::EIO_After_Write(eio_req *req)
+  {
+    ev_unref(EV_DEFAULT_UC);
+    HandleScope scope;
+    struct rw_request *w_req = (struct rw_request *)(req->data);
+    Local<Value> argv[1];
+    Local<Object> global = Context::GetCurrent()->Global();
+    
+    if(!w_req->callback->IsNull()){
+
+	if(w_req->status[1]){
+    	    argv[0] =  Exception::Error(
+        	String::Concat(String::New("FBblob::EIO_After_Read - "),ERR_MSG_STAT(w_req->status, FBblob)));
+	}        
+	else
+    	    argv[0] = Local<Value>::New(Null());
+    	    
+        w_req->callback->Call(global, 1, argv);
+    };
+    
+    w_req->callback.Dispose();
+//    w_req->blob->Emit();
+    w_req->blob->stop_async();
+    w_req->blob->Unref();
+    free(w_req);
+
+    return 0;
+    
+  }
+  
+int FBblob::EIO_Write(eio_req *req)
+  {
+    struct rw_request *w_req = (struct rw_request *)(req->data);
+    isc_put_segment(w_req->status, &w_req->blob->handle, w_req->length, w_req->buffer);
+    return 0;
+  }
+  
+  
+Handle<Value>
+ FBblob::Write(const Arguments& args)
+  { 
+    HandleScope scope;
+    FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());
+    
+    if( (args.Length() > 0) && !Buffer::HasInstance(args[0])) {
+        return ThrowException(Exception::Error(
+                String::New("First argument needs to be a buffer")));
+    }
+    
+    Local<Object> buffer_obj = args[0]->ToObject();
+    char *buf = Buffer::Data(buffer_obj);
+    size_t len = Buffer::Length(buffer_obj);
+    
+    
+    struct rw_request *w_req =
+         (struct rw_request *)calloc(1, sizeof(struct rw_request));
+
+    if (!w_req) {
+      V8::LowMemoryNotification();
+      return ThrowException(Exception::Error(
+            String::New("Could not allocate memory.")));
+    }
+    
+    w_req->blob = blob;
+    w_req->buffer = buf;
+
+    int cb_arg = 1;    
+    if( (args.Length() > 1) && args[1]->IsInt32() )
+    {
+      int16_t alen = (int16_t) args[1]->IntegerValue();
+      if(alen < len) len = alen;
+      w_req->length = len;
+      cb_arg = 2;
+    }
+    
+    if( (args.Length() > cb_arg) && args[cb_arg]->IsFunction()) {
+      w_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[cb_arg]));  
+    }
+    else w_req->callback = Persistent<Function>::New(Local<Function>::Cast(Local<Value>::New(Null())));
+
+    w_req->res = 0;
+
+    blob->start_async();
+    eio_custom(EIO_Write, EIO_PRI_DEFAULT, EIO_After_Write, w_req);
+    
+    ev_ref(EV_DEFAULT_UC);
+    blob->Ref();
+    
+    return Undefined();
+       
+  }
   
 Handle<Value>
 FBblob::IsReadGetter(Local<String> property,

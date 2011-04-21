@@ -8,6 +8,7 @@ var SchunkSize = 4*1024;
 var Connection  =  binding.Connection;
 var FBResult    =  binding.FBResult;
 var FBStatement =  binding.FBStatement;
+var FBblob =  binding.FBblob;
 
 function MakeSafe(obj,meth){
   var super = obj.prototype[meth];
@@ -28,6 +29,8 @@ MakeSafe(Connection,"commit");
 MakeSafe(Connection,"rollback");
 MakeSafe(FBResult,"fetch");
 MakeSafe(FBStatement,"exec");
+MakeSafe(FBblob,"_read");
+MakeSafe(FBblob,"_write");
 
 
 binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
@@ -162,15 +165,22 @@ Stream.prototype.destroy = function(){
 Stream.prototype.write = function(data, encoding, fd) {
   if (typeof data != 'string') {
   };
-  this._blob._writeSync(data);
+  var self = this;
+  //this._blob._writeSync(data);
+  this._blob._write(data,function(err){
+     if(err) self.emit('error',err);
+     //self.emit('drain');
+  }); 
 }
 
 Stream.prototype.end = function(data, encoding, fd) {
-  if(data) this._blob._writeSync(data);
-  this.destroy();
+  var self = this;
+  if(data) this._blob._write(data,function(err){
+     console.log('in blob write callback'); 
+     if(err) self.emit('error',err);
+     self.destroy();
+  })
+  else self.destroy();
+   
 }
-
-
-
-
 

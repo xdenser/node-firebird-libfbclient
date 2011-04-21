@@ -34,7 +34,7 @@ public:
   static Handle<Value>
   ReadSync(const Arguments& args);
   
-  struct read_request {
+  struct rw_request {
      Persistent<Function> callback;
      FBblob *blob;
      char* buffer;
@@ -58,6 +58,14 @@ public:
   
   static Handle<Value>
   WriteSync(const Arguments& args);
+  
+  static int EIO_After_Write(eio_req *req);
+  
+  static int EIO_Write(eio_req *req);
+  
+  static Handle<Value>
+  Write(const Arguments& args);
+  
   
   static Handle<Value>
   IsReadGetter(Local<String> property,
