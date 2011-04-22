@@ -69,9 +69,9 @@ Check also samples directory.
 
 # Links
 
-[node.js and firebird installing on Amazon EC2 instance](http://mapopa.blogspot.com/2011/01/nodejs-and-firebird-installing-on.html) on Mariuz's Blog
-[NodeJS home](http://nodejs.org)
-[Collection of NodeJS modules](https://github.com/joyent/node/wiki/modules)
+- [node.js and firebird installing on Amazon EC2 instance](http://mapopa.blogspot.com/2011/01/nodejs-and-firebird-installing-on.html) on Mariuz's Blog
+- [NodeJS home](http://nodejs.org)
+- [Collection of NodeJS modules](https://github.com/joyent/node/wiki/modules)
  
 # Reference
 
