@@ -5,20 +5,24 @@ Inspired by ibpp, firebird samples, node-mysql-libmysql, node-postgress and othe
 
 * Synchronous and Asynchronous methods for connection, query and fetch data;
 * Support of Firebird Events (post_event statement);
-* Covered with tests in nodeunit.
+* Covered with tests in nodeunit;
+* blob field support;
+* blob stream compatible to node stream class;
+* prepared statements;
 
 As for now in plans are:
 
-* blob field support;
-* prepared statements support;
 * connection pool support;
+* prepared statements pool;
+* transaction parameters support;
 * continous refactoring;
-* more tests.
+* more tests;
+* services api.
 
 # Getting Started
 
 You will need:
- NodeJS (tested with v0.3.2-pre)
+ NodeJS (tested with v0.4.4)
  Firebird (tested with v2.5)
 
  All things below were tested on CentOS 5.5.
@@ -60,7 +64,14 @@ Play with it from node:
     con.commitSync();
     var rows = res.fetchSync("all",true);
     console.log(sys.inspect(rows));
- 
+
+Check also samples directory.    
+
+# Links
+
+[node.js and firebird installing on Amazon EC2 instance](http://mapopa.blogspot.com/2011/01/nodejs-and-firebird-installing-on.html) on Mariuz's Blog
+[NodeJS home](http://nodejs.org)
+[Collection of NodeJS modules](https://github.com/joyent/node/wiki/modules)
  
 # Reference
 
@@ -133,9 +144,10 @@ Unsubscribes connection from getting events for name.
     
 Synchronously commits current transaction. 
 
-Note:
+Notes:
 There is only one transaction associated with connection. 
-Transacation is automatically started before any query. Use of mutliple transactions with same connection may be added in future.
+Transacation is automatically started before any query if connection does not have active transaction (check `inTransaction` property).
+Use of mutliple transactions with same connection may be added in future.
 You also should note that DDL statements (altering database structure) are commited automatically.
 
 * * *
@@ -182,21 +194,21 @@ Each row may be represented as array of field values or as object with named fie
 ### Data types
 Here is Interbase to Node data type accordance:
 
-Firebird		Node
-DATE	->	Date
-TIME	->	Date
-TIMESTAMP	->	Date
-CHAR	->	String
-VARCHAR	->	String
-SMALLINT	->	Integer
-INTEGER	->	Integer
-NUMERIC	->	Integer, Number (depends on scale)
-DECIMAL	->	Integer, Number (depends on scale)
-FLOAT	->	Number
-DOUBLE	->	Number
-BLOB	->	FBblob
-
-    
+Firebird		Node  
+DATE	->	Date  
+TIME	->	Date  
+TIMESTAMP	->	Date  
+CHAR	->	String  
+VARCHAR	->	String  
+SMALLINT	->	Integer  
+INTEGER	->	Integer  
+NUMERIC	->	Integer, Number (depends on scale)  
+DECIMAL	->	Integer, Number (depends on scale)  
+FLOAT	->	Number  
+DOUBLE	->	Number  
+BLOB	->	FBblob  
+  
+      
 ### FBResult object members
 
 * * *
@@ -302,5 +314,13 @@ Returns number of bytes actually writen.
 * `callback` - function(err), err - Error object in case of error, or null;
 
 Asynchronously writes BLOB segment (chunk) from buffer and calls callback function if any.
+
+* * *
+## Stream object
+
+Represents BLOB stream. Create BLOB stream using `var strm = new fb.Stream(FBblob);`. 
+You may pipe strm to/from NodeJS Stream objects (fs or socket). 
+You may also look at [NodeJS Streams reference](http://nodejs.org/docs/v0.4.4/api/streams.html).
+
 
 
