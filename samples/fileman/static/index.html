@@ -1,0 +1,24 @@
+<html>
+<head>
+<title>Files</title>
+<script src="js/jquery-1.6.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/jquery-ui-1.8.12.custom.min.js" type="text/javascript" charset="utf-8"></script>
+<link rel="stylesheet" href="css/smoothness/jquery-ui-1.8.12.custom.css" type="text/css" media="screen" charset="utf-8">
+
+<script src="elfinder/elfinder.full.js" type="text/javascript" charset="utf-8"></script>
+<link rel="stylesheet" href="elfinder/css/elfinder.css" type="text/css" media="screen" charset="utf-8">
+
+<script type="text/javascript" charset="utf-8">
+   $(function(){
+     $('#file-manager').elfinder({
+       url : '/node/elfinder',
+	   lang: 'en'
+     });
+   })
+</script>
+
+</head>	
+<body>
+ <div id='file-manager'></div>
+</body>
+</html>
