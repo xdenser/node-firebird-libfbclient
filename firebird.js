@@ -34,18 +34,20 @@ MakeSafe(FBblob,"_write");
 
 var superConnect = Connection.prototype.connect;
 Connection.prototype.connect = function(db,user,pass,role,cb){
+   var obj = this;
    superConnect.call(this,db,user,pass,role,function (err){
-       if(err) this.emit('error',err);
-       else this.emit('connected');
+       if(err) obj.emit('error',err);
+       else obj.emit('connected');
        if(cb) cb(err);
    });
 };
 
 var superQuery = Connection.prototype.query;
 Connection.prototype.query = function(sql,cb){
+  var obj = this;
   superQuery.call(this,sql,function(err,res){
-      if(err) this.emit('error',err);
-      else this.emit('result',res);
+      if(err) obj.emit('error',err);
+      else obj.emit('result',res);
       if(cb) cb(err,res);
   });
 };
