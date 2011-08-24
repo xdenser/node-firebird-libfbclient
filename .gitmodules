@@ -1,3 +1,6 @@
 [submodule "tools/nodeunit"]
 	path = tools/nodeunit
 	url = git://github.com/caolan/nodeunit.git
+[submodule "tools/node-deferred"]
+	path = tools/node-deferred
+	url = git://github.com/felixge/node-deferred.git
