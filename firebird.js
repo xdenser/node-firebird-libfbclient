@@ -112,10 +112,12 @@ exports.createConnection = function () {
   return c;
 };
 
-
 exports.createConnectionPool = function(settings){
    
 };
+
+// Allows further extention
+exports.binding = binding;
 
 var buf = null;
 function allocBuf(){

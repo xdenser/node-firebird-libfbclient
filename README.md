@@ -22,7 +22,7 @@ As for now in plans are:
 # Getting Started
 
 You will need:
- NodeJS (tested with v0.4.4)
+ NodeJS (tested with v0.4.11)
  Firebird (tested with v2.5)
 
  All things below were tested on CentOS 5.5.
