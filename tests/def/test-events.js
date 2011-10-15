@@ -48,7 +48,7 @@ function WaitForFinish(finished,clean,timeout){
     timedout = true;
   },timeout);
   
-  /*
+  
   process.nextTick(function loop(){
      if(finished.call()||timedout){
        clearTimeout(tid);
@@ -56,7 +56,7 @@ function WaitForFinish(finished,clean,timeout){
      }
      else  process.nextTick(loop);
   });
-  */
+  /*
   setTimeout(function loop(){
      if(finished.call()||timedout){
        clearTimeout(tid);
@@ -64,7 +64,7 @@ function WaitForFinish(finished,clean,timeout){
      }
      else setTimeout(loop,0);
   },0);
-       
+  */     
 }
 
 function CleanUp(){
@@ -142,13 +142,13 @@ exports.oneEventBetween = function(test) {
 
   conn.addFBevent(eName);
   
-  //setTimeout(function(){
+  setTimeout(function(){
     GenEvent(eName);
     var z = 0;
-    for(var i=0; i< 1000000; i++) z++;
-    conn.addFBevent("strange");
-  //},0);
-  
+   // for(var i=0; i< 1000000; i++) z++;
+    
+  },0);
+  conn.addFBevent("strange");
    
   // Wait 2 sec for event
   WaitForFinish(function(){ return finished; },

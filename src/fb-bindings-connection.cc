@@ -746,15 +746,22 @@ int Connection::EIO_After_Query(eio_req *req)
      argv[1] = Local<Value>::New(scope.Close(js_result));    
      argv[0] = Local<Value>::New(Null());
     }
-
+    
+    {  
     TryCatch try_catch;
+    
 
     q_req->callback->Call(Context::GetCurrent()->Global(), 2, argv);
-
+    
+    printf("After cb\n");
+    
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
     }
+    }
 
+    printf("After cb 1\n");
+    
     q_req->callback.Dispose();
     q_req->conn->stop_async();
     q_req->conn->Unref();
