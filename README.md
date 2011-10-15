@@ -36,6 +36,7 @@ Update your path:
     export PATH=$PATH:/opt/firebird/bin
 
 Create some Database: 
+
     isql -user sysdba -password masterkey
     CREATE DATABASE 'test.fdb';
     CONNECT 'test.fdb';
@@ -47,6 +48,10 @@ Clone repository and build module
     git clone git://github.com/xdenser/node-firebird-libfbclient.git
     node-waf configure build
     node-waf configure install
+    
+or use npm:
+    
+    npm install firebird
 
 To run tests update ./tests/config.js with your test database connection parameters and
 
@@ -70,6 +75,7 @@ Check also samples directory.
 # Links
 
 - [node.js and firebird installing on Amazon EC2 instance](http://mapopa.blogspot.com/2011/01/nodejs-and-firebird-installing-on.html) on Mariuz's Blog
+- [Catch Firebird events with Node.js](http://www.king-foo.be/2011/07/catch-firebird-events-with-node-js) on www.king-foo.be 
 - [NodeJS home](http://nodejs.org)
 - [Collection of NodeJS modules](https://github.com/joyent/node/wiki/modules)
  
