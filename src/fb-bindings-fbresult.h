@@ -51,7 +51,7 @@ protected:
   
   static int EIO_After_Fetch(eio_req *req);
 
-  static int EIO_Fetch(eio_req *req);
+  static void EIO_Fetch(eio_req *req);
   
   static Handle<Value>
   Fetch(const Arguments& args);

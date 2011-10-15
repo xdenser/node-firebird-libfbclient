@@ -1,17 +1,29 @@
-var binding = require("./build/default/binding");
-var sys = require("sys");
+var binding = require("./build/Release/binding");
 var stream = require("stream");
 var util = require("util");
+var events = require('events');
 var SchunkSize = 4*1024;
 
 
 var Connection  =  binding.Connection;
+var FBEventEmitter = binding.FBEventEmitter;
 var FBResult    =  binding.FBResult;
 var FBStatement =  binding.FBStatement;
 var FBblob =  binding.FBblob;
 
+//util.inherits(FBEventEmitter, events.EventEmitter);
+for(var i in events.EventEmitter.prototype){
+    FBEventEmitter.prototype[i] = events.EventEmitter.prototype[i]; 
+}
+/*
+FBEventEmitter.prototype.init = function(){
+    console.log('init called ');
+}
+*/
+//util.inherits(Connection, FBEventEmitter);
+
 function MakeSafe(obj,meth){
-  var super = obj.prototype[meth];
+  var superm = obj.prototype[meth];
   obj.prototype[meth] = function(){
     if(this.inAsyncCall){
        var self = this;
@@ -20,7 +32,7 @@ function MakeSafe(obj,meth){
           self[meth].apply(self,args);  
        });      
     }
-    else super.apply(this,arguments);
+    else superm.apply(this,arguments);
   }
 }
 
@@ -108,7 +120,7 @@ binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
 
 
 exports.createConnection = function () {
-  var c = new Connection;
+  var c = new Connection();
   return c;
 };
 

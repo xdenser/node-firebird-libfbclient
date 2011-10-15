@@ -35,7 +35,7 @@ protected:
  
  static int EIO_After_Exec(eio_req *req);
     
- static int EIO_Exec(eio_req *req);
+ static void EIO_Exec(eio_req *req);
  
  static Handle<Value>
  Exec (const Arguments& args);

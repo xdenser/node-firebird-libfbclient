@@ -8,12 +8,12 @@ var cfg = require("../config").cfg;
 
 // Require modules
 var
-  fb_binding = require("../../build/default/binding");
+  fb_binding = require("../../firebird.js");
  
 
 exports.AsyncConnection = function (test) {
   test.expect(4);
-  var conn = new fb_binding.Connection;
+  var conn = fb_binding.createConnection();
   conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(){
      test.ok(conn.connected,"Connected to database");
      conn.query("select * from rdb$relations", function(err,res){
@@ -29,7 +29,7 @@ exports.AsyncConnection = function (test) {
 
 exports.AsyncQueryWithError = function (test) {
   test.expect(4);
-  var conn = new fb_binding.Connection;
+  var conn = fb_binding.createConnection();
   conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(){
       test.ok(conn.connected,"Connected to database");
       conn.query("select * from non_existent_table", function(err,res){
@@ -44,7 +44,7 @@ exports.AsyncQueryWithError = function (test) {
 
 exports.AsyncFetch = function(test){
   test.expect(6);
-  var conn = new fb_binding.Connection;
+  var conn = fb_binding.createConnection();
   conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   test.ok(conn.connected,"Connected to database");
   var res = conn.querySync("select * from rdb$relations");
@@ -62,7 +62,7 @@ exports.AsyncFetch = function(test){
 
 exports.InAsyncCallConnection = function(test){
  test.expect(7);
- var conn = new fb_binding.Connection;
+ var conn = fb_binding.createConnection();
  conn.on("fbStartAsync",function(){
    test.ok(true,"StartAsync Called");
  });

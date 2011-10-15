@@ -1,4 +1,4 @@
-/*!
+/*
  * Copyright by Denys Khanzhiyev aka xdenser
  *
  * See license text in LICENSE file
@@ -20,8 +20,9 @@ void
     
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
     
-    t->Inherit(FBEventEmitter::constructor_template);
     t->InstanceTemplate()->SetInternalFieldCount(1);
+    t->SetClassName(String::NewSymbol("Connection"));
+    t->Inherit(FBEventEmitter::constructor_template);
     // Methods 
 
     NODE_SET_PROTOTYPE_METHOD(t, "connectSync", ConnectSync);
@@ -44,6 +45,7 @@ void
     instance_t->SetAccessor(String::NewSymbol("connected"), ConnectedGetter);
     instance_t->SetAccessor(String::NewSymbol("inTransaction"), InTransactionGetter);
     instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
+   
     
     target->Set(String::NewSymbol("Connection"), t->GetFunction());  
   }
@@ -365,7 +367,7 @@ Handle<Value>
     Connection *connection = new Connection();
     connection->Wrap(args.This());
 
-    return args.This();
+    return scope.Close(args.This());
   }
   
 Handle<Value>
@@ -431,7 +433,7 @@ int Connection::EIO_After_Connect(eio_req *req)
     
   }
   
-int Connection::EIO_Connect(eio_req *req)
+void Connection::EIO_Connect(eio_req *req)
   {
     struct connect_request *conn_req = (struct connect_request *)(req->data);
     req->result = conn_req->conn->Connect(
@@ -445,7 +447,7 @@ int Connection::EIO_Connect(eio_req *req)
     delete conn_req->Password;
     delete conn_req->Role;
     
-    return 0;
+    return ;
    
   }
   
@@ -608,12 +610,12 @@ int Connection::EIO_After_TransactionRequest(eio_req *req)
     
   }
   
-int Connection::EIO_TransactionRequest(eio_req *req)
+void Connection::EIO_TransactionRequest(eio_req *req)
   {
     struct transaction_request *tr_req = (struct transaction_request *)(req->data);
     if(tr_req->commit) req->result = tr_req->conn->commit_transaction();
     else req->result = tr_req->conn->rollback_transaction();
-    return 0;
+    return;
   }
 
   
@@ -762,13 +764,13 @@ int Connection::EIO_After_Query(eio_req *req)
     
   }
     
-int Connection::EIO_Query(eio_req *req)
+void Connection::EIO_Query(eio_req *req)
   {
     struct query_request *q_req = (struct query_request *)(req->data);
     
     req->result = q_req->conn->process_statement(&q_req->sqlda,**(q_req->Query), &q_req->stmt);
     delete q_req->Query;
-    return 0;
+    return;
   }
   
 Handle<Value>

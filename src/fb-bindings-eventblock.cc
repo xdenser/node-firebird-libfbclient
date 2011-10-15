@@ -6,7 +6,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <node_events.h>
+#include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-eventblock.h"
 
 /*
@@ -200,7 +200,7 @@ void event_block::event_notification(EV_P_ ev_async *w, int revents){
 	   if(Vector[i]) {
 	     argv[0] = EvNames[i];
 	     argv[1] = Integer::New(Vector[i]);
-             ((EventEmitter*) conn)->Emit(fbevent_symbol,2,argv);
+             ((FBEventEmitter*) conn)->Emit(fbevent_symbol,2,argv);
            }     
         }
 

@@ -6,11 +6,31 @@
 #include <node.h>
 #include "./fb-bindings-fbeventemitter.h"
 
-void FBEventEmitter::Init()
+Persistent<FunctionTemplate> FBEventEmitter::constructor_template;
+
+void FBEventEmitter::Initialize(v8::Handle<v8::Object> target)
   {
     start_async_symbol = NODE_PSYMBOL("fbStartAsync");
     stop_async_symbol = NODE_PSYMBOL("fbStopAsync");
+    
+    Local<FunctionTemplate> t = FunctionTemplate::New();
+    
+    constructor_template = Persistent<FunctionTemplate>::New(t);
+    constructor_template->SetClassName(String::NewSymbol("FBEventEmitter"));
+           
+    target->Set(String::NewSymbol("FBEventEmitter"),  constructor_template->GetFunction());
   }
+ 
+ 
+void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
+  {
+    HandleScope scope;
+    Handle<Value> argv1[11];
+    if(argc>10) ThrowException(Exception::Error(String::New("Cant process more than 10 arguments")));
+    argv1[0] = event;
+    for(int i=0;i<argc;i++) argv1[i+1] = argv[i];
+    node::MakeCallback(handle_,"emit",argc+1,argv1);
+  }  
 
 void FBEventEmitter::start_async()
   {
@@ -24,9 +44,12 @@ void FBEventEmitter::stop_async()
     Emit(stop_async_symbol, 0, NULL);  
   }
 
-FBEventEmitter::FBEventEmitter () : EventEmitter () 
+FBEventEmitter::FBEventEmitter () : ObjectWrap () 
   {
     in_async = false;
+   // Handle<Value> argv[1];
+   // printf("in init\n");
+   // node::MakeCallback(handle_,"init",0,argv);
   }
 
 Handle<Value>

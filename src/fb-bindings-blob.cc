@@ -154,11 +154,11 @@ int FBblob::EIO_After_Read(eio_req *req)
     return 0;
   }
   
-int FBblob::EIO_Read(eio_req *req)
+void FBblob::EIO_Read(eio_req *req)
   {
     struct rw_request *r_req = (struct rw_request *)(req->data);
     r_req->res = r_req->blob->read(r_req->status,r_req->buffer,(unsigned short) r_req->length);
-    return 0;
+    return;
   }
 
 Handle<Value> FBblob::Read(const Arguments& args)
@@ -302,11 +302,11 @@ int FBblob::EIO_After_Write(eio_req *req)
     
   }
   
-int FBblob::EIO_Write(eio_req *req)
+void FBblob::EIO_Write(eio_req *req)
   {
     struct rw_request *w_req = (struct rw_request *)(req->data);
     isc_put_segment(w_req->status, &w_req->blob->handle, w_req->length, w_req->buffer);
-    return 0;
+    return;
   }
   
   

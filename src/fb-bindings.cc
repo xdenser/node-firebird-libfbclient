@@ -44,7 +44,7 @@ init (Handle<Object> target)
   HandleScope scope;
   
   event_block::Init();
-  FBEventEmitter::Init();
+  FBEventEmitter::Initialize(target);
   FBResult::Initialize(target);
   Connection::Initialize(target);
   FBblob::Initialize(target);

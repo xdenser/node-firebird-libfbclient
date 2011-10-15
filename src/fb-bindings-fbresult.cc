@@ -706,7 +706,7 @@ int FBResult::EIO_After_Fetch(eio_req *req)
     return 0;
   } 
 
-int FBResult::EIO_Fetch(eio_req *req)
+void FBResult::EIO_Fetch(eio_req *req)
   {
     struct fetch_request *f_req = (struct fetch_request *)(req->data);
     
@@ -714,7 +714,7 @@ int FBResult::EIO_Fetch(eio_req *req)
     
     req->result = (f_req->fetchStat == 0);
 
-    return 0;
+    return ;
   }
   
 Handle<Value>

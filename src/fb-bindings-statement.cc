@@ -194,14 +194,14 @@ int FBStatement::EIO_After_Exec(eio_req *req)
         }
        
    }
-   ((EventEmitter*) fb_stmt)->Emit(event,argc,argv);           
+   ((FBEventEmitter*) fb_stmt)->Emit(event,argc,argv);           
     fb_stmt->stop_async();
     fb_stmt->Unref();
     free(e_req);
     return 0;
  }
     
-int FBStatement::EIO_Exec(eio_req *req)
+void FBStatement::EIO_Exec(eio_req *req)
  {
     struct exec_request *e_req = (struct exec_request *)(req->data);
     FBStatement *fb_stmt = e_req->statement;
@@ -211,7 +211,7 @@ int FBStatement::EIO_Exec(eio_req *req)
     else 
       req->result = true;
     
-    return 0;
+    return ;
  }
  
 Handle<Value>

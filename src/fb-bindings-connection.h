@@ -62,7 +62,7 @@ class Connection : public FBEventEmitter {
   
   static int EIO_After_Connect(eio_req *req);
   
-  static int EIO_Connect(eio_req *req);
+  static void EIO_Connect(eio_req *req);
   
   static Handle<Value>
   Connect (const Arguments& args);
@@ -94,7 +94,7 @@ class Connection : public FBEventEmitter {
 
   static int EIO_After_TransactionRequest(eio_req *req);
   
-  static int EIO_TransactionRequest(eio_req *req);
+  static void EIO_TransactionRequest(eio_req *req);
   
   static Handle<Value>
   Commit (const Arguments& args);
@@ -115,7 +115,7 @@ class Connection : public FBEventEmitter {
   
   static int EIO_After_Query(eio_req *req);
     
-  static int EIO_Query(eio_req *req);
+  static void EIO_Query(eio_req *req);
   
   static Handle<Value>
   Query(const Arguments& args);

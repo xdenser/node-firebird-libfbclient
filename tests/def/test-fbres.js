@@ -8,14 +8,14 @@ var cfg = require("../config").cfg;
 
 // Require modules
 var
-  fb_binding = require("../../build/default/binding");
+  fb_binding = require("../../firebird.js");
   
 var 
   testCase = require("../../tools/nodeunit").testCase;  
 
 module.exports = testCase({
          setUp: function(callback){
-           this.conn = new fb_binding.Connection;
+           this.conn = fb_binding.createConnection();
            this.conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
            this.res = this.conn.querySync("select * from rdb$relations");
            callback();

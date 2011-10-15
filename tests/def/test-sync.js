@@ -8,12 +8,13 @@ var cfg = require("../config").cfg;
 
 // Require modules
 var
-  fb_binding = require("../../build/default/binding");
+  fb_binding = require("../../firebird.js");
+  
  
 
 exports.SyncConnection = function (test) {
   test.expect(3);
-  var conn = new fb_binding.Connection;
+  var conn = fb_binding.createConnection();
   conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   test.ok(conn.connected,"Connected to database");
   var res = conn.querySync("select * from rdb$relations");
@@ -24,14 +25,14 @@ exports.SyncConnection = function (test) {
 };
 
 function Connect(){
-  var conn = new fb_binding.Connection;
+  var conn = fb_binding.createConnection();
   conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   conn.querySync("create table TEST_TRANS (ID INTEGER, NAME VARCHAR(20))");
   return conn;
 }
 function Close(conn){
   conn.disconnect();
-  var con = new fb_binding.Connection;
+  var con = fb_binding.createConnection();
   con.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   con.querySync("drop table TEST_TRANS;");
   con.disconnect();

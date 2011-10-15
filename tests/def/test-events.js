@@ -8,14 +8,15 @@ var cfg = require("../config").cfg;
 
 // Require modules
 var
-  fb_binding = require("../../build/default/binding");
+  fb_binding = require("../../firebird.js");
+  
 
 var zexports = {};  
  
 
 function Init()
 {
-  var conn = new fb_binding.Connection;
+  var conn = fb_binding.createConnection();
   conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   conn.querySync("\
                  create or alter procedure DoEvent(\
@@ -28,7 +29,7 @@ function Init()
 }
 
 function Connect(){
-  var conn = new fb_binding.Connection;
+  var conn = fb_binding.createConnection();
   conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   return conn;
 }
@@ -47,17 +48,27 @@ function WaitForFinish(finished,clean,timeout){
     timedout = true;
   },timeout);
   
+  /*
   process.nextTick(function loop(){
      if(finished.call()||timedout){
        clearTimeout(tid);
        clean.call();
      }
      else  process.nextTick(loop);
-  });     
+  });
+  */
+  setTimeout(function loop(){
+     if(finished.call()||timedout){
+       clearTimeout(tid);
+       clean.call();
+     }
+     else setTimeout(loop,0);
+  },0);
+       
 }
 
 function CleanUp(){
-  var con = new fb_binding.Connection;
+  var con = fb_binding.createConnection();
   con.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   con.querySync("drop procedure DoEvent;");
   con.disconnect();
@@ -131,10 +142,14 @@ exports.oneEventBetween = function(test) {
 
   conn.addFBevent(eName);
   
-  GenEvent(eName);
+  //setTimeout(function(){
+    GenEvent(eName);
+    var z = 0;
+    for(var i=0; i< 1000000; i++) z++;
+    conn.addFBevent("strange");
+  //},0);
   
-  conn.addFBevent("strange");
- 
+   
   // Wait 2 sec for event
   WaitForFinish(function(){ return finished; },
   function(){

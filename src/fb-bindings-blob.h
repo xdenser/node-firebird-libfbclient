@@ -45,7 +45,7 @@ public:
   
   static int EIO_After_Read(eio_req *req);
   
-  static int EIO_Read(eio_req *req);
+  static void EIO_Read(eio_req *req);
   
   static Handle<Value>
   Read(const Arguments& args);
@@ -61,7 +61,7 @@ public:
   
   static int EIO_After_Write(eio_req *req);
   
-  static int EIO_Write(eio_req *req);
+  static void EIO_Write(eio_req *req);
   
   static Handle<Value>
   Write(const Arguments& args);
