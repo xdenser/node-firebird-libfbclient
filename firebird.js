@@ -24,15 +24,18 @@ FBEventEmitter.prototype.init = function(){
 
 function MakeSafe(obj,meth){
   var superm = obj.prototype[meth];
-  obj.prototype[meth] = function(){
+  obj.prototype[meth] = function safe(){
     if(this.inAsyncCall){
        var self = this;
        var args = arguments;
        this.once("fbStopAsync",function(){
-          self[meth].apply(self,args);  
+          safe.apply(self,args); 
+          //superm.apply(self,args);  
        });      
     }
-    else superm.apply(this,arguments);
+    else {
+      superm.apply(this,arguments);  
+    } 
   }
 }
 

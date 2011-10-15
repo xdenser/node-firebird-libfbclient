@@ -731,7 +731,7 @@ int Connection::EIO_After_Query(eio_req *req)
     Local<Value> argv[3];
     
     if (!req->result) {
-       argv[0] = Exception::Error(
+         argv[0] = Exception::Error(
             String::Concat(String::New("While query - "),ERR_MSG(q_req->conn, Connection)));
        argv[1] = Local<Value>::New(Null());        
     }
@@ -747,20 +747,15 @@ int Connection::EIO_After_Query(eio_req *req)
      argv[0] = Local<Value>::New(Null());
     }
     
-    {  
+      
     TryCatch try_catch;
     
-
     q_req->callback->Call(Context::GetCurrent()->Global(), 2, argv);
     
-    printf("After cb\n");
     
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
     }
-    }
-
-    printf("After cb 1\n");
     
     q_req->callback.Dispose();
     q_req->conn->stop_async();

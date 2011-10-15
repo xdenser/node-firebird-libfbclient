@@ -28,14 +28,16 @@ exports.AsyncConnection = function (test) {
 };
 
 exports.AsyncQueryWithError = function (test) {
-  test.expect(4);
+  test.expect(5);
   var conn = fb_binding.createConnection();
   conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(){
       test.ok(conn.connected,"Connected to database");
-      console.log('before err'); 
+      conn.on('error',function(err){
+          test.ok(err,"There is error");
+          return true;
+      });
       conn.query("select * from non_existent_table", function(err,res){
-         console.log('err'); 
-         test.ok(err,"There is error");   
+         test.ok(err,"There is error");    
          test.ok(!res,"No result");   
          conn.disconnect();
          test.ok(!conn.connected,"Disconnected from database");
