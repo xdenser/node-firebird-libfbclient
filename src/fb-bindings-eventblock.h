@@ -12,6 +12,7 @@
 #include <v8.h>
 #include "./fb-bindings.h"
 
+//#define DEBUG
 
 #define MAX_EVENTS_PER_BLOCK	15
 
@@ -49,7 +50,7 @@ public:
     static void Init();
     
 #ifdef DEBUG    
-    void dump_buf(char* buf, int len);
+    static void dump_buf(char* buf, int len);
 #endif    
     
     // calculates event counts

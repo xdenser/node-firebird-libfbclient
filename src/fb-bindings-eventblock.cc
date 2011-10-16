@@ -70,8 +70,13 @@ void event_block::get_counts(ISC_ULONG* Vector){
          eb = eb + 4;
          rb = rb + 4;
          if(vnew > vold){
-           Vector[idx] = (int) vnew - vold;
+           Vector[idx] = (int) (vnew - vold);
          }
+         else
+         if((int)vold == -1 && (int) vnew > 0)
+         {
+          Vector[idx] = (int)--vnew;
+         } 
          else Vector[idx] = 0;
          
          idx++;
@@ -135,13 +140,16 @@ void event_block::isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR 
         // copy updated to result buffer
         // all examples use loop
         // why not to use mmcpy ???
-	
+	     
+	      
         if((ISC_USHORT) eb->blength < length) length = (ISC_USHORT) eb->blength;
         ISC_UCHAR *r = eb->result_buffer;
         while(length--) *r++ = *updated++;
         
+     //   dump_buf((char*) eb->result_buffer, eb->blength);
+        
         eb->traped = true;
-	eb->queued = false;
+	    eb->queued = false;
       
         // schedule event_notification call
         ev_async_send(EV_DEFAULT_UC_ eb->event_);
@@ -153,7 +161,7 @@ void event_block::event_notification(EV_P_ ev_async *w, int revents){
         
         ISC_STATUS_ARRAY Vector;
         HandleScope scope;
-	Local<Value> argv[2];
+	    Local<Value> argv[2];
 	
         event_block* eb = static_cast<event_block*>(w->data);
         if(eb->count==0) return;
@@ -167,9 +175,9 @@ void event_block::event_notification(EV_P_ ev_async *w, int revents){
         // this is handled with proper buffer initialization with uint32_t(-1)
         eb->get_counts((ISC_ULONG*) Vector);
 	
-	int count = eb->count;
-	int i;
-	Local<Value> EvNames[MAX_EVENTS_PER_BLOCK];
+	    int count = eb->count;
+	    int i;
+	    Local<Value> EvNames[MAX_EVENTS_PER_BLOCK];
         
         bool emit_events = false;
         // collect event names to emit
@@ -255,7 +263,9 @@ bool event_block::addEvent(char *Event)
       char* buf = (char*) event_buffer + ( (prev_size == 0) ? 1 : prev_size );
       *(buf++) = static_cast<char>(len);
       for(p=Event;*p;){ *buf++ = *p++; };
-      *(buf++) = -1; *(buf++) = -1; *(buf++) = -1; *buf = -1;
+      int *pi = (int*) buf;
+      *pi = -1;
+      //(int)(*(buf++)) = -1;// *(buf++) = -1; *(buf++) = -1; *buf = -1;
       blength = prev_size + needed;
       memcpy(result_buffer+prev_size,event_buffer+prev_size,needed);
       

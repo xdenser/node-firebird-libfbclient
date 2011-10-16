@@ -11,16 +11,9 @@ var FBResult    =  binding.FBResult;
 var FBStatement =  binding.FBStatement;
 var FBblob =  binding.FBblob;
 
-//util.inherits(FBEventEmitter, events.EventEmitter);
-for(var i in events.EventEmitter.prototype){
-    FBEventEmitter.prototype[i] = events.EventEmitter.prototype[i]; 
-}
-/*
-FBEventEmitter.prototype.init = function(){
-    console.log('init called ');
-}
-*/
-//util.inherits(Connection, FBEventEmitter);
+// inherit FBEventEmitter (and all descendants ) from events.EventEmitter
+FBEventEmitter.prototype.__proto__ = events.EventEmitter.prototype;
+
 
 function MakeSafe(obj,meth){
   var superm = obj.prototype[meth];
