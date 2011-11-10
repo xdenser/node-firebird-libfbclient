@@ -9,7 +9,7 @@
     , "email": "xdenser@gmail.com"
     }
   ]
-, "bugs" : { "web" : "http://github.com/xdenser/node-firebird-libfbclient/issues" } 
+, "bugs" : { "url" : "http://github.com/xdenser/node-firebird-libfbclient/issues" } 
 , "licenses" : [ { "type" : "MIT" } ] 
 , "repositories" :
   [ { "type" : "git"

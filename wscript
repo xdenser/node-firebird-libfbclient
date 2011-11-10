@@ -4,7 +4,7 @@ from os.path import exists
 
 srcdir = '.'
 blddir = 'build'
-VERSION = '0.0.5'
+VERSION = '0.0.7'
 
 def set_options(opt):
   opt.tool_options('compiler_cxx')
@@ -13,11 +13,15 @@ def configure(conf):
   conf.check_tool('compiler_cxx')
   conf.check_tool('node_addon')
 
-  fb_config = conf.find_program('fb_config', var='FB_CONFIG', mandatory=True)
-  fb_libdir = popen("%s --libs" % fb_config).readline().strip()
+  fb_config = conf.find_program('fb_config', var='FB_CONFIG')
+  if not fb_config:
+    fb_libdir = "-L/usr/lib -lfbclient"
+    fb_includedir = "-I/usr/include/"
+  else:    
+    fb_libdir = popen("%s --libs" % fb_config).readline().strip()
+    fb_includedir = popen("%s --cflags" % fb_config).readline().strip()
   conf.env.append_value("LIBPATH_FB", fb_libdir)
   conf.env.append_value("LIB_FB", "fbclient")
-  fb_includedir = popen("%s --cflags" % fb_config).readline().strip()
   conf.env.append_value("CPPPATH_FB", fb_includedir)
 
 def buildo(bldo):
