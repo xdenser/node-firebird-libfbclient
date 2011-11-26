@@ -3,15 +3,7 @@
  *
  * See license text in LICENSE file
  */
-
-#include <string.h>
-#include <stdlib.h>
-#include "./fb-bindings-fbresult.h"
-#include "./fb-bindings-statement.h" 
 #include "./fb-bindings-connection.h" 
-#include "./fb-bindings-blob.h"
-
-
 
 void
   Connection::Initialize (v8::Handle<v8::Object> target)
@@ -401,15 +393,15 @@ Handle<Value>
   }
 
    
-int Connection::EIO_After_Connect(eio_req *req)
+void Connection::EIO_After_Connect(uv_work_t *req)
   {
-    ev_unref(EV_DEFAULT_UC);
+    uv_unref(uv_default_loop());
     HandleScope scope;
     struct connect_request *conn_req = (struct connect_request *)(req->data);
-
+	delete req;
     Local<Value> argv[1];
     
-    if (!req->result) {
+    if (!conn_req->res) {
        argv[0] = Exception::Error(
             String::Concat(String::New("While connecting - "),ERR_MSG(conn_req->conn, Connection)));
     }
@@ -429,19 +421,17 @@ int Connection::EIO_After_Connect(eio_req *req)
     conn_req->conn->stop_async();
     conn_req->conn->Unref();
     free(conn_req);
-    return 0;
     
   }
   
-void Connection::EIO_Connect(eio_req *req)
+void Connection::EIO_Connect(uv_work_t *req)
   {
     struct connect_request *conn_req = (struct connect_request *)(req->data);
-    req->result = conn_req->conn->Connect(
+    conn_req->res = conn_req->conn->Connect(
                      **(conn_req->Database),
                      **(conn_req->User), 
                      **(conn_req->Password),
                      **(conn_req->Role));
-    conn_req->res = req->result;
     delete conn_req->Database;
     delete conn_req->User;
     delete conn_req->Password;
@@ -483,9 +473,12 @@ Handle<Value>
     
     conn->start_async();
     
-    eio_custom(EIO_Connect, EIO_PRI_DEFAULT, EIO_After_Connect, conn_req);
+	uv_work_t* req = new uv_work_t();
+    req->data = conn_req;
+    uv_queue_work(uv_default_loop(), req, EIO_Connect,  EIO_After_Connect);
+
     
-    ev_ref(EV_DEFAULT_UC);
+    uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -578,15 +571,15 @@ Handle<Value>
   }
   
   
-int Connection::EIO_After_TransactionRequest(eio_req *req)
+void Connection::EIO_After_TransactionRequest(uv_work_t *req)
   {
-    ev_unref(EV_DEFAULT_UC);
+    uv_unref(uv_default_loop());
     HandleScope scope;
     struct transaction_request *tr_req = (struct transaction_request *)(req->data);
-
+    delete req;
     Local<Value> argv[1];
     
-    if (!req->result) {
+    if (!tr_req->result) {
        argv[0] = Exception::Error(ERR_MSG(tr_req->conn, Connection));
     }
     else{
@@ -606,15 +599,14 @@ int Connection::EIO_After_TransactionRequest(eio_req *req)
     tr_req->conn->Unref();
     free(tr_req);
 
-    return 0;
     
   }
   
-void Connection::EIO_TransactionRequest(eio_req *req)
+void Connection::EIO_TransactionRequest(uv_work_t *req)
   {
     struct transaction_request *tr_req = (struct transaction_request *)(req->data);
-    if(tr_req->commit) req->result = tr_req->conn->commit_transaction();
-    else req->result = tr_req->conn->rollback_transaction();
+    if(tr_req->commit) tr_req->result = tr_req->conn->commit_transaction();
+    else tr_req->result = tr_req->conn->rollback_transaction();
     return;
   }
 
@@ -644,9 +636,13 @@ Handle<Value>
     tr_req->commit = true;
     
     conn->start_async();
-    eio_custom(EIO_TransactionRequest, EIO_PRI_DEFAULT, EIO_After_TransactionRequest, tr_req);
+
+	uv_work_t* req = new uv_work_t();
+    req->data = tr_req;
+    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
+
     
-    ev_ref(EV_DEFAULT_UC);
+    uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -677,9 +673,12 @@ Handle<Value>
     tr_req->commit = false;
     
     conn->start_async();
-    eio_custom(EIO_TransactionRequest, EIO_PRI_DEFAULT, EIO_After_TransactionRequest, tr_req);
+
+	uv_work_t* req = new uv_work_t();
+    req->data = tr_req;
+    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
     
-    ev_ref(EV_DEFAULT_UC);
+    uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -722,15 +721,16 @@ Handle<Value>
   }
   
   
-int Connection::EIO_After_Query(eio_req *req)
+void Connection::EIO_After_Query(uv_work_t *req)
   {
-    ev_unref(EV_DEFAULT_UC);
+    uv_unref(uv_default_loop());
     HandleScope scope;
     struct query_request *q_req = (struct query_request *)(req->data);
+	delete req;
 
     Local<Value> argv[3];
     
-    if (!req->result) {
+    if (!q_req->result) {
          argv[0] = Exception::Error(
             String::Concat(String::New("While query - "),ERR_MSG(q_req->conn, Connection)));
        argv[1] = Local<Value>::New(Null());        
@@ -762,15 +762,14 @@ int Connection::EIO_After_Query(eio_req *req)
     q_req->conn->Unref();
     free(q_req);
 
-    return 0;
     
   }
     
-void Connection::EIO_Query(eio_req *req)
+void Connection::EIO_Query(uv_work_t *req)
   {
     struct query_request *q_req = (struct query_request *)(req->data);
     
-    req->result = q_req->conn->process_statement(&q_req->sqlda,**(q_req->Query), &q_req->stmt);
+    q_req->result = q_req->conn->process_statement(&q_req->sqlda,**(q_req->Query), &q_req->stmt);
     delete q_req->Query;
     return;
   }
@@ -803,9 +802,13 @@ Handle<Value>
     q_req->stmt = 0;
     
     conn->start_async();
-    eio_custom(EIO_Query, EIO_PRI_DEFAULT, EIO_After_Query, q_req);
+
+	uv_work_t* req = new uv_work_t();
+    req->data = q_req;
+    uv_queue_work(uv_default_loop(), req, EIO_Query,  EIO_After_Query);
+
     
-    ev_ref(EV_DEFAULT_UC);
+    uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();

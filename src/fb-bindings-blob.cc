@@ -3,10 +3,11 @@
  *
  * See license text in LICENSE file
  */
+
+#define BUILDING_NODE_EXTENSION 1
 #include <stdlib.h>
-#include <v8.h> 
-#include <node.h>
 #include "./fb-bindings-blob.h"
+#include "./fb-bindings-connection.h"
 
 v8::Persistent<v8::FunctionTemplate> FBblob::constructor_template;
 char FBblob::err_message[MAX_ERR_MSG_LEN];
@@ -15,7 +16,7 @@ void FBblob::Initialize (v8::Handle<v8::Object> target)
   {
     HandleScope scope;
     
-    Local<FunctionTemplate> t = FunctionTemplate::New(New);
+    Local<FunctionTemplate> t = FunctionTemplate::New(FBblob::New);
 
     t->Inherit(FBEventEmitter::constructor_template);
         
@@ -117,11 +118,12 @@ Handle<Value> FBblob::ReadSync(const Arguments& args)
     return scope.Close(Integer::New(res));
   }
   
-int FBblob::EIO_After_Read(eio_req *req)
+void FBblob::EIO_After_Read(uv_work_t *req)
   {
-    ev_unref(EV_DEFAULT_UC);
+    uv_unref(uv_default_loop());
     HandleScope scope;
     struct rw_request *r_req = (struct rw_request *)(req->data);
+	delete req;
     Local<Value> argv[3];
     int argc;
     
@@ -151,10 +153,9 @@ int FBblob::EIO_After_Read(eio_req *req)
     r_req->blob->Unref();
     free(r_req);
 
-    return 0;
   }
   
-void FBblob::EIO_Read(eio_req *req)
+void FBblob::EIO_Read(uv_work_t *req)
   {
     struct rw_request *r_req = (struct rw_request *)(req->data);
     r_req->res = r_req->blob->read(r_req->status,r_req->buffer,(unsigned short) r_req->length);
@@ -202,9 +203,13 @@ Handle<Value> FBblob::Read(const Arguments& args)
     r_req->res = 0;
 
     blob->start_async();
-    eio_custom(EIO_Read, EIO_PRI_DEFAULT, EIO_After_Read, r_req);
+
+	uv_work_t* req = new uv_work_t();
+    req->data = r_req;
+    uv_queue_work(uv_default_loop(), req, EIO_Read,  EIO_After_Read);
+
     
-    ev_ref(EV_DEFAULT_UC);
+    uv_ref(uv_default_loop());
     blob->Ref();
     
     return Undefined();
@@ -272,11 +277,12 @@ FBblob::WriteSync(const Arguments& args)
     return scope.Close(Integer::New(len));     
   }  
   
-int FBblob::EIO_After_Write(eio_req *req)
+void FBblob::EIO_After_Write(uv_work_t *req)
   {
-    ev_unref(EV_DEFAULT_UC);
+    uv_unref(uv_default_loop());
     HandleScope scope;
     struct rw_request *w_req = (struct rw_request *)(req->data);
+	delete req;
     Local<Value> argv[1];
     Local<Object> global = Context::GetCurrent()->Global();
     
@@ -298,11 +304,10 @@ int FBblob::EIO_After_Write(eio_req *req)
     w_req->blob->Unref();
     free(w_req);
 
-    return 0;
     
   }
   
-void FBblob::EIO_Write(eio_req *req)
+void FBblob::EIO_Write(uv_work_t *req)
   {
     struct rw_request *w_req = (struct rw_request *)(req->data);
     isc_put_segment(w_req->status, &w_req->blob->handle, w_req->length, w_req->buffer);
@@ -355,9 +360,13 @@ Handle<Value>
     w_req->res = 0;
 
     blob->start_async();
-    eio_custom(EIO_Write, EIO_PRI_DEFAULT, EIO_After_Write, w_req);
+
+	uv_work_t* req = new uv_work_t();
+    req->data = w_req;
+    uv_queue_work(uv_default_loop(), req, EIO_Write,  EIO_After_Write);
+
     
-    ev_ref(EV_DEFAULT_UC);
+    uv_ref(uv_default_loop());
     blob->Ref();
     
     return Undefined();

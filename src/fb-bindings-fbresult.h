@@ -6,11 +6,17 @@
 #ifndef SRC_FB_BINDINGS_FBRESULT_H_
 #define SRC_FB_BINDINGS_FBRESULT_H_
 
-#include <v8.h>
-#include <node.h>
-#include <ibase.h>
+
+#define BUILDING_NODE_EXTENSION 1
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <ctime> 
+#include <uv-private/eio.h>
 #include "./fb-bindings.h"
 #include "./fb-bindings-fbeventemitter.h"
+#include "./fb-bindings-blob.h"
+
 
 
 class FBResult : public FBEventEmitter {
@@ -47,11 +53,12 @@ protected:
      int rowCount;
      int fetchStat;
      bool rowAsObject;
+	 bool result;
   };
   
-  static int EIO_After_Fetch(eio_req *req);
+  static void EIO_After_Fetch(uv_work_t *req);
 
-  static void EIO_Fetch(eio_req *req);
+  static void EIO_Fetch(uv_work_t *req);
   
   static Handle<Value>
   Fetch(const Arguments& args);

@@ -6,6 +6,7 @@
 
 #ifndef SRC_FB_BINDINGS_STATEMENT_H_
 #define SRC_FB_BINDINGS_STATEMENT_H_
+#define BUILDING_NODE_EXTENSION 1
 
 #include "./fb-bindings.h"
 #include "./fb-bindings-connection.h"
@@ -31,11 +32,12 @@ protected:
  
  struct exec_request {
      FBStatement *statement;
+	 bool result;
  };
  
- static int EIO_After_Exec(eio_req *req);
+ static void EIO_After_Exec(uv_work_t *req);
     
- static void EIO_Exec(eio_req *req);
+ static void EIO_Exec(uv_work_t *req);
  
  static Handle<Value>
  Exec (const Arguments& args);

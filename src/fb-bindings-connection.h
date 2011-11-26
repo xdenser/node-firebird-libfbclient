@@ -5,12 +5,18 @@
  */
 #ifndef SRC_FB_BINDINGS_CONNECTION_H_
 #define SRC_FB_BINDINGS_CONNECTION_H_
+#define BUILDING_NODE_EXTENSION 1
 
-#include <ibase.h>
-#include <v8.h>
-#include <node.h>
+
+#include <uv-private/ev.h>
+#include "./fb-bindings.h"
 #include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-eventblock.h"
+#include "./fb-bindings-fbresult.h"
+#include "./fb-bindings-statement.h" 
+#include "./fb-bindings-blob.h"
+#include <string.h>
+#include <stdlib.h>
 
 using namespace v8;
 using namespace node;
@@ -60,9 +66,9 @@ class Connection : public FBEventEmitter {
      bool res;
   };
   
-  static int EIO_After_Connect(eio_req *req);
+  static void EIO_After_Connect(uv_work_t *req);
   
-  static void EIO_Connect(eio_req *req);
+  static void EIO_Connect(uv_work_t *req);
   
   static Handle<Value>
   Connect (const Arguments& args);
@@ -90,11 +96,12 @@ class Connection : public FBEventEmitter {
      Persistent<Function> callback;
      Connection *conn;
      bool commit;
+	 bool result;
   };
 
-  static int EIO_After_TransactionRequest(eio_req *req);
+  static void EIO_After_TransactionRequest(uv_work_t *req);
   
-  static void EIO_TransactionRequest(eio_req *req);
+  static void EIO_TransactionRequest(uv_work_t *req);
   
   static Handle<Value>
   Commit (const Arguments& args);
@@ -111,11 +118,12 @@ class Connection : public FBEventEmitter {
      String::Utf8Value *Query;
      XSQLDA *sqlda;
      isc_stmt_handle stmt;
+	 bool result;
   };
   
-  static int EIO_After_Query(eio_req *req);
+  static void EIO_After_Query(uv_work_t *req);
     
-  static void EIO_Query(eio_req *req);
+  static void EIO_Query(uv_work_t *req);
   
   static Handle<Value>
   Query(const Arguments& args);

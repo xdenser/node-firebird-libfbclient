@@ -5,14 +5,13 @@
  */
 #ifndef SRC_FB_BINDINGS_BLOB_H_
 #define SRC_FB_BINDINGS_BLOB_H_
+#define BUILDING_NODE_EXTENSION 1
 
-#include <v8.h>
-//#include <node.h>
-#include <node_buffer.h>
-#include <ibase.h>
+
 #include "./fb-bindings.h"
+#include <node_buffer.h>
 #include "./fb-bindings-fbeventemitter.h"
-#include "./fb-bindings-connection.h"
+
 
 
 class FBblob : public FBEventEmitter {
@@ -43,9 +42,9 @@ public:
      ISC_STATUS_ARRAY status;
   };
   
-  static int EIO_After_Read(eio_req *req);
+  static void EIO_After_Read(uv_work_t *req);
   
-  static void EIO_Read(eio_req *req);
+  static void EIO_Read(uv_work_t *req);
   
   static Handle<Value>
   Read(const Arguments& args);
@@ -59,9 +58,9 @@ public:
   static Handle<Value>
   WriteSync(const Arguments& args);
   
-  static int EIO_After_Write(eio_req *req);
+  static void EIO_After_Write(uv_work_t *req);
   
-  static void EIO_Write(eio_req *req);
+  static void EIO_Write(uv_work_t *req);
   
   static Handle<Value>
   Write(const Arguments& args);
