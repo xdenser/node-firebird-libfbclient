@@ -76,8 +76,11 @@ Check also samples directory.
 
 ##Under Windows
 
-[Experimental build for Windows](http://www.xdenser.com/downloads/node-firebird-win.zip)
+[Experimental build for Windows link1](https://github.com/downloads/xdenser/node-firebird-libfbclient/node-firebird-win.zip)
+[Experimental build for Windows link2](http://www.xdenser.com/downloads/node-firebird-win.zip)
+
 Unzip, modify config.js for your DB. Run:
+
     node.exe test.js
    
 
