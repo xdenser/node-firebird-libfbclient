@@ -3,13 +3,10 @@
  *
  * See license text in LICENSE file
  */
-#include <stdlib.h>
-#include <string.h>
-#include <v8.h>
-#include <node.h>
-#include <ibase.h>
+#pragma comment(lib, "uv.lib")
+#define BUILDING_NODE_EXTENSION 1
 #include "./fb-bindings-statement.h" 
-#include "./fb-bindings-fbresult.h"
+
 
 Persistent<FunctionTemplate> FBStatement::constructor_template;
 
@@ -129,17 +126,18 @@ Handle<Value>
     
  }
  
-int FBStatement::EIO_After_Exec(eio_req *req)
+void FBStatement::EIO_After_Exec(uv_work_t *req)
  {
-   ev_unref(EV_DEFAULT_UC);
+   uv_unref(uv_default_loop());
    HandleScope scope;
    
    struct exec_request *e_req = (struct exec_request *)(req->data);
+   delete req;
    FBStatement *fb_stmt = e_req->statement;
    Local<Value> argv[3];
    Handle<String> event;
    int argc = 0;
-   if(!req->result)
+   if(!e_req->result)
    {
      argv[0] = Exception::Error(
          String::Concat(String::New("In FBStatement::EIO_After_Exec - "),ERR_MSG(fb_stmt, FBStatement)));
@@ -198,18 +196,17 @@ int FBStatement::EIO_After_Exec(eio_req *req)
     fb_stmt->stop_async();
     fb_stmt->Unref();
     free(e_req);
-    return 0;
  }
     
-void FBStatement::EIO_Exec(eio_req *req)
+void FBStatement::EIO_Exec(uv_work_t *req)
  {
     struct exec_request *e_req = (struct exec_request *)(req->data);
     FBStatement *fb_stmt = e_req->statement;
     
     if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
-      req->result = false;
+      e_req->result = false;
     else 
-      req->result = true;
+      e_req->result = true;
     
     return ;
  }
@@ -244,9 +241,13 @@ Handle<Value>
     e_req->statement = fb_stmt;
     
     fb_stmt->start_async();
-    eio_custom(EIO_Exec, EIO_PRI_DEFAULT, EIO_After_Exec, e_req);
+
+	uv_work_t* req = new uv_work_t();
+    req->data = e_req;
+    uv_queue_work(uv_default_loop(), req, EIO_Exec,  EIO_After_Exec);
+
     
-    ev_ref(EV_DEFAULT_UC);
+    uv_ref(uv_default_loop());
     fb_stmt->Ref();
     
     return Undefined();

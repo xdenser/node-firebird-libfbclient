@@ -5,10 +5,9 @@
  */
 #ifndef SRC_FB_BINDINGS_FBEVENTEMITTER_H_
 #define SRC_FB_BINDINGS_FBEVENTEMITTER_H_
+#define BUILDING_NODE_EXTENSION 1
 
-#include <node.h>
-#include <v8.h>
-
+#include "./fb-bindings.h"
 
 using namespace node;
 using namespace v8;

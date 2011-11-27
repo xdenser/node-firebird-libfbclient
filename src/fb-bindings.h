@@ -7,6 +7,10 @@
 #ifndef SRC_FB_BINDINGS_H_
 #define SRC_FB_BINDINGS_H_
 
+#include <v8.h>
+#include <node.h>
+#include <ibase.h>
+
 #define MAX_ERR_MSG_LEN 1024
 #define ERR_MSG(obj,class) \
 String::New(ErrorMessage(obj->status,obj->err_message,sizeof(obj->err_message)))

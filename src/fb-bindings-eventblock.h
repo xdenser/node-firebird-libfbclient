@@ -6,9 +6,12 @@
 
 #ifndef SRC_FB_BINDINGS_EVENTBLOCK_H_
 #define SRC_FB_BINDINGS_EVENTBLOCK_H_
+#define BUILDING_NODE_EXTENSION 1
 
 #include <ibase.h>
 #include <node.h>
+#include <uv-private/ev.h>
+#include <uv-private/eio.h>
 #include <v8.h>
 #include "./fb-bindings.h"
 
@@ -38,8 +41,9 @@ public:
     ev_names event_names;
     int count;
     long blength;
-    event_block *next, *prev;
-    ev_async *event_;
+    event_block *next;
+	event_block *prev;
+    uv_async_t *event_;
     
     
     ISC_STATUS_ARRAY status;
@@ -68,7 +72,7 @@ public:
 
     // this is event nitification proc
     // here we emit node events 
-    static void event_notification(EV_P_ ev_async *w, int revents);
+    static void event_notification(uv_async_t *w, int revents);
     
     static Handle<Value> 
     que_event(event_block *eb);

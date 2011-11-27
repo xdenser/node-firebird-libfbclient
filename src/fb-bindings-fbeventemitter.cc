@@ -3,7 +3,7 @@
  *
  * See license text in LICENSE file
  */
-#include <node.h>
+#define BUILDING_NODE_EXTENSION 1
 #include "./fb-bindings-fbeventemitter.h"
 
 Persistent<FunctionTemplate> FBEventEmitter::constructor_template;

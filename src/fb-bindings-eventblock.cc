@@ -3,7 +3,7 @@
  *
  * See license text in LICENSE file
  */
-
+#define BUILDING_NODE_EXTENSION 1
 #include <stdlib.h>
 #include <string.h>
 #include "./fb-bindings-fbeventemitter.h"
@@ -152,12 +152,12 @@ void event_block::isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR 
 	    eb->queued = false;
       
         // schedule event_notification call
-        ev_async_send(EV_DEFAULT_UC_ eb->event_);
+        uv_async_send(eb->event_);
       }    
     }
     // this is event nitification proc
     // here we emit node events 
-void event_block::event_notification(EV_P_ ev_async *w, int revents){
+void event_block::event_notification(uv_async_t *w, int revents){
         
         ISC_STATUS_ARRAY Vector;
         HandleScope scope;
@@ -331,9 +331,9 @@ Handle<Value>
 			      	  String::New("Could not allocate memory.")));
 	}
         res->event_->data = res;
-        ev_async_init(res->event_, event_block::event_notification);
-        ev_async_start(EV_DEFAULT_UC_ res->event_);
-        ev_unref(EV_DEFAULT_UC);
+        uv_async_init(uv_default_loop(),res->event_, event_block::event_notification);
+       // uv_async_start(EV_DEFAULT_UC_ res->event_);
+        uv_unref(uv_default_loop());
         
         // Set links
         if(root) root->next = res;
@@ -423,7 +423,7 @@ Handle<Value>
       result_buffer = NULL;
       blength = 0;
       event_id = 0;
-      event_ = new ev_async();
+      event_ = new uv_async_t();
       
       queued = false;
       traped = false;

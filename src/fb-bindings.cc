@@ -9,6 +9,12 @@
  *
  * @ignore
  */
+#pragma comment(lib, "v8_snapshot.lib")
+#pragma comment(lib, "uv.lib")
+#pragma comment(lib, "node.lib")
+#pragma comment(lib, "fbclient_ms.lib")
+
+
 #include "./fb-bindings-connection.h"
 #include "./fb-bindings-fbresult.h"
 #include "./fb-bindings-fbeventemitter.h"
@@ -38,7 +44,7 @@ char * ErrorMessage(const ISC_STATUS *pvector, char *err_msg, int max_len)
     return err_msg;
 }
 
-extern "C" void
+void
 init (Handle<Object> target)
 {
   HandleScope scope;
@@ -50,3 +56,5 @@ init (Handle<Object> target)
   FBblob::Initialize(target);
   FBStatement::Initialize (target);
 }
+
+NODE_MODULE(binding, init)

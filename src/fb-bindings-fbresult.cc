@@ -4,16 +4,8 @@
  * See license text in LICENSE file
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <v8.h>
-#include <node.h>
-#include <ibase.h>
-#include <math.h>
-#include <ctime> 
-#include "./fb-bindings-connection.h"
 #include "./fb-bindings-fbresult.h"
-#include "./fb-bindings-blob.h"
+
  
 
  Persistent<FunctionTemplate> FBResult::constructor_template;
@@ -143,11 +135,12 @@ Handle<Value>
       if(var->sqlind != 0) delete var->sqlind;
     }
   }     
-   
+/*   
   double get_js_time(struct tm* times){
      double res = 0;
      
   }
+*/
 bool FBResult::clone_sqlda(XSQLDA *src_sqlda,XSQLDA **dest_sqlda)
   {
      int size = XSQLDA_LENGTH (src_sqlda->sqln);
@@ -611,11 +604,12 @@ Handle<Value>
 
   }
 
-int FBResult::EIO_After_Fetch(eio_req *req)
+void FBResult::EIO_After_Fetch(uv_work_t *req)
   {
-    ev_unref(EV_DEFAULT_UC);
+    uv_unref(uv_default_loop());
     HandleScope scope;
     struct fetch_request *f_req = (struct fetch_request *)(req->data);
+	delete req;
     short i, num_cols;
     num_cols = f_req->res->sqldap->sqld;
     
@@ -624,7 +618,7 @@ int FBResult::EIO_After_Fetch(eio_req *req)
     Local<Value> argv[3];
     int argc = 0;
     
-    if(req->result)
+    if(f_req->result)
     {
         if(f_req->rowCount>0) f_req->rowCount--;  
         
@@ -657,9 +651,14 @@ int FBResult::EIO_After_Fetch(eio_req *req)
 	    else
 	    if((!ret->IsBoolean() || ret->BooleanValue())&&f_req->rowCount!=0)
 	    {
-		eio_custom(EIO_Fetch, EIO_PRI_DEFAULT, EIO_After_Fetch, f_req);
-        	ev_ref(EV_DEFAULT_UC);
-        	return 0;
+		    
+			uv_work_t* req = new uv_work_t();
+            req->data = f_req;
+            uv_queue_work(uv_default_loop(), req, EIO_Fetch,  EIO_After_Fetch);	
+
+
+        	uv_ref(uv_default_loop());
+        	return;
 	    }
 	    else
 	    {
@@ -703,16 +702,15 @@ int FBResult::EIO_After_Fetch(eio_req *req)
     f_req->res->Unref();
     free(f_req);
 
-    return 0;
   } 
 
-void FBResult::EIO_Fetch(eio_req *req)
+void FBResult::EIO_Fetch(uv_work_t *req)
   {
     struct fetch_request *f_req = (struct fetch_request *)(req->data);
     
     f_req->fetchStat = isc_dsql_fetch(f_req->res->status, &f_req->res->stmt, SQL_DIALECT_V6, f_req->res->sqldap);
     
-    req->result = (f_req->fetchStat == 0);
+    f_req->result = (f_req->fetchStat == 0);
 
     return ;
   }
@@ -774,9 +772,12 @@ Handle<Value>
     f_req->eofCallback = Persistent<Function>::New(Local<Function>::Cast(args[3]));
     
     res->start_async();
-    eio_custom(EIO_Fetch, EIO_PRI_DEFAULT, EIO_After_Fetch, f_req);
+
+	uv_work_t* req = new uv_work_t();
+    req->data = f_req;
+    uv_queue_work(uv_default_loop(), req, EIO_Fetch,  EIO_After_Fetch);	
     
-    ev_ref(EV_DEFAULT_UC);
+    uv_ref(uv_default_loop());
     res->Ref();
     
     return Undefined();
