@@ -21,6 +21,8 @@ As for now in plans are:
 
 # Getting Started
 
+
+##Under Linux
 You will need:
  NodeJS (tested with v0.6.0)
  Firebird (tested with v2.5)
@@ -57,7 +59,7 @@ To run tests update ./tests/config.js with your test database connection paramet
 
     git submodule update --init
     node-waf test
- 
+     
 Play with it from node:
 
     var fb  = require("./firebird");
@@ -71,6 +73,16 @@ Play with it from node:
     console.log(sys.inspect(rows));
 
 Check also samples directory.    
+
+##Under Windows
+
+[Experimental build for Windows link1](https://github.com/downloads/xdenser/node-firebird-libfbclient/node-firebird-win.zip)
+[Experimental build for Windows link2](http://www.xdenser.com/downloads/node-firebird-win.zip)
+
+Unzip, modify config.js for your DB. Run:
+
+    node.exe test.js
+   
 
 # Links
 
