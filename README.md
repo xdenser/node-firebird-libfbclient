@@ -72,7 +72,8 @@ Play with it from node:
     var rows = res.fetchSync("all",true);
     console.log(sys.inspect(rows));
 
-Check also samples directory.    
+Check also samples directory and [this sample application](https://github.com/xdenser/node-fb-sample).    
+
 
 ##Under Windows
 
