@@ -77,6 +77,8 @@ Check also samples directory and [this sample application](https://github.com/xd
 
 ##Under Windows
 
+You need Firebird client library installed.
+
 - [Experimental build for Windows link1](https://github.com/downloads/xdenser/node-firebird-libfbclient/node-firebird-win.zip)
 - [Experimental build for Windows link2](http://www.xdenser.com/downloads/node-firebird-win.zip)
 
