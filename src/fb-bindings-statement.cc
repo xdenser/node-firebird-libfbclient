@@ -86,42 +86,51 @@ Handle<Value>
       }
     }
     
+    if(fb_stmt->statement_type == isc_info_sql_stmt_select)
+    {    
+	if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+        {
+	      return ThrowException(Exception::Error(
+	             String::Concat(String::New("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement))));
+        }
         
-    if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
-    {
-      return ThrowException(Exception::Error(
-         String::Concat(String::New("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement))));
     }
+    else
+    {
+	if (isc_dsql_execute2(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
+        {
+	      return ThrowException(Exception::Error(
+	             String::Concat(String::New("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement))));
+        }
+        
+        if(fb_stmt->sqldap->sqld){ 
+           Local<Object> js_result_row;   
+           js_result_row = fb_stmt->getCurrentRow(true);
+           return scope.Close(js_result_row);
+        }  
+    
+    }    
+    
     
     if(!fb_stmt->sqldap->sqld) 
-      return Undefined();
-      
-    fb_stmt->status[1]=0;
-    isc_dsql_set_cursor_name(fb_stmt->status, &fb_stmt->stmt,fb_stmt->cursor,0);
-    if (fb_stmt->status[1])
-    {
-      return ThrowException(Exception::Error(
-      String::Concat(String::New("In FBStatement::execSync, set_cursor_name - "),ERR_MSG(fb_stmt, FBStatement))));
-    }
+          return Undefined();
 
-    /*    
-    Local<Value> argv[3];
-    XSQLDA *sqlda = 0;
-    if(!FBResult::clone_sqlda(fb_stmt->out_sqlda,&sqlda))
+/*
+    if(fb_stmt->statement_type != isc_info_sql_stmt_select)    
     {
-      if(sqlda) free(sqlda);
-      return ThrowException(Exception::Error(
-         String::New("In FBStatement::execSync - cant clone SQLDA")));
+	fb_stmt->status[1]=0;
+	printf("opening cursor \n");
+	isc_dsql_set_cursor_name(fb_stmt->status, &fb_stmt->stmt,fb_stmt->cursor,0);
+	if (fb_stmt->status[1])
+	{
+          return ThrowException(Exception::Error(
+	  String::Concat(String::New("In FBStatement::execSync, set_cursor_name - "),ERR_MSG(fb_stmt, FBStatement))));
+        }
     }
-    argv[0] = External::New(sqlda);
-    argv[1] = External::New(&fb_stmt->stmt);
-    argv[2] = External::New(fb_stmt->conn);
-    Persistent<Object> js_result(FBResult::constructor_template->
-                                     GetFunction()->NewInstance(3, argv));
-                                    
-    return scope.Close(js_result); 
-    */
+*/    
+
     fb_stmt->retres = true;
+    
     return Undefined();
     
  }
@@ -263,7 +272,18 @@ Handle<Value>
  //  stmt = *astmtp;
    retres = false;
    strncpy(cursor, "test_cursor", sizeof(cursor));
- } 
+// Get sql info
+   short l;
+   static char     stmt_info[] = { isc_info_sql_stmt_type };
+   char            info_buffer[20];
+   
+   if (!isc_dsql_sql_info(status, astmtp, sizeof (stmt_info), stmt_info, 
+              sizeof (info_buffer), info_buffer))
+    {
+        l = (short) isc_vax_integer((char *) info_buffer + 1, 2);
+        statement_type = isc_vax_integer((char *) info_buffer + 3, l);
+    }
+} 
  
  FBStatement::~FBStatement()
  {

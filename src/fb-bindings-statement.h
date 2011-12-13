@@ -47,14 +47,10 @@ protected:
  ~FBStatement(); 
 
 private: 
-// Connection* conn;
  XSQLDA *in_sqlda;
-// XSQLDA *out_sqlda;
-// isc_stmt_handle stmt;
+ int	statement_type;
  bool retres;
  
-// ISC_STATUS_ARRAY status;
-// char err_message[MAX_ERR_MSG_LEN];
  char cursor[50];
 
 };

@@ -518,6 +518,42 @@ Local<Value>
     
     return scope.Close(js_field);
   }
+  
+Local<Object> 
+  FBResult::getCurrentRow(bool asObject)
+  {
+    short  i, num_cols;	
+//    XSQLDA         *sqlda;
+
+//    sqlda = sqldap;
+
+    num_cols = sqldap->sqld;
+    
+    
+    HandleScope scope;
+    Local<Object> js_result_row;   
+    Local<Value> js_field;
+    
+//    if(!sqldap){ return scope.Close(js_result_row);}
+    
+    if(asObject)
+            js_result_row = Object::New();
+         else 
+            js_result_row = Array::New();
+        
+    for (i = 0; i < num_cols; i++)
+    {
+            js_field = FBResult::GetFieldValue((XSQLVAR *) &sqldap->sqlvar[i], connection);
+            if(asObject)
+            { 
+              js_result_row->Set(String::New(sqldap->sqlvar[i].sqlname), js_field);
+            }
+            else
+            js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
+    }    
+    
+    return scope.Close(js_result_row);
+  }  
 
 Handle<Value>
   FBResult::FetchSync(const Arguments& args) 
@@ -571,8 +607,8 @@ Handle<Value>
     Local<Array> res = Array::New(); 
     while (((fetch_stat = isc_dsql_fetch(fb_res->status, &fb_res->stmt, SQL_DIALECT_V6, sqlda)) == 0)&&((rowCount==-1)||(rowCount>0)))
     {
-        //js_result_row = Array::New();
-         if(rowAsObject)
+        js_result_row = fb_res->getCurrentRow(rowAsObject);
+    /*     if(rowAsObject)
             js_result_row = Object::New();
          else 
             js_result_row = Array::New();
@@ -586,7 +622,7 @@ Handle<Value>
             }
             else
             js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
-        }
+        }*/
         res->Set(Integer::NewFromUnsigned(j++), js_result_row);
         if(rowCount>0) rowCount--;
     }
@@ -622,6 +658,8 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
     {
         if(f_req->rowCount>0) f_req->rowCount--;  
         
+        js_result_row = f_req->res->getCurrentRow(f_req->rowAsObject);
+        /*
 	if(f_req->rowAsObject)
     	    js_result_row = Object::New();
 	else 
@@ -637,7 +675,7 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
     	    else
         	js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
         }
-        
+        */
         if(f_req->rowCallback->IsFunction()){
     	    argv[0] = js_result_row;
         
