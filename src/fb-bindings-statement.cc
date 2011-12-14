@@ -74,7 +74,8 @@ Handle<Value>
     
     FBStatement *fb_stmt = ObjectWrap::Unwrap<FBStatement>(args.This());
     
-    FBResult::set_params(fb_stmt->in_sqlda, args);
+    Handle<Value> sp_res =  FBResult::set_params(fb_stmt->in_sqlda, args);
+    if(!sp_res->IsUndefined()) return scope.Close(sp_res);
 
     if(fb_stmt->retres) 
     {
@@ -174,12 +175,12 @@ void FBStatement::EIO_After_Exec(uv_work_t *req)
     		event = error_symbol;     
 	    }
 	    else
-	    {
+	    {*/
 	        argv[0] = Local<Value>::New(Null());	
 	        argc = 1;      
 		event = result_symbol;                             
-	    }
-     */
+	//    }
+     
           if(fb_stmt->statement_type != isc_info_sql_stmt_select) 
           {
             //Local<Object> js_result_row;   
@@ -233,7 +234,10 @@ Handle<Value>
             String::New("Could not allocate memory.")));
     }
     
-    FBResult::set_params(fb_stmt->in_sqlda, args);
+    //FBResult::set_params(fb_stmt->in_sqlda, args);
+    Handle<Value> sp_res =  FBResult::set_params(fb_stmt->in_sqlda, args);
+    if(!sp_res->IsUndefined()) return scope.Close(sp_res);
+
 
     if(fb_stmt->retres) 
     {

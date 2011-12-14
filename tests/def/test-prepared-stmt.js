@@ -20,6 +20,16 @@ module.exports = testCase({
            this.conn = new fb_binding.createConnection();
            this.conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
            this.conn.querySync('create table PREPARED_TEST_TABLE ( test_field1 INT, test_field2 VARCHAR(10))');
+           var sql =  'create or alter procedure TEST_PROC(\n'+
+               '"INPUT" varchar(25))\n'+
+               'returns (\n'+
+               '"OUTPUT" varchar(25))\n'+
+               'as\n'+
+               'BEGIN\n'+
+               '  output = input;\n'+
+               '  suspend;\n'+
+               'END\n';
+           this.conn.querySync(sql);
            callback();
          },
          tearDown: function(callback){
@@ -28,6 +38,7 @@ module.exports = testCase({
            var conn = new fb_binding.createConnection();
            conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
            conn.querySync('drop table PREPARED_TEST_TABLE');    
+           conn.querySync('drop procedure TEST_PROC');    
            conn.disconnect();
            callback();
          },
@@ -112,14 +123,36 @@ module.exports = testCase({
            var self = this;
            stmt.once('result',function(err){
                 test.ok(!err,'no error on insert');
-        	var stmt = self.conn.prepareSync('select test_field2 from PREPARED_TEST_TABLE');                          
-        	stmt.exec();
-        	stmt.once('result',function(err){
+        	var stmt1 = self.conn.prepareSync('select test_field2 from PREPARED_TEST_TABLE');                          
+        	stmt1.once('result',function(err){
         	  test.ok(!err,'no error on select');
-        	  var row = stmt.fetchSync("all",false); 
+        	  var row = stmt1.fetchSync("all",false); 
         	  test.equal(data[1],row[0][0],'returned data equal');
         	  test.done();
         	});
+        	stmt1.exec();
            });
-         }
+           
+         },
+         execProcSync:function(test){
+            test.expect(2);
+            var stmt = this.conn.prepareSync('execute procedure TEST_PROC(?)');
+            var data = 'test';
+            var res = stmt.execSync(data);
+            test.ok(res,'have result');
+            test.equal(res.OUTPUT,data,'returned data equal'); 
+            test.done();
+         },
+         execProcAsync:function(test){
+            test.expect(2);
+            var stmt = this.conn.prepareSync('execute procedure TEST_PROC(?)');
+            var data = 'testAsync';
+            stmt.exec(data);
+            stmt.once('result',function(err,res){
+		test.ok(res,'have result');
+        	test.equal(res.OUTPUT,data,'returned data equal'); 
+        	test.done();               
+            });
+         }          
+         
 });
