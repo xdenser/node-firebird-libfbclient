@@ -158,12 +158,13 @@ void FBStatement::EIO_After_Exec(uv_work_t *req)
    {
 	if(!fb_stmt->sqldap->sqld) 
 	{
-    	    argc = 0; 
+    	    argc = 1; 
     	    event = result_symbol;     
+    	    argv[0] = Local<Value>::New(Null());	
         }
         else
         {
-    	    fb_stmt->status[1]=0;
+    /*	    fb_stmt->status[1]=0;
 	    isc_dsql_set_cursor_name(fb_stmt->status, &fb_stmt->stmt,fb_stmt->cursor,0);
 	    if (fb_stmt->status[1])
 	    {		
@@ -174,30 +175,17 @@ void FBStatement::EIO_After_Exec(uv_work_t *req)
 	    }
 	    else
 	    {
-		/*XSQLDA *sqlda = 0;
-		if(!FBResult::clone_sqlda(fb_stmt->out_sqlda,&sqlda))
-		{
-    		    if(sqlda) free(sqlda);
-    		    argv[0] = Exception::Error(
-        	       String::New("In FBStatement::EIO_After_Exec - cant clone SQLDA"));
-		}
-	        else
-	        {
-	    	        argv[0] = External::New(sqlda);
-			argv[1] = External::New(&fb_stmt->stmt);
-			argv[2] = External::New(fb_stmt->conn);
-			Persistent<Object> js_result(FBResult::constructor_template->
-                                    		      GetFunction()->NewInstance(3, argv));
-			fb_stmt->retres = true; 
-			argv[0] = Local<Value>::New(Null());
-			argv[1] = Local<Value>::New(js_result);
-			argc = 2;      
-			event = result_symbol;                             
-	        }*/
 	        argv[0] = Local<Value>::New(Null());	
 	        argc = 1;      
 		event = result_symbol;                             
 	    }
+     */
+          if(fb_stmt->statement_type != isc_info_sql_stmt_select) 
+          {
+            //Local<Object> js_result_row;   
+            argv[1] = fb_stmt->getCurrentRow(true);	
+            argc = 2;
+          }
         }
        
    }
@@ -212,10 +200,20 @@ void FBStatement::EIO_Exec(uv_work_t *req)
     struct exec_request *e_req = (struct exec_request *)(req->data);
     FBStatement *fb_stmt = e_req->statement;
     
-    if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
-      e_req->result = false;
-    else 
-      e_req->result = true;
+    if(fb_stmt->statement_type == isc_info_sql_stmt_select)
+    {
+        if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+	  e_req->result = false;
+        else 
+	  e_req->result = true;
+    }
+    else
+    {
+	if (isc_dsql_execute2(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
+	  e_req->result = false;
+        else 
+	  e_req->result = true;
+    }	  
     
     return ;
  }
