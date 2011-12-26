@@ -31,6 +31,7 @@ void
     NODE_SET_PROTOTYPE_METHOD(t, "prepareSync", PrepareSync);
     NODE_SET_PROTOTYPE_METHOD(t, "newBlobSync", NewBlobSync);
     NODE_SET_PROTOTYPE_METHOD(t, "startTransactionSync", StartSync);
+    NODE_SET_PROTOTYPE_METHOD(t, "startTransaction", Start);
     
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
@@ -605,8 +606,16 @@ void Connection::EIO_After_TransactionRequest(uv_work_t *req)
 void Connection::EIO_TransactionRequest(uv_work_t *req)
   {
     struct transaction_request *tr_req = (struct transaction_request *)(req->data);
-    if(tr_req->commit) tr_req->result = tr_req->conn->commit_transaction();
-    else tr_req->result = tr_req->conn->rollback_transaction();
+    switch(tr_req->type){
+       case rCommit:
+            tr_req->result = tr_req->conn->commit_transaction();
+            break;
+       case rRollback:
+            tr_req->result = tr_req->conn->rollback_transaction();   
+            break;
+       case rStart:
+            tr_req->result = tr_req->conn->start_transaction();   
+    }
     return;
   }
 
@@ -633,11 +642,11 @@ Handle<Value>
     
     tr_req->conn = conn;
     tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
-    tr_req->commit = true;
+    tr_req->type = rCommit;
     
     conn->start_async();
 
-	uv_work_t* req = new uv_work_t();
+    uv_work_t* req = new uv_work_t();
     req->data = tr_req;
     uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
 
@@ -670,11 +679,47 @@ Handle<Value>
     
     tr_req->conn = conn;
     tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
-    tr_req->commit = false;
+    tr_req->type = rRollback;
     
     conn->start_async();
 
 	uv_work_t* req = new uv_work_t();
+    req->data = tr_req;
+    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
+    
+    uv_ref(uv_default_loop());
+    conn->Ref();
+    
+    return Undefined();
+  } 
+  
+Handle<Value>
+  Connection::Start (const Arguments& args)
+  {
+    HandleScope scope;
+    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    
+    struct transaction_request *tr_req =
+         (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
+
+    if (!tr_req) {
+      V8::LowMemoryNotification();
+      return ThrowException(Exception::Error(
+            String::New("Could not allocate memory.")));
+    }
+    
+    if (args.Length() < 1) {
+      return ThrowException(Exception::Error(
+            String::New("Expecting Callback Function argument")));
+    }
+    
+    tr_req->conn = conn;
+    tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+    tr_req->type = rStart;
+    
+    conn->start_async();
+
+    uv_work_t* req = new uv_work_t();
     req->data = tr_req;
     uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
     

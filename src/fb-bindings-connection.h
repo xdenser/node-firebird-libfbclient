@@ -91,12 +91,18 @@ class Connection : public FBEventEmitter {
   
   static Handle<Value>
   StartSync (const Arguments& args);
+  
+  enum TransReqType {
+    rCommit,
+    rRollback,
+    rStart
+  };
     
   struct transaction_request {
      Persistent<Function> callback;
      Connection *conn;
-     bool commit;
-	 bool result;
+     TransReqType type;
+     bool result;
   };
 
   static void EIO_After_TransactionRequest(uv_work_t *req);
@@ -108,6 +114,9 @@ class Connection : public FBEventEmitter {
   
   static Handle<Value>
   Rollback (const Arguments& args);
+  
+  static Handle<Value>
+  Start (const Arguments& args);
   
   static Handle<Value>
   QuerySync(const Arguments& args);
