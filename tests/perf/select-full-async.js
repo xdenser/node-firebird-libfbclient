@@ -15,12 +15,15 @@ http.createServer(function (req, res) {
     var con = fb.createConnection();
     con.connect(cfg.db, cfg.user, cfg.password, cfg.role,function(){
        con.query('select * from rdb$relations',function(err,rs){
-          var rows = [];
+          //var rows = [];
+          res.write('[');
           rs.fetch("all",true,function(r){
-            rows.push(r);
+            //rows.push(r);
+             res.write(JSON.stringify(r)+',');
           }, function(err){
             con.disconnect();
-            res.end(util.inspect(rows));
+            //res.end(util.inspect(rows));
+             res.end(']');
           });
        
        });

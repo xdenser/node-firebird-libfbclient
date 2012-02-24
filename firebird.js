@@ -127,6 +127,8 @@ exports.createConnectionPool = function(settings){
 // Allows further extention
 exports.binding = binding;
 
+function Stream(blob){
+
 var buf = null;
 function allocBuf(){
   buf = new Buffer(SchunkSize);   
@@ -154,7 +156,7 @@ function ReadStream(strm) {
   });  
 };
 
-function Stream(blob){
+
  if(!(blob instanceof binding.FBblob )) {
     throw new Error('Expecting blob');
     //blob = new binding.FBblob();

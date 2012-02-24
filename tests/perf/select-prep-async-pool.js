@@ -74,11 +74,13 @@ http.createServer(function (req, res) {
     var exec = function(){
       con.stmt.exec();
       con.stmt.once('result',function(err){
-          var rows = [];
+         //  var rows = [];
+          res.write('[');
           con.stmt.fetch("all",true,function(r){
-            rows.push(r);
+            //rows.push(r);
+            res.write(JSON.stringify(r)+',');
           }, function(err){
-            res.end(util.inspect(rows));
+            res.end(']');
             con.conn.commit(function(){
               pool.release(con);
             });

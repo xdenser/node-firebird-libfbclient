@@ -21,11 +21,13 @@ http.createServer(function (req, res) {
     var exec = function(){
       stmt.exec();
       stmt.once('result',function(err){
-          var rows = [];
+          //var rows = [];
+          res.write('[');
           stmt.fetch("all",true,function(r){
-            rows.push(r);
+           // rows.push(r);
+            res.write(JSON.stringify(r)+',');
           }, function(err){
-            res.end(util.inspect(rows));
+            res.end(']');
             con.commit(function(err){
              //if(err) return;   
              stmt.lock = false;

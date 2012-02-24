@@ -63,8 +63,9 @@ module.exports = testCase({
             test.done();
          },
          charMAX:function(test){
+           // return; 
             test.expect(1);
-            var len = 32737;
+            var len = Math.ceil(32737/4);
             var Data = '';
             var chars = 'abcdefghABSD01234689q';
             for(var i=0; i<len;i++) Data+=chars.charAt(Math.floor(Math.random()*chars.length));
@@ -226,7 +227,7 @@ module.exports = testCase({
          },
          VarcharMAX:function(test){
             test.expect(1);
-            var len = 32737;
+            var len = Math.ceil(32737/4);
             var Data = '';
             var chars = 'abcdefghABSD01234689q';
             for(var i=0; i<len;i++) Data+=chars.charAt(Math.floor(Math.random()*chars.length));

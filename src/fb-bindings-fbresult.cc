@@ -89,6 +89,7 @@ Handle<Value>
                             break;                              
         case SQL_TEXT:      var->sqldata = new char[var->sqllen + 1];
                             memset(var->sqldata, ' ', var->sqllen);
+                            //memset(var->sqldata, 0, var->sqllen);
                             var->sqldata[var->sqllen] = '\0';
                             break;
         case SQL_VARYING:   var->sqldata = new char[var->sqllen + 3];
@@ -325,6 +326,21 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
     }
     return Undefined();
   }
+
+short getCharsetSize(XSQLVAR *var){
+	switch(var->sqlsubtype & 0xFF){
+	 case 0: case 1: case 2: case 10: case 11: case 12: case 13: case 14:
+	 case 19: case 21: case 22: case 39: case 45: case 46: case 47:
+	 case 50: case 51: case 52: case 53: case 54: case 55: case 58:  return 1;
+	 
+	 case 5: case 6: case 8: case 44: case 56: case 57: case 64: return 2;
+	 
+	 case 3: return 3;
+	 
+	 case 4: case 59: return 4; 
+	}
+	return 0;
+}
   
 Local<Value> 
   FBResult::GetFieldValue(XSQLVAR *var, Connection* conn)
@@ -336,7 +352,8 @@ Local<Value>
     ISC_QUAD    bid;
     time_t      rawtime;
     double      time_val;
-    int 	days; 
+    int 	    days;
+    short		bpc, chars; // bytes per char 
     
     
     HandleScope scope;
@@ -344,7 +361,7 @@ Local<Value>
     Local<Function> con;
     Local<Value> argv[7];
     
-    Local<Object> js_date;
+    Local<Object> js_date, js_obj;
     Local<Value> js_field = Local<Value>::New(Null());
     dtype = var->sqltype & ~1;
     if ((var->sqltype & 1) && (*var->sqlind < 0))
@@ -356,8 +373,19 @@ Local<Value>
         switch (dtype)
         {
             case SQL_TEXT:
-                //js_field = String::New(var->sqldata,var->sqllen);
-                js_field = String::New(var->sqldata);
+            	bpc = getCharsetSize(var);
+            	chars =  var->sqllen/(bpc != 0 ? bpc : 1);
+                js_field = String::New(var->sqldata,var->sqllen );
+                if(Local<String>::Cast(js_field)->Length() > chars )
+                {
+                	js_obj = js_field->ToObject(); 
+                	argv[0] = Integer::New(0);
+                	argv[1] = Integer::New(chars);
+                	js_field = Local<Function>::Cast(js_obj->Get(String::New("slice")))->Call(js_obj,2,argv);
+                }
+                
+               //  printf(" char lengh %d/%d, %d, 1 %hx, 2 %hx, 3 %hx, 4 %hx \n",var->sqllen,Local<String>::Cast(js_field)->Length(), var->sqlsubtype, var->sqldata[0],var->sqldata[1],var->sqldata[2],var->sqldata[3]);
+                //  js_field = String::New(var->sqldata);
                 break;
 
             case SQL_VARYING:

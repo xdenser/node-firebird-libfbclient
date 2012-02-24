@@ -17,6 +17,6 @@ http.createServer(function (req, res) {
     var rs = con.querySync('select * from rdb$relations');
     var rows = rs.fetchSync("all",true);
     con.disconnect();
-    res.end(util.inspect(rows));
+    res.end(JSON.stringify(rows));
 }).listen(1337, "127.0.0.1");
 console.log('Server running at http://127.0.0.1:1337/');
