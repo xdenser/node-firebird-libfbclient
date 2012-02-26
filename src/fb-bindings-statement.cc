@@ -293,6 +293,7 @@ Handle<Value>
      FBResult::clean_sqlda(in_sqlda);
      free(in_sqlda);
    }
+  // printf("fbstatement destructor !\n");
  /*  if(out_sqlda) {
      FBResult::clean_sqlda(out_sqlda);
      free(out_sqlda);

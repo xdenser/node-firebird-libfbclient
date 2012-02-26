@@ -966,7 +966,8 @@ Handle<Value>
 
   Connection::~Connection ()
   { 
-    if(db!=NULL) Close();
+   // printf("connection free----------\n");
+	if(db!=NULL) Close();
     assert(db == NULL);
   }
  

@@ -865,6 +865,7 @@ Handle<Value>
      free(sqldap);
      sqldap = NULL;
    }
+  // printf("fbresult destructor !\n");
    //connection->Unref();
   }
   
