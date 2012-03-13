@@ -16,7 +16,7 @@
 #include "./fb-bindings.h"
 #include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-blob.h"
-
+#include "./fb-bindings-connection.h"
 
 
 class FBResult : public FBEventEmitter {

@@ -9,14 +9,14 @@
 #define BUILDING_NODE_EXTENSION 1
 
 #include "./fb-bindings.h"
-#include "./fb-bindings-connection.h"
-#include "./fb-bindings-fbeventemitter.h"
+//#include "./fb-bindings-connection.h"
+//#include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-fbresult.h"
 
 static Persistent<String> error_symbol;
 static Persistent<String> result_symbol;
 
-class FBStatement : public FBResult {
+class FBStatement:public FBResult{
 public:
  static Persistent<FunctionTemplate> constructor_template; 
 

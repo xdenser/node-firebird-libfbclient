@@ -16,7 +16,7 @@ function StatementPool()
     events.EventEmitter.call(this);
     this.conns = [];
     this.busy = [];
-    this.MaxConns = 20;
+    this.MaxConns = 5;
     this.newConn = function(){
         var c ={
            conn: fb.createConnection()  
@@ -70,7 +70,6 @@ http.createServer(function (req, res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
 //    console.log(stmt);
     pool.get(function(con){
-        
     var exec = function(){
       con.stmt.exec();
       con.stmt.once('result',function(err){

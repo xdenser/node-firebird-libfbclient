@@ -855,17 +855,36 @@ Handle<Value>
     sqldap = asqldap;
     stmt = *astmtp;
     connection = conn;
-    //conn->Ref();
+   // conn->doref();
   }
   
  FBResult::~FBResult()
   {
+   
+	//printf("Statement freed\n"); 
    if(sqldap) {
      FBResult::clean_sqlda(sqldap);
      free(sqldap);
      sqldap = NULL;
    }
+   
+   long SQLCODE;
+   if(stmt){
+	   isc_dsql_free_statement(status,&stmt,DSQL_drop);
+	   if (status[1]){
+		    SQLCODE = isc_sqlcode(status);
+		    if(SQLCODE!=-901) // print error message if error is not 'Invalid Statement Handle', wich is normal when connection closed before FBresult is freed
+		      printf("Error in free statement %s, %d, %d\n",ErrorMessage(status,err_message,sizeof(this->err_message)),status[1],SQLCODE);
+		   /*ThrowException(Exception::Error(
+		              String::Concat(String::New("In FBResult::~FBResult, isc_dsql_free_statement - "),ERR_MSG(this, FBStatement))));
+		   */           
+	   }
+	   else stmt = NULL;
+	   
+   }
+   
+	   
   // printf("fbresult destructor !\n");
-   //connection->Unref();
+  // connection->dounref();
   }
   

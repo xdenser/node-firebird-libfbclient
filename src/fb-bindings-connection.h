@@ -12,8 +12,6 @@
 #include "./fb-bindings.h"
 #include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-eventblock.h"
-#include "./fb-bindings-fbresult.h"
-#include "./fb-bindings-statement.h" 
 #include "./fb-bindings-blob.h"
 #include <string.h>
 #include <stdlib.h>
@@ -43,6 +41,10 @@ class Connection : public FBEventEmitter {
   bool rollback_transaction();
   
   bool start_transaction();
+  
+  void doref();
+  
+  void dounref();
   
   isc_db_handle get_DB_Handle();
   isc_tr_handle get_Def_Tr_Handle();

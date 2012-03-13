@@ -4,6 +4,8 @@
  * See license text in LICENSE file
  */
 #include "./fb-bindings-connection.h" 
+#include "./fb-bindings-fbresult.h"
+#include "./fb-bindings-statement.h"
 
 void
   Connection::Initialize (v8::Handle<v8::Object> target)
@@ -349,8 +351,18 @@ isc_db_handle Connection::get_DB_Handle()
 isc_tr_handle Connection::get_Def_Tr_Handle()
   {
     return trans;
-  }    
-  
+  }   
+
+void Connection::doref()
+{
+	this->Ref();
+}
+
+void Connection::dounref()
+{
+	this->Unref();
+}
+
  
 Handle<Value>
   Connection::New (const Arguments& args)
@@ -758,7 +770,7 @@ Handle<Value>
     argv[0] = External::New(sqlda);
     argv[1] = External::New(&stmt);
     argv[2] = External::New(connection);
-    Persistent<Object> js_result(FBResult::constructor_template->
+    Local<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
 
     return scope.Close(js_result); 
@@ -785,10 +797,10 @@ void Connection::EIO_After_Query(uv_work_t *req)
      argv[1] = External::New(&q_req->stmt);
      argv[2] = External::New(q_req->conn);
      
-     Persistent<Object> js_result(FBResult::constructor_template->
+     Local<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
                                      
-     argv[1] = Local<Value>::New(scope.Close(js_result));    
+     argv[1] = Local<Value>::New(js_result);    
      argv[0] = Local<Value>::New(Null());
     }
     
@@ -806,7 +818,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
     q_req->conn->stop_async();
     q_req->conn->Unref();
     free(q_req);
-
+   // scope.Close(argv[1]); 
     
   }
     
