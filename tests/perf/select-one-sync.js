@@ -16,9 +16,14 @@ var con = fb.createConnection();
 http.createServer(function (req, res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
     if(!con.inTransaction) con.startTransactionSync();
-    var rs = con.querySync('select * from rdb$relations');
+    //var rs = con.querySync('select * from rdb$relations');
+    var rs = con.querySync('select * from test_t where pid = 10');
     var rows = rs.fetchSync("all",true);
-    res.end(util.inspect(rows));
+    res.write('[');
+    rows.forEach(function(r){
+     res.write(JSON.stringify(r)+',');
+    });
+    res.end(']');
     con.commitSync();
 }).listen(1337, "127.0.0.1");
 console.log('Server running at http://127.0.0.1:1337/');

@@ -24,7 +24,7 @@ As for now in plans are:
 
 ##Under Linux
 You will need:
- NodeJS (tested with v0.6.0)
+ NodeJS (tested with v0.6.13)
  Firebird (tested with v2.5)
 
  All things below were tested on CentOS 5.5.

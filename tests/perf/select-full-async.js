@@ -14,7 +14,8 @@ http.createServer(function (req, res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
     var con = fb.createConnection();
     con.connect(cfg.db, cfg.user, cfg.password, cfg.role,function(){
-       con.query('select * from rdb$relations',function(err,rs){
+       //con.query('select * from rdb$relations',function(err,rs){
+       con.query('select first 20 * from test_t where pid = 10',function(err,rs){
           //var rows = [];
           res.write('[');
           rs.fetch("all",true,function(r){

@@ -17,10 +17,12 @@ function ConnectionPool()
     this.conns = [];
     this.busy = [];
     this.MaxConns = 5;
-    this.newConn = function(){
+    this.newConn = function(cb){
         var c = fb.createConnection();  
-        c.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
-        this.conns.push(c); 
+        c.connect(cfg.db, cfg.user, cfg.password, cfg.role,function(){
+           this.conns.push(c);
+           cb(); 
+        });
     };
     this.get = function(cb)
     {
@@ -37,8 +39,9 @@ function ConnectionPool()
           });
         }
         else {
-            this.newConn();
-            this.get(cb);
+            this.newConn(function(){
+              this.get(cb);
+            });
         }   
     };
     
@@ -64,11 +67,11 @@ var pool = new ConnectionPool();
 pool.setMaxListeners(2000);
 
 function exec(con,res){
-         con.query('select * from rdb$relations',function(err,rs){
+         //con.query('select * from rdb$relations',function(err,rs){
+           con.query('select first 5 * from test_t where pid = 10',function(err,rs){
               res.write('[');
               rs.fetch("all",true,function(r){
                res.write(JSON.stringify(r)+',');
-                                     
               },function(err){
                 res.end(']');
                 con.commit(function(){
@@ -76,15 +79,11 @@ function exec(con,res){
                 });
             });    
         });
-        };
+};
 
 http.createServer(function (req, res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
-//    console.log(stmt);
-      
     pool.get(function(con){
-      //   if(!con.inTransaction) con.startTransactionSync();
-         
         if(!con.inTransaction) con.startTransaction(function(err){
           if(!err) exec(con,res);
         });

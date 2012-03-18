@@ -17,13 +17,17 @@ function StatementPool()
     this.conns = [];
     this.busy = [];
     this.MaxConns = 5;
-    this.newConn = function(){
+    this.newConn = function(cb){
         var c ={
            conn: fb.createConnection()  
-        };
-        c.conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
-        c.stmt = c.conn.prepareSync('select * from rdb$relations');
-        this.conns.push(c); 
+        }, self = this;
+        
+        c.conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(){
+          c.stmt = c.conn.prepareSync('select * from rdb$relations');
+       // c.stmt = c.conn.prepareSync('select first 5 * from test_t where pid = ?');
+          self.conns.push(c);
+          cb(); 
+        });
     };
     this.get = function(cb)
     {
@@ -40,8 +44,9 @@ function StatementPool()
           });
         }
         else {
-            this.newConn();
-            this.get(cb);
+            this.newConn(function(){
+              this.get(cb);
+            });
         }   
     };
     this.release = function(con){
@@ -68,15 +73,12 @@ pool.setMaxListeners(2000);
     
 http.createServer(function (req, res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
-//    console.log(stmt);
     pool.get(function(con){
     var exec = function(){
-      con.stmt.exec();
+      con.stmt.exec(10);
       con.stmt.once('result',function(err){
-         //  var rows = [];
           res.write('[');
           con.stmt.fetch("all",true,function(r){
-            //rows.push(r);
             res.write(JSON.stringify(r)+',');
           }, function(err){
             res.end(']');
@@ -87,16 +89,10 @@ http.createServer(function (req, res) {
       });
     };    
         
-    var resp  = function(){
-      if(!con.conn.inTransaction) con.conn.startTransaction(function(err){
+   if(!con.conn.inTransaction) con.conn.startTransaction(function(err){
           if(!err) exec();
-      });
-      else exec();     
-    };
-    
-    
-    resp();
-    
+   });
+   else exec();     
   });  
     
 }).listen(1337, "127.0.0.1");

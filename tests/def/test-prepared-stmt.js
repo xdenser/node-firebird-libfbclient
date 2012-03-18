@@ -6,7 +6,7 @@ See license text in LICENSE file
 
 // Load configuration
 var cfg = require("../config").cfg;
-var sys = require("sys");
+var sys = require("util");
 
 // Require modules
 var

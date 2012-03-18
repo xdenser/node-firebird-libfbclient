@@ -15,7 +15,7 @@ var
 var 
   fs = require('fs');  
 var 
-  sys = require("sys");
+  sys = require("util");
 
 
 var util = {

@@ -2,6 +2,7 @@ var binding = require("./build/Release/binding");
 var stream = require("stream");
 var util = require("util");
 var events = require('events');
+
 var SchunkSize = 4*1024;
 
 
@@ -120,11 +121,8 @@ exports.createConnection = function () {
   return c;
 };
 
-exports.createConnectionPool = function(settings){
-   
-};
 
-// Allows further extention
+// Allows further extension
 exports.binding = binding;
 
 function Stream(blob){
