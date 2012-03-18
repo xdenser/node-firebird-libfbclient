@@ -220,11 +220,14 @@ bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *qu
      XSQLDA          *in_sqlda;
      XSQLDA          *out_sqlda;
      short 	     num_params, num_cols;
+     int 	     sqlda_size;
      
      in_sqlda = *insqlda;
      if(!in_sqlda)
      {
-          in_sqlda = (XSQLDA *) malloc(XSQLDA_LENGTH (10));
+    	  sqlda_size = XSQLDA_LENGTH (10);
+    	  in_sqlda = (XSQLDA *) malloc(sqlda_size);
+          memset(in_sqlda,0,sqlda_size);
           in_sqlda->sqln = 10;
           in_sqlda->version = 1;
           *insqlda = in_sqlda;
@@ -233,7 +236,9 @@ bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *qu
      out_sqlda = *outsqlda;
      if(!out_sqlda)
      {
-          out_sqlda = (XSQLDA *) malloc(XSQLDA_LENGTH (10));
+    	  sqlda_size = XSQLDA_LENGTH (10);
+    	  out_sqlda = (XSQLDA *) malloc(sqlda_size);
+    	  memset(out_sqlda,0,sqlda_size);
           out_sqlda->sqln = 10;
           out_sqlda->version = 1;
           *outsqlda = out_sqlda;
@@ -262,8 +267,10 @@ bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *qu
      {
         num_params = in_sqlda->sqld;
         
-        *insqlda = in_sqlda = (XSQLDA *) realloc(in_sqlda,
-                                                XSQLDA_LENGTH (num_params));
+        sqlda_size = XSQLDA_LENGTH (num_params);
+        *insqlda = in_sqlda = (XSQLDA *) realloc(in_sqlda, sqlda_size);
+        memset(in_sqlda,0,sqlda_size);
+        
         in_sqlda->sqln = num_params;
         in_sqlda->version = 1;
         
@@ -281,9 +288,11 @@ bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *qu
      /* Need more room. */
     if (out_sqlda->sqln < out_sqlda->sqld)
      {
-        num_cols = out_sqlda->sqld;  
-        *outsqlda = out_sqlda = (XSQLDA *) realloc(out_sqlda,
-                                                XSQLDA_LENGTH (num_cols));
+        num_cols = out_sqlda->sqld; 
+        sqlda_size = XSQLDA_LENGTH (num_cols);
+        *outsqlda = out_sqlda = (XSQLDA *) realloc(out_sqlda, sqlda_size);
+        memset(out_sqlda,0,sqlda_size);
+        
         out_sqlda->sqln = num_cols;
         out_sqlda->version = 1;
 
