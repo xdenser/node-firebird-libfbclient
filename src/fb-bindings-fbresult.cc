@@ -550,7 +550,8 @@ Local<Value>
 Local<Object> 
   FBResult::getCurrentRow(bool asObject)
   {
-    short  i, num_cols;	
+    short  i, num_cols;
+    char fieldname[33];
 //    XSQLDA         *sqlda;
 
 //    sqlda = sqldap;
@@ -574,7 +575,8 @@ Local<Object>
             js_field = FBResult::GetFieldValue((XSQLVAR *) &sqldap->sqlvar[i], connection);
             if(asObject)
             { 
-              js_result_row->Set(String::New(sqldap->sqlvar[i].sqlname), js_field);
+            	js_result_row->Set(String::New(sqldap->sqlvar[i].aliasname,sqldap->sqlvar[i].aliasname_length), js_field);
+            	//js_result_row->Set(String::New(sqldap->sqlvar[i].sqlname,sqldap->sqlvar[i]), js_field);
             }
             else
             js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
