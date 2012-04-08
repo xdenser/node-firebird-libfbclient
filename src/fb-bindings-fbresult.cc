@@ -551,7 +551,6 @@ Local<Object>
   FBResult::getCurrentRow(bool asObject)
   {
     short  i, num_cols;
-    char fieldname[33];
 //    XSQLDA         *sqlda;
 
 //    sqlda = sqldap;
