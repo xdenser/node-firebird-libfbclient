@@ -31,12 +31,14 @@
         
     NODE_SET_PROTOTYPE_METHOD(t, "fetchSync", FetchSync);
     NODE_SET_PROTOTYPE_METHOD(t, "fetch", Fetch);
+    NODE_SET_PROTOTYPE_METHOD(t, "_fetch", FetchOnly);
 
 
     instance_template->SetInternalFieldCount(1);
     
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
     instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
+    instance_t->SetAccessor(String::NewSymbol("_SQLDA"),SQLDAGetter);
     
     target->Set(String::NewSymbol("FBResult"), t->GetFunction());
   }
@@ -583,6 +585,7 @@ Local<Object>
     
     return scope.Close(js_result_row);
   }  
+ 
 
 Handle<Value>
   FBResult::FetchSync(const Arguments& args) 
@@ -668,6 +671,34 @@ Handle<Value>
     return scope.Close(js_result);
 
   }
+  
+Handle<Value>
+  FBResult::FetchOnly(const Arguments& args) 
+  {
+	int  fetch_stat;
+	HandleScope scope;
+    
+        FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(args.This());
+        fetch_stat = isc_dsql_fetch(fb_res->status, &fb_res->stmt, SQL_DIALECT_V6, fb_res->sqldap);
+        
+        if ((fetch_stat != 100L) && fetch_stat) 
+          return ThrowException(Exception::Error(
+            String::Concat(String::New("While FetchSync - "),ERR_MSG(fb_res,FBResult))));
+            
+        return scope.Close(Integer::New(fetch_stat));
+    
+  }
+  
+Handle<Value>
+  FBResult::SQLDAGetter(Local<String> property,
+                                const AccessorInfo &info) 
+  {
+    HandleScope scope;
+    FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(info.Holder());
+    
+    return fb_res->js_sqlda_buffer;
+  }
+
 
 void FBResult::EIO_After_Fetch(uv_work_t *req)
   {
@@ -856,6 +887,18 @@ Handle<Value>
     sqldap = asqldap;
     stmt = *astmtp;
     connection = conn;
+    
+    
+    if(sqldap){
+        size_t size = XSQLDA_LENGTH (sqldap->sqln);
+        HandleScope scope;
+        Buffer *slowBuffer = Buffer::New((char*)sqldap, size);
+        Local<Object> globalObj = Context::GetCurrent()->Global();
+        Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
+        Handle<Value> constructorArgs[3] = { slowBuffer->handle_, Integer::New(size), Integer::New(0) };
+        js_sqlda_buffer = Persistent<Object>(bufferConstructor->NewInstance(3, constructorArgs));
+    }
+    
    // conn->doref();
   }
   
@@ -866,6 +909,7 @@ Handle<Value>
    if(sqldap) {
      FBResult::clean_sqlda(sqldap);
      free(sqldap);
+     js_sqlda_buffer.Dispose();
      sqldap = NULL;
    }
    
