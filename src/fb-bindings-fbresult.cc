@@ -376,8 +376,9 @@ Local<Value>
         {
             case SQL_TEXT:
             	bpc = getCharsetSize(var);
-            	chars =  var->sqllen/(bpc != 0 ? bpc : 1);
-                js_field = String::New(var->sqldata,var->sqllen );
+            	/*chars =  var->sqllen/(bpc != 0 ? bpc : 1);
+            	
+            	js_field = String::New(var->sqldata,var->sqllen );
                 if(Local<String>::Cast(js_field)->Length() > chars )
                 {
                 	js_obj = js_field->ToObject(); 
@@ -385,15 +386,39 @@ Local<Value>
                 	argv[1] = Integer::New(chars);
                 	js_field = Local<Function>::Cast(js_obj->Get(String::New("slice")))->Call(js_obj,2,argv);
                 }
+                */
+                
+                {
+                  HandleScope scope1; 
+                  Buffer *slowBuffer = Buffer::New(var->sqllen);
+                  memcpy(Buffer::Data(slowBuffer), (const char*)(var->sqldata), var->sqllen);
+                  Local<Object> globalObj = Context::GetCurrent()->Global();
+                  Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
+                  Handle<Value> constructorArgs[3] = { slowBuffer->handle_, Integer::New(var->sqllen), Integer::New(0) };
+                  js_field = bufferConstructor->NewInstance(3, constructorArgs);
+                }
                 
                //  printf(" char lengh %d/%d, %d, 1 %hx, 2 %hx, 3 %hx, 4 %hx \n",var->sqllen,Local<String>::Cast(js_field)->Length(), var->sqlsubtype, var->sqldata[0],var->sqldata[1],var->sqldata[2],var->sqldata[3]);
                 //  js_field = String::New(var->sqldata);
                 break;
 
             case SQL_VARYING:
-                vary2 = (PARAMVARY*) var->sqldata;
+            
+                /*vary2 = (PARAMVARY*) var->sqldata;
                 vary2->vary_string[vary2->vary_length] = '\0';
                 js_field = String::New((const char*)(vary2->vary_string));
+                */
+                {
+                  HandleScope scope1; 
+                  vary2 = (PARAMVARY*) var->sqldata;
+                  Buffer *slowBuffer = Buffer::New(vary2->vary_length);
+                  memcpy(Buffer::Data(slowBuffer), (const char*)(vary2->vary_string), vary2->vary_length);
+                  Local<Object> globalObj = Context::GetCurrent()->Global();
+                  Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
+                  Handle<Value> constructorArgs[3] = { slowBuffer->handle_, Integer::New(vary2->vary_length), Integer::New(0) };
+                  js_field = bufferConstructor->NewInstance(3, constructorArgs);
+                }
+                
                 break;
 
             case SQL_SHORT:
