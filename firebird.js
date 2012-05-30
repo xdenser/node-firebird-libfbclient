@@ -45,21 +45,23 @@ var superConnect = Connection.prototype.connect;
 Connection.prototype.connect = function(db,user,pass,role,cb){
    var obj = this;
    superConnect.call(this,db,user,pass,role,function (err){
-       if(err) obj.emit('error',err);
+       if(err && (!cb || obj.listeners('error').length)) obj.emit('error',err);
        else obj.emit('connected');
        if(cb) cb(err);
    });
 };
 
+
 var superQuery = Connection.prototype.query;
 Connection.prototype.query = function(sql,cb){
   var obj = this;
   superQuery.call(this,sql,function(err,res){
-      if(err) obj.emit('error',err);
+      if(err && (!cb || obj.listeners('error').length)) obj.emit('error',err);
       else obj.emit('result',res);
       if(cb) cb(err,res);
   });
 };
+
 
 binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
   if(initialSize instanceof Function)

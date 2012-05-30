@@ -789,7 +789,7 @@ Handle<Value>
   
 void Connection::EIO_After_Query(uv_work_t *req)
   {
-    uv_unref(uv_default_loop());
+   // uv_unref(uv_default_loop());
     HandleScope scope;
     struct query_request *q_req = (struct query_request *)(req->data);
 	delete req;
@@ -874,7 +874,7 @@ Handle<Value>
     uv_queue_work(uv_default_loop(), req, EIO_Query,  EIO_After_Query);
 
     
-    uv_ref(uv_default_loop());
+   //uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
