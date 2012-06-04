@@ -64,6 +64,13 @@ protected:
   static Handle<Value>
   Fetch(const Arguments& args);
   
+  static Handle<Value>
+  FetchOnly(const Arguments& args);
+  
+  static Handle<Value>
+  SQLDAGetter(Local<String> property,
+                      const AccessorInfo &info);
+  
   FBResult(XSQLDA *asqldap, isc_stmt_handle *astmtp, Connection *conn); 
   
   virtual ~FBResult();
@@ -71,6 +78,7 @@ protected:
   ISC_STATUS_ARRAY status;
   char err_message[MAX_ERR_MSG_LEN];
   XSQLDA *sqldap;
+  Persistent<Object> js_sqlda_buffer;
   isc_stmt_handle stmt;
   Connection *connection;
   
