@@ -18,6 +18,7 @@ FBEventEmitter.prototype.__proto__ = events.EventEmitter.prototype;
 
 function MakeSafe(obj,meth){
   var superm = obj.prototype[meth];
+  obj.prototype['unsafe_'+meth] = obj.prototype[meth];
   obj.prototype[meth] = function safe(){
     if(this.inAsyncCall){
        var self = this;
@@ -35,6 +36,7 @@ function MakeSafe(obj,meth){
 
 MakeSafe(Connection,"query");
 MakeSafe(Connection,"commit");
+MakeSafe(Connection,"startTransaction");
 MakeSafe(Connection,"rollback");
 MakeSafe(FBResult,"fetch");
 MakeSafe(FBStatement,"exec");

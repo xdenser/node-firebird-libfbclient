@@ -803,7 +803,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
     }
     else{
      argv[0] = External::New(q_req->sqlda);
-     argv[1] = External::New(&q_req->stmt);
+     argv[1] = External::New(&(q_req->stmt));
      argv[2] = External::New(q_req->conn);
      
      Local<Object> js_result(FBResult::constructor_template->
