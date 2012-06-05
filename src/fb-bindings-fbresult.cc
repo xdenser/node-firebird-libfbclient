@@ -389,10 +389,13 @@ Local<Value>
                 */
                 
                 {
-                  //HandleScope scope1; 
+                 // HandleScope scope1; 
                   Buffer *slowBuffer = Buffer::New(var->sqllen);
                   
-                  //if(slowBuffer == NULL) printf("Slow buffer is NULL\n");
+                  if(slowBuffer == NULL) {
+                	  printf("Slow buffer is NULL\n");
+                	  return scope.Close(js_field);
+                  }
                   
                   memcpy(Buffer::Data(slowBuffer), (const char*)(var->sqldata), var->sqllen);
                   Local<Object> globalObj = Context::GetCurrent()->Global();
@@ -412,11 +415,14 @@ Local<Value>
                 js_field = String::New((const char*)(vary2->vary_string));
                 */
                 {
-                  //HandleScope scope1; 
+                 // HandleScope scope1; 
                   vary2 = (PARAMVARY*) var->sqldata;
                   Buffer *slowBuffer = Buffer::New(vary2->vary_length);
                   
-                  //if(slowBuffer == NULL) printf("Slow buffer is NULL\n");
+                  if(slowBuffer == NULL) {
+                	  printf("Slow buffer is NULL\n");
+                	  return scope.Close(js_field);
+                  }
                   
                   memcpy(Buffer::Data(slowBuffer), (const char*)(vary2->vary_string), vary2->vary_length);
                   Local<Object> globalObj = Context::GetCurrent()->Global();
