@@ -363,6 +363,11 @@ Local<Value>
     Local<Function> con;
     Local<Value> argv[7];
     
+    //Buffer *slowBuffer;
+    //Local<Object> globalObj;
+    //Local<Function> bufferConstructor;
+    //Handle<Value> constructorArgs[3];
+    
     Local<Object> js_date, js_obj;
     Local<Value> js_field = Local<Value>::New(Null());
     dtype = var->sqltype & ~1;
@@ -389,17 +394,15 @@ Local<Value>
                 */
                 
                 {
-                 // HandleScope scope1; 
-                  Buffer *slowBuffer = Buffer::New(var->sqllen);
+                
+                  Buffer *slowBuffer = Buffer::New((char*)(var->sqldata), var->sqllen);
                   
                   if(slowBuffer == NULL) {
                 	  printf("Slow buffer is NULL\n");
                 	  return scope.Close(js_field);
                   }
-                  
-                  memcpy(Buffer::Data(slowBuffer), (const char*)(var->sqldata), var->sqllen);
                   Local<Object> globalObj = Context::GetCurrent()->Global();
-                  Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
+                  Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::NewSymbol("Buffer")));
                   Handle<Value> constructorArgs[3] = { slowBuffer->handle_, Integer::New(var->sqllen), Integer::New(0) };
                   js_field = bufferConstructor->NewInstance(3, constructorArgs);
                 }
@@ -415,21 +418,21 @@ Local<Value>
                 js_field = String::New((const char*)(vary2->vary_string));
                 */
                 {
-                 // HandleScope scope1; 
+ 
                   vary2 = (PARAMVARY*) var->sqldata;
-                  Buffer *slowBuffer = Buffer::New(vary2->vary_length);
+                  Buffer *slowBuffer = Buffer::New((char*)(vary2->vary_string), vary2->vary_length);
                   
                   if(slowBuffer == NULL) {
                 	  printf("Slow buffer is NULL\n");
                 	  return scope.Close(js_field);
                   }
                   
-                  memcpy(Buffer::Data(slowBuffer), (const char*)(vary2->vary_string), vary2->vary_length);
+
                   Local<Object> globalObj = Context::GetCurrent()->Global();
-                  Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
+                  Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::NewSymbol("Buffer")));
                   Handle<Value> constructorArgs[3] = { slowBuffer->handle_, Integer::New(vary2->vary_length), Integer::New(0) };
                   js_field = bufferConstructor->NewInstance(3, constructorArgs);
-                }
+                } 
                 
                 break;
 
