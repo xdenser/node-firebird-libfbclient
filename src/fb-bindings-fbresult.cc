@@ -381,7 +381,7 @@ Local<Value>
                 	js_obj = js_field->ToObject(); 
                 	argv[0] = Integer::New(0);
                 	argv[1] = Integer::New(chars);
-                	js_field = Local<Function>::Cast(js_obj->Get(String::New("slice")))->Call(js_obj,2,argv);
+                	js_field = Local<Function>::Cast(js_obj->Get(String::NewSymbol("slice")))->Call(js_obj,2,argv);
                 }
                 
                //  printf(" char lengh %d/%d, %d, 1 %hx, 2 %hx, 3 %hx, 4 %hx \n",var->sqllen,Local<String>::Cast(js_field)->Length(), var->sqlsubtype, var->sqldata[0],var->sqldata[1],var->sqldata[2],var->sqldata[3]);
