@@ -169,25 +169,25 @@ void get_date(struct tm* times, Local<Object> js_date, int* msp)
   HandleScope scope;
   Local<Value> val;
   
-  val = Local<Function>::Cast(js_date->Get( String::New("getFullYear") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getFullYear") ))->Call(js_date,0,NULL);
   times->tm_year = (int) (val->Int32Value()) - 1900;
   
-  val = Local<Function>::Cast(js_date->Get( String::New("getMonth") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getMonth") ))->Call(js_date,0,NULL);
   times->tm_mon = val->Int32Value();
 
-  val = Local<Function>::Cast(js_date->Get( String::New("getDate") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getDate") ))->Call(js_date,0,NULL);
   times->tm_mday = val->Int32Value();
 
-  val = Local<Function>::Cast(js_date->Get( String::New("getHours") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getHours") ))->Call(js_date,0,NULL);
   times->tm_hour = val->Int32Value();
   
-  val = Local<Function>::Cast(js_date->Get( String::New("getMinutes") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getMinutes") ))->Call(js_date,0,NULL);
   times->tm_min = val->Int32Value();
 
-  val = Local<Function>::Cast(js_date->Get( String::New("getSeconds") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getSeconds") ))->Call(js_date,0,NULL);
   times->tm_sec = val->Int32Value();
   
-  val = Local<Function>::Cast(js_date->Get( String::New("getMilliseconds") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getMilliseconds") ))->Call(js_date,0,NULL);
   *msp = val->Int32Value();
   
 }
@@ -450,20 +450,20 @@ Local<Value>
 	            isc_decode_timestamp((ISC_TIMESTAMP *)var->sqldata, &times);
 	            js_date = Date::New(0)->ToObject();
 	            argv[0] = Integer::New(times.tm_year+1900);
-	            Local<Function>::Cast(js_date->Get( String::New("setFullYear") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setFullYear") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mon);
-	            Local<Function>::Cast(js_date->Get( String::New("setMonth") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMonth") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mday);
-	            Local<Function>::Cast(js_date->Get( String::New("setDate") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setDate") ))->Call(js_date,1,argv);
 	            
 	            argv[0] = Integer::New(times.tm_hour);
-	            Local<Function>::Cast(js_date->Get( String::New("setHours") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setHours") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_min);
-	            Local<Function>::Cast(js_date->Get( String::New("setMinutes") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMinutes") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_sec);
-	            Local<Function>::Cast(js_date->Get( String::New("setSeconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setSeconds") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
-	            Local<Function>::Cast(js_date->Get( String::New("setMilliseconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMilliseconds") ))->Call(js_date,1,argv);
 	            
 	            js_field = js_date;
 	            break;
@@ -473,21 +473,25 @@ Local<Value>
 	            isc_decode_sql_date((ISC_DATE *)var->sqldata, &times);
 	            
 	            // days from 1 jan 1858 	            
-	            // days = * (int *) var->sqldata ; 
+	            //days = * (int *) var->sqldata ; 
 	            
+	            
+	            //time_val = (static_cast<double>(days) - 40587) * 86400 * 1000;
 	            js_date = Date::New(0)->ToObject();
+	           
 	            
 	            argv[0] = Integer::New(times.tm_year+1900);
-	            Local<Function>::Cast(js_date->Get( String::New("setFullYear") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setFullYear") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mon);
-	            Local<Function>::Cast(js_date->Get( String::New("setMonth") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMonth") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mday);
-	            Local<Function>::Cast(js_date->Get( String::New("setDate") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setDate") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(0);
-	            Local<Function>::Cast(js_date->Get( String::New("setHours") ))->Call(js_date,1,argv);
-	            Local<Function>::Cast(js_date->Get( String::New("setMinutes") ))->Call(js_date,1,argv);
-	            Local<Function>::Cast(js_date->Get( String::New("setSeconds") ))->Call(js_date,1,argv);
-	            Local<Function>::Cast(js_date->Get( String::New("setMilliseconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setHours") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMinutes") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setSeconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMilliseconds") ))->Call(js_date,1,argv);
+	            
 	            
 	            //js_field = con->Call(js_date, 3, argv);
 	            /*js_date = Object::New();
@@ -498,7 +502,7 @@ Local<Value>
                     js_date->Set(String::New("day"),
                              Integer::New(times.tm_mday));
                              
-	            time_val = (static_cast<double>(days) - 40587.0) * 86400 * 1000;
+	            
 	            js_date->Set(String::New("date"),
                              Date::New(time_val));*/
 	            js_field = js_date;
@@ -509,20 +513,20 @@ Local<Value>
 	            
 	            js_date = Date::New(0)->ToObject();
 	            argv[0] = Integer::New(times.tm_year+1900);
-	            Local<Function>::Cast(js_date->Get( String::New("setFullYear") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setFullYear") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mon);
-	            Local<Function>::Cast(js_date->Get( String::New("setMonth") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMonth") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mday);
-	            Local<Function>::Cast(js_date->Get( String::New("setDate") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setDate") ))->Call(js_date,1,argv);
 	            
 	            argv[0] = Integer::New(times.tm_hour);
-	            Local<Function>::Cast(js_date->Get( String::New("setHours") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setHours") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_min);
-	            Local<Function>::Cast(js_date->Get( String::New("setMinutes") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMinutes") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_sec);
-	            Local<Function>::Cast(js_date->Get( String::New("setSeconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setSeconds") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
-	            Local<Function>::Cast(js_date->Get( String::New("setMilliseconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMilliseconds") ))->Call(js_date,1,argv);
 	            
 	            js_field = js_date;
 	            break;            
