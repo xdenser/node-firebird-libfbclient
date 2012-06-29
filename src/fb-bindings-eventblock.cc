@@ -333,7 +333,7 @@ Handle<Value>
         res->event_->data = res;
         uv_async_init(uv_default_loop(),res->event_, event_block::event_notification);
        // uv_async_start(EV_DEFAULT_UC_ res->event_);
-        uv_unref(uv_default_loop());
+      //  uv_unref(uv_default_loop());
         
         // Set links
         if(root) root->next = res;

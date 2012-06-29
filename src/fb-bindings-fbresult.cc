@@ -675,7 +675,7 @@ Handle<Value>
 
 void FBResult::EIO_After_Fetch(uv_work_t *req)
   {
-    uv_unref(uv_default_loop());
+   // uv_unref(uv_default_loop());
     HandleScope scope;
     struct fetch_request *f_req = (struct fetch_request *)(req->data);
 	delete req;
@@ -728,7 +728,7 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
             uv_queue_work(uv_default_loop(), req, EIO_Fetch,  EIO_After_Fetch);	
 
 
-        	uv_ref(uv_default_loop());
+        	//uv_ref(uv_default_loop());
         	return;
 	    }
 	    else
@@ -848,7 +848,7 @@ Handle<Value>
     req->data = f_req;
     uv_queue_work(uv_default_loop(), req, EIO_Fetch,  EIO_After_Fetch);	
     
-    uv_ref(uv_default_loop());
+    //uv_ref(uv_default_loop());
     res->Ref();
     
     return Undefined();

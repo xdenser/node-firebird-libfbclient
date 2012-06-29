@@ -417,7 +417,7 @@ Handle<Value>
    
 void Connection::EIO_After_Connect(uv_work_t *req)
   {
-    uv_unref(uv_default_loop());
+   // uv_unref(uv_default_loop());
     HandleScope scope;
     struct connect_request *conn_req = (struct connect_request *)(req->data);
 	delete req;
@@ -500,7 +500,7 @@ Handle<Value>
     uv_queue_work(uv_default_loop(), req, EIO_Connect,  EIO_After_Connect);
 
     
-    uv_ref(uv_default_loop());
+   // uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -595,7 +595,7 @@ Handle<Value>
   
 void Connection::EIO_After_TransactionRequest(uv_work_t *req)
   {
-    uv_unref(uv_default_loop());
+  //  uv_unref(uv_default_loop());
     HandleScope scope;
     struct transaction_request *tr_req = (struct transaction_request *)(req->data);
     delete req;
@@ -672,7 +672,7 @@ Handle<Value>
     uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
 
     
-    uv_ref(uv_default_loop());
+    //uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -708,7 +708,7 @@ Handle<Value>
     req->data = tr_req;
     uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
     
-    uv_ref(uv_default_loop());
+   // uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -744,7 +744,7 @@ Handle<Value>
     req->data = tr_req;
     uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
     
-    uv_ref(uv_default_loop());
+   // uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -898,7 +898,7 @@ Handle<Value>
     
     if(!event_block::FindBlock(conn->fb_events, *Event)){
         
-        event_block* eb;
+       // event_block* eb;
         
         return event_block::RegEvent(&(conn->fb_events), *Event, conn, &conn->db);
         

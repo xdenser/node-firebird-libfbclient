@@ -120,7 +120,7 @@ Handle<Value> FBblob::ReadSync(const Arguments& args)
   
 void FBblob::EIO_After_Read(uv_work_t *req)
   {
-    uv_unref(uv_default_loop());
+   // uv_unref(uv_default_loop());
     HandleScope scope;
     struct rw_request *r_req = (struct rw_request *)(req->data);
 	delete req;
@@ -209,7 +209,7 @@ Handle<Value> FBblob::Read(const Arguments& args)
     uv_queue_work(uv_default_loop(), req, EIO_Read,  EIO_After_Read);
 
     
-    uv_ref(uv_default_loop());
+    //uv_ref(uv_default_loop());
     blob->Ref();
     
     return Undefined();
@@ -279,7 +279,7 @@ FBblob::WriteSync(const Arguments& args)
   
 void FBblob::EIO_After_Write(uv_work_t *req)
   {
-    uv_unref(uv_default_loop());
+    //uv_unref(uv_default_loop());
     HandleScope scope;
     struct rw_request *w_req = (struct rw_request *)(req->data);
 	delete req;
@@ -366,7 +366,7 @@ Handle<Value>
     uv_queue_work(uv_default_loop(), req, EIO_Write,  EIO_After_Write);
 
     
-    uv_ref(uv_default_loop());
+    //uv_ref(uv_default_loop());
     blob->Ref();
     
     return Undefined();
