@@ -105,14 +105,14 @@ bool Connection::Close(){
     
   }
   
-bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp)
+bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp, int *statement_type)
   {
      XSQLDA          *sqlda;
      XSQLVAR         *var;
      static char     stmt_info[] = { isc_info_sql_stmt_type };
      char            info_buffer[20];
      short           l, num_cols, i, length, alignment, type, offset;
-     int             statement_type;
+    // int             statement_type;
      int 	     sqlda_size;	
      
      
@@ -147,13 +147,12 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
          sizeof (info_buffer), info_buffer))
      {
          l = (short) isc_vax_integer((char *) info_buffer + 1, 2);
-         statement_type = isc_vax_integer((char *) info_buffer + 3, l);
+         *statement_type = isc_vax_integer((char *) info_buffer + 3, l);
      }
      
      // It is statement w\o resultset
      if (!sqlda->sqld)
      {
-        
         free(sqlda);
         *sqldap = NULL;
                    
@@ -164,7 +163,7 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
 
         /* Commit DDL statements if that is what sql_info says */
 
-        if (trans && (statement_type == isc_info_sql_stmt_ddl))
+        if (trans && (*statement_type == isc_info_sql_stmt_ddl))
         {
             //printf("it is ddl !");
             if (isc_commit_transaction(status, &trans))
@@ -206,11 +205,19 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
       */
     if(!FBResult::prepare_sqlda(sqlda)) return false;
       
-
-    if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
-    {
-        return false;
-    }
+     if(*statement_type == isc_info_sql_stmt_select){
+    	 if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
+    	 {
+    		 return false;
+    	 }
+     }
+     else {
+    	 if (isc_dsql_execute2(status, &trans, stmtp, SQL_DIALECT_V6, NULL, sqlda)){
+    		 return false;
+    	 }
+     }
+    	 
+     
     return true;
 
   }
@@ -754,6 +761,7 @@ Handle<Value>
   Connection::QuerySync(const Arguments& args)
   {
     Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    int statement_type;
     
     HandleScope scope;
     
@@ -766,14 +774,12 @@ Handle<Value>
     
     XSQLDA *sqlda = NULL;
     isc_stmt_handle stmt = NULL;
-    bool r = connection->process_statement(&sqlda,*Query, &stmt);
+    bool r = connection->process_statement(&sqlda,*Query, &stmt, &statement_type);
     if(!r) {
       return ThrowException(Exception::Error(
             String::Concat(String::New("In querySync - "),ERR_MSG(connection, Connection))));
     }
     
-    
-
     Local<Value> argv[3];
 
     argv[0] = External::New(sqlda);
@@ -781,6 +787,13 @@ Handle<Value>
     argv[2] = External::New(connection);
     Local<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
+    	
+    if(statement_type==isc_info_sql_stmt_exec_procedure){
+    	FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
+    	Local<Value> js_value = fb_res->getCurrentRow(true);
+    	return scope.Close(js_value);
+    }
+    
 
     return scope.Close(js_result); 
         
@@ -808,8 +821,13 @@ void Connection::EIO_After_Query(uv_work_t *req)
      
      Local<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
-                                     
-     argv[1] = Local<Value>::New(js_result);    
+     
+     if(q_req->statement_type==isc_info_sql_stmt_exec_procedure){
+    	 FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
+    	 Local<Value> js_value = fb_res->getCurrentRow(true);
+    	 argv[1] = fb_res->getCurrentRow(true);
+     }
+     else  argv[1] = Local<Value>::New(js_result);    
      argv[0] = Local<Value>::New(Null());
     }
     
@@ -835,7 +853,7 @@ void Connection::EIO_Query(uv_work_t *req)
   {
     struct query_request *q_req = (struct query_request *)(req->data);
     
-    q_req->result = q_req->conn->process_statement(&q_req->sqlda,**(q_req->Query), &q_req->stmt);
+    q_req->result = q_req->conn->process_statement(&q_req->sqlda,**(q_req->Query), &q_req->stmt, &(q_req->statement_type));
     delete q_req->Query;
     return;
   }

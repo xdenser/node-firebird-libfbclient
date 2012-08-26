@@ -32,7 +32,7 @@ class Connection : public FBEventEmitter {
  
   bool Close();
   
-  bool process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp);
+  bool process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp, int *statement_type);
   
   bool prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *query, isc_stmt_handle *stmtp);
  
@@ -129,6 +129,7 @@ class Connection : public FBEventEmitter {
      String::Utf8Value *Query;
      XSQLDA *sqlda;
      isc_stmt_handle stmt;
+     int statement_type;
 	 bool result;
   };
   
