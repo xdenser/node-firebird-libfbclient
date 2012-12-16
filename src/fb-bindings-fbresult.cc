@@ -555,18 +555,14 @@ Local<Object>
   FBResult::getCurrentRow(bool asObject)
   {
     short  i, num_cols;
-//    XSQLDA         *sqlda;
-
-//    sqlda = sqldap;
-
-    num_cols = sqldap->sqld;
-    
-    
+   
     HandleScope scope;
     Local<Object> js_result_row;   
     Local<Value> js_field;
     
-//    if(!sqldap){ return scope.Close(js_result_row);}
+    if(!sqldap) num_cols = 0;
+    else num_cols = sqldap->sqld;
+ 
     
     if(asObject)
             js_result_row = Object::New();
