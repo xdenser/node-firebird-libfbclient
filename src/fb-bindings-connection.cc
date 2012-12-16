@@ -807,9 +807,8 @@ void Connection::EIO_After_Query(uv_work_t *req)
     struct query_request *q_req = (struct query_request *)(req->data);
 	delete req;
    
-	printf("in after query\n");
+	
     Local<Value> argv[3];
-    
     if (!q_req->result) {
          argv[0] = Exception::Error(
             String::Concat(String::New("While query - "),ERR_MSG(q_req->conn, Connection)));
@@ -824,7 +823,6 @@ void Connection::EIO_After_Query(uv_work_t *req)
                                      GetFunction()->NewInstance(3, argv));
      
      if(q_req->statement_type==isc_info_sql_stmt_exec_procedure ){
-    	 printf("this is proc\n");
     	 FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
     	 argv[1] = fb_res->getCurrentRow(true);
      }
@@ -835,9 +833,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
       
     TryCatch try_catch;
     
-    printf("before callback \n");
     q_req->callback->Call(Context::GetCurrent()->Global(), 2, argv);
-    printf("after callbackn");
     
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
@@ -847,8 +843,6 @@ void Connection::EIO_After_Query(uv_work_t *req)
     q_req->conn->stop_async();
     q_req->conn->Unref();
     free(q_req);
-    
-    printf("out aft query\n");
     
    // scope.Close(argv[1]); 
     
