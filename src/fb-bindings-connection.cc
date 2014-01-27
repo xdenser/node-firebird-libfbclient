@@ -105,14 +105,14 @@ bool Connection::Close(){
     
   }
   
-bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp)
+bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp, int *statement_type)
   {
      XSQLDA          *sqlda;
      XSQLVAR         *var;
      static char     stmt_info[] = { isc_info_sql_stmt_type };
      char            info_buffer[20];
      short           l, num_cols, i, length, alignment, type, offset;
-     int             statement_type;
+    // int             statement_type;
      int 	     sqlda_size;	
      
      
@@ -147,13 +147,12 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
          sizeof (info_buffer), info_buffer))
      {
          l = (short) isc_vax_integer((char *) info_buffer + 1, 2);
-         statement_type = isc_vax_integer((char *) info_buffer + 3, l);
+         *statement_type = isc_vax_integer((char *) info_buffer + 3, l);
      }
      
      // It is statement w\o resultset
      if (!sqlda->sqld)
      {
-        
         free(sqlda);
         *sqldap = NULL;
                    
@@ -164,7 +163,7 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
 
         /* Commit DDL statements if that is what sql_info says */
 
-        if (trans && (statement_type == isc_info_sql_stmt_ddl))
+        if (trans && (*statement_type == isc_info_sql_stmt_ddl))
         {
             //printf("it is ddl !");
             if (isc_commit_transaction(status, &trans))
@@ -206,11 +205,19 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
       */
     if(!FBResult::prepare_sqlda(sqlda)) return false;
       
-
-    if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
-    {
-        return false;
-    }
+     if(*statement_type == isc_info_sql_stmt_select){
+    	 if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
+    	 {
+    		 return false;
+    	 }
+     }
+     else {
+    	 if (isc_dsql_execute2(status, &trans, stmtp, SQL_DIALECT_V6, NULL, sqlda)){
+    		 return false;
+    	 }
+     }
+    	 
+     
     return true;
 
   }
@@ -417,7 +424,7 @@ Handle<Value>
    
 void Connection::EIO_After_Connect(uv_work_t *req)
   {
-    uv_unref(uv_default_loop());
+   // uv_unref(uv_default_loop());
     HandleScope scope;
     struct connect_request *conn_req = (struct connect_request *)(req->data);
 	delete req;
@@ -500,7 +507,7 @@ Handle<Value>
     uv_queue_work(uv_default_loop(), req, EIO_Connect,  EIO_After_Connect);
 
     
-    uv_ref(uv_default_loop());
+   // uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -595,7 +602,7 @@ Handle<Value>
   
 void Connection::EIO_After_TransactionRequest(uv_work_t *req)
   {
-    uv_unref(uv_default_loop());
+  //  uv_unref(uv_default_loop());
     HandleScope scope;
     struct transaction_request *tr_req = (struct transaction_request *)(req->data);
     delete req;
@@ -672,7 +679,7 @@ Handle<Value>
     uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
 
     
-    uv_ref(uv_default_loop());
+    //uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -708,7 +715,7 @@ Handle<Value>
     req->data = tr_req;
     uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
     
-    uv_ref(uv_default_loop());
+   // uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -744,7 +751,7 @@ Handle<Value>
     req->data = tr_req;
     uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
     
-    uv_ref(uv_default_loop());
+   // uv_ref(uv_default_loop());
     conn->Ref();
     
     return Undefined();
@@ -754,6 +761,7 @@ Handle<Value>
   Connection::QuerySync(const Arguments& args)
   {
     Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    int statement_type;
     
     HandleScope scope;
     
@@ -766,14 +774,12 @@ Handle<Value>
     
     XSQLDA *sqlda = NULL;
     isc_stmt_handle stmt = NULL;
-    bool r = connection->process_statement(&sqlda,*Query, &stmt);
+    bool r = connection->process_statement(&sqlda,*Query, &stmt, &statement_type);
     if(!r) {
       return ThrowException(Exception::Error(
             String::Concat(String::New("In querySync - "),ERR_MSG(connection, Connection))));
     }
     
-    
-
     Local<Value> argv[3];
 
     argv[0] = External::New(sqlda);
@@ -781,6 +787,13 @@ Handle<Value>
     argv[2] = External::New(connection);
     Local<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
+    	
+    if(statement_type==isc_info_sql_stmt_exec_procedure){
+    	FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
+    	Local<Value> js_value = fb_res->getCurrentRow(true);
+    	return scope.Close(js_value);
+    }
+    
 
     return scope.Close(js_result); 
         
@@ -793,9 +806,9 @@ void Connection::EIO_After_Query(uv_work_t *req)
     HandleScope scope;
     struct query_request *q_req = (struct query_request *)(req->data);
 	delete req;
-
+   
+	
     Local<Value> argv[3];
-    
     if (!q_req->result) {
          argv[0] = Exception::Error(
             String::Concat(String::New("While query - "),ERR_MSG(q_req->conn, Connection)));
@@ -808,16 +821,19 @@ void Connection::EIO_After_Query(uv_work_t *req)
      
      Local<Object> js_result(FBResult::constructor_template->
                                      GetFunction()->NewInstance(3, argv));
-                                     
-     argv[1] = Local<Value>::New(js_result);    
+     
+     if(q_req->statement_type==isc_info_sql_stmt_exec_procedure ){
+    	 FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
+    	 argv[1] = fb_res->getCurrentRow(true);
+     }
+     else  argv[1] = Local<Value>::New(js_result);    
      argv[0] = Local<Value>::New(Null());
     }
-    
+   
       
     TryCatch try_catch;
     
     q_req->callback->Call(Context::GetCurrent()->Global(), 2, argv);
-    
     
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
@@ -827,6 +843,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
     q_req->conn->stop_async();
     q_req->conn->Unref();
     free(q_req);
+    
    // scope.Close(argv[1]); 
     
   }
@@ -835,7 +852,8 @@ void Connection::EIO_Query(uv_work_t *req)
   {
     struct query_request *q_req = (struct query_request *)(req->data);
     
-    q_req->result = q_req->conn->process_statement(&q_req->sqlda,**(q_req->Query), &q_req->stmt);
+    q_req->result = q_req->conn->process_statement(&q_req->sqlda,**(q_req->Query), &q_req->stmt, &(q_req->statement_type));
+    
     delete q_req->Query;
     return;
   }
@@ -872,7 +890,7 @@ Handle<Value>
 	uv_work_t* req = new uv_work_t();
     req->data = q_req;
     uv_queue_work(uv_default_loop(), req, EIO_Query,  EIO_After_Query);
-
+    
     
    //uv_ref(uv_default_loop());
     conn->Ref();
@@ -898,7 +916,7 @@ Handle<Value>
     
     if(!event_block::FindBlock(conn->fb_events, *Event)){
         
-        event_block* eb;
+       // event_block* eb;
         
         return event_block::RegEvent(&(conn->fb_events), *Event, conn, &conn->db);
         

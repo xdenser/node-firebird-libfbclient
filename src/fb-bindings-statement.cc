@@ -138,7 +138,7 @@ Handle<Value>
  
 void FBStatement::EIO_After_Exec(uv_work_t *req)
  {
-   uv_unref(uv_default_loop());
+   //uv_unref(uv_default_loop());
    HandleScope scope;
    
    struct exec_request *e_req = (struct exec_request *)(req->data);
@@ -258,7 +258,7 @@ Handle<Value>
     uv_queue_work(uv_default_loop(), req, EIO_Exec,  EIO_After_Exec);
 
     
-    uv_ref(uv_default_loop());
+   // uv_ref(uv_default_loop());
     fb_stmt->Ref();
     
     return Undefined();
