@@ -22,17 +22,13 @@ As for now in plans are:
 # Getting Started
 
 
-##Under Linux
+##Under Linux and Windows
 You will need:
- NodeJS (tested with v0.6.13)
+ NodeJS (tested with v0.10.25)
  Firebird (tested with v2.5)
 
- All things below were tested on CentOS 5.5.
- 
-Get Firebird:
- 
-    wget http://downloads.sourceforge.net/project/firebird/firebird-linux-i386/2.5-Release/FirebirdCS-2.5.0.26074-0.i686.rpm 
-    rpm -ivh FirebirdCS-2.5.0.26074-0.i686.rpm 
+
+Get Firebird.
 
 Update your path: 
     export PATH=$PATH:/opt/firebird/bin
@@ -48,8 +44,7 @@ Create some Database:
 Clone repository and build module
 
     git clone git://github.com/xdenser/node-firebird-libfbclient.git
-    node-waf configure build
-    node-waf configure install
+    npm install
     
 or use npm:
     
@@ -57,8 +52,8 @@ or use npm:
 
 To run tests update ./tests/config.js with your test database connection parameters and
 
-    git submodule update --init
-    node-waf test
+    npm install nodeunit
+    ./node_modules/.bin/nodeunit tests/def
      
 Play with it from node:
 
@@ -74,17 +69,6 @@ Play with it from node:
 
 Check also samples directory and [this sample application](https://github.com/xdenser/node-fb-sample).    
 
-
-##Under Windows
-
-You need Firebird client library installed.
-
-- [Experimental build for Windows link1](https://github.com/downloads/xdenser/node-firebird-libfbclient/node-firebird-win-v0.0.9.zip)
-
-Unzip, modify config.js for your DB. Run:
-
-    node.exe test.js
-   
 
 # Links
 
