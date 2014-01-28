@@ -11,7 +11,7 @@ var sys = require("util");
 var
   fb_binding = require("../../firebird");
 var 
-  testCase = require("../../tools/nodeunit").testCase;  
+  testCase = require("nodeunit").testCase;  
   
 var util = {
             getDataTypeResult: function(datatype,value){

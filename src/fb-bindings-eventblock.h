@@ -10,8 +10,8 @@
 
 #include <ibase.h>
 #include <node.h>
-#include <uv-private/ev.h>
-#include <uv-private/eio.h>
+#include <uv.h>
+//#include <eio.h>
 #include <v8.h>
 #include "./fb-bindings.h"
 

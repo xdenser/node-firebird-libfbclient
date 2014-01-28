@@ -3,7 +3,6 @@
  *
  * See license text in LICENSE file
  */
-#pragma comment(lib, "uv.lib")
 #define BUILDING_NODE_EXTENSION 1
 #include "./fb-bindings-statement.h" 
 

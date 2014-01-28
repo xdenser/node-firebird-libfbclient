@@ -8,9 +8,22 @@
                    './src/fb-bindings-fbeventemitter.cc', 
                    './src/fb-bindings-statement.cc' ],
       'include_dirs': [
-          '/usr/include/'
+          '<(module_root_dir)/fb/include'
       ],
-      'libraries': [ '-L/usr/lib -lfbclient' ]
+      "conditions" : [
+            [
+                'OS=="linux"', {
+                    'libraries': [ '-lfbclient' ]
+                }
+            ],
+            [
+                'OS=="win"', {
+                  "libraries" : [
+                      '<(module_root_dir)/fb/lib/fbclient_ms.lib'
+                  ]
+                }
+            ]
+      ]
     }
   ]
 }

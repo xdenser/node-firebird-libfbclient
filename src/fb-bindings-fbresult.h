@@ -12,7 +12,7 @@
 #include <string.h>
 #include <math.h>
 #include <ctime> 
-#include <uv-private/eio.h>
+//#include <eio.h>
 #include "./fb-bindings.h"
 #include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-blob.h"

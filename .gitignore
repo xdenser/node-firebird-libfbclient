@@ -2,3 +2,4 @@
 build/
 test.js
 issue*
+/node_modules

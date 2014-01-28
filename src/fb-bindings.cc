@@ -9,10 +9,6 @@
  *
  * @ignore
  */
-#pragma comment(lib, "v8_snapshot.lib")
-#pragma comment(lib, "uv.lib")
-#pragma comment(lib, "node.lib")
-#pragma comment(lib, "fbclient_ms.lib")
 
 
 #include "./fb-bindings-connection.h"

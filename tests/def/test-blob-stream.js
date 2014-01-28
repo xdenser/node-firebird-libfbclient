@@ -11,7 +11,7 @@ var cfg = require("../config").cfg;
 var
   fb_binding = require("../../firebird");
 var 
-  testCase = require("../../tools/nodeunit").testCase;  
+  testCase = require("nodeunit").testCase;  
 var 
   fs = require('fs');  
 var 

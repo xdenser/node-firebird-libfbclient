@@ -11,7 +11,7 @@ var
   fb_binding = require("../../firebird.js");
   
 var 
-  testCase = require("../../tools/nodeunit").testCase;  
+  testCase = require("nodeunit").testCase;  
 
 module.exports = testCase({
          setUp: function(callback){

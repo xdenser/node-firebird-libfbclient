@@ -8,7 +8,7 @@
 #define BUILDING_NODE_EXTENSION 1
 
 
-#include <uv-private/ev.h>
+#include <uv.h>
 #include "./fb-bindings.h"
 #include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-eventblock.h"

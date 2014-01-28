@@ -49,14 +49,14 @@ function WaitForFinish(finished,clean,timeout){
   },timeout);
   
   
-  process.nextTick(function loop(){
+  /*process.nextTick(function loop(){
      if(finished.call()||timedout){
        clearTimeout(tid);
        clean.call();
      }
      else  process.nextTick(loop);
   });
-  /*
+  */
   setTimeout(function loop(){
      if(finished.call()||timedout){
        clearTimeout(tid);
@@ -64,7 +64,7 @@ function WaitForFinish(finished,clean,timeout){
      }
      else setTimeout(loop,0);
   },0);
-  */     
+       
 }
 
 function CleanUp(){
