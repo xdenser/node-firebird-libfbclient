@@ -721,7 +721,7 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
 		    
 			uv_work_t* req = new uv_work_t();
             req->data = f_req;
-            uv_queue_work(uv_default_loop(), req, EIO_Fetch,  EIO_After_Fetch);	
+            uv_queue_work(uv_default_loop(), req, EIO_Fetch,  (uv_after_work_cb)EIO_After_Fetch);	
 
 
         	//uv_ref(uv_default_loop());
@@ -842,7 +842,7 @@ Handle<Value>
 
 	uv_work_t* req = new uv_work_t();
     req->data = f_req;
-    uv_queue_work(uv_default_loop(), req, EIO_Fetch,  EIO_After_Fetch);	
+    uv_queue_work(uv_default_loop(), req, EIO_Fetch,  (uv_after_work_cb)EIO_After_Fetch);	
     
     //uv_ref(uv_default_loop());
     res->Ref();
