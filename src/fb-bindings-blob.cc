@@ -206,7 +206,7 @@ Handle<Value> FBblob::Read(const Arguments& args)
 
 	uv_work_t* req = new uv_work_t();
     req->data = r_req;
-    uv_queue_work(uv_default_loop(), req, EIO_Read,  EIO_After_Read);
+    uv_queue_work(uv_default_loop(), req, EIO_Read,  (uv_after_work_cb)EIO_After_Read);
 
     
     //uv_ref(uv_default_loop());
@@ -363,7 +363,7 @@ Handle<Value>
 
 	uv_work_t* req = new uv_work_t();
     req->data = w_req;
-    uv_queue_work(uv_default_loop(), req, EIO_Write,  EIO_After_Write);
+    uv_queue_work(uv_default_loop(), req, EIO_Write,  (uv_after_work_cb)EIO_After_Write);
 
     
     //uv_ref(uv_default_loop());

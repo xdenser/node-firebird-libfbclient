@@ -255,7 +255,7 @@ Handle<Value>
 
 	uv_work_t* req = new uv_work_t();
     req->data = e_req;
-    uv_queue_work(uv_default_loop(), req, EIO_Exec,  EIO_After_Exec);
+    uv_queue_work(uv_default_loop(), req, EIO_Exec,  (uv_after_work_cb)EIO_After_Exec);
 
     
    // uv_ref(uv_default_loop());

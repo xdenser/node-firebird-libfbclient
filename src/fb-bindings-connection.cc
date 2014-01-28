@@ -504,7 +504,7 @@ Handle<Value>
     
 	uv_work_t* req = new uv_work_t();
     req->data = conn_req;
-    uv_queue_work(uv_default_loop(), req, EIO_Connect,  EIO_After_Connect);
+    uv_queue_work(uv_default_loop(), req, EIO_Connect,  (uv_after_work_cb)EIO_After_Connect);
 
     
    // uv_ref(uv_default_loop());
@@ -676,7 +676,7 @@ Handle<Value>
 
     uv_work_t* req = new uv_work_t();
     req->data = tr_req;
-    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
+    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  (uv_after_work_cb)EIO_After_TransactionRequest);
 
     
     //uv_ref(uv_default_loop());
@@ -713,7 +713,7 @@ Handle<Value>
 
 	uv_work_t* req = new uv_work_t();
     req->data = tr_req;
-    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
+    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  (uv_after_work_cb)EIO_After_TransactionRequest);
     
    // uv_ref(uv_default_loop());
     conn->Ref();
@@ -749,7 +749,7 @@ Handle<Value>
 
     uv_work_t* req = new uv_work_t();
     req->data = tr_req;
-    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  EIO_After_TransactionRequest);
+    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  (uv_after_work_cb)EIO_After_TransactionRequest);
     
    // uv_ref(uv_default_loop());
     conn->Ref();
@@ -889,7 +889,7 @@ Handle<Value>
 
 	uv_work_t* req = new uv_work_t();
     req->data = q_req;
-    uv_queue_work(uv_default_loop(), req, EIO_Query,  EIO_After_Query);
+    uv_queue_work(uv_default_loop(), req, EIO_Query,  (uv_after_work_cb)EIO_After_Query);
     
     
    //uv_ref(uv_default_loop());
