@@ -324,7 +324,7 @@ Asynchronously writes BLOB segment (chunk) from buffer and calls callback functi
 
 Represents BLOB stream. Create BLOB stream using `var strm = new fb.Stream(FBblob);`. 
 You may pipe strm to/from NodeJS Stream objects (fs or socket). 
-You may also look at [NodeJS Streams reference](http://nodejs.org/docs/v0.4.4/api/streams.html).
+You may also look at [NodeJS Streams reference](http://nodejs.org/api/stream.html).
 
 
 
