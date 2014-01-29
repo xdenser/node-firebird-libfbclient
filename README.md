@@ -75,7 +75,7 @@ Check also samples directory and [this sample application](https://github.com/xd
 - [node.js and firebird installing on Amazon EC2 instance](http://mapopa.blogspot.com/2011/01/nodejs-and-firebird-installing-on.html) on Mariuz's Blog
 - [Catch Firebird events with Node.js](http://www.king-foo.be/2011/07/catch-firebird-events-with-node-js) on www.king-foo.be 
 - [NodeJS home](http://nodejs.org)
-- [Collection of NodeJS modules](https://github.com/joyent/node/wiki/modules)
+- [Collection of NodeJS modules](https://npmjs.org/)
  
 # Reference
 
