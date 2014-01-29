@@ -10,7 +10,7 @@
   ]
 , "bugs" : { "url" : "http://github.com/xdenser/node-firebird-libfbclient/issues" } 
 , "licenses" : [ { "type" : "MIT" } ] 
-, "repositories" :
+, "repository" :
   [ { "type" : "git"
     , "url" : "http://github.com/xdenser/node-firebird-libfbclient.git"
     }
