@@ -113,8 +113,9 @@ Handle<Value>
   
   void FBResult::clean_sqlda(XSQLDA *sqlda)
   {
+    int i;
     XSQLVAR* var;
-    for(int i = 0, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
+    for(i = 0, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
     {
       switch(var->sqltype & ~1)
       {
