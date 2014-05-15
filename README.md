@@ -22,10 +22,10 @@ As for now in plans are:
 # Getting Started
 
 
-##Under Linux and Windows
+##Under Linux, Windows and MacOS X
 You will need:
- NodeJS (tested with v0.10.25)
- Firebird (tested with v2.5)
+ NodeJS (tested with v0.10.x)
+ Firebird (tested with v2.5.x)
 
 
 Get Firebird.
