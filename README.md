@@ -3,21 +3,21 @@ Inspired by ibpp, firebird samples, node-mysql-libmysql, node-postgress and othe
 
 # Features
 
-* Synchronous and Asynchronous methods for connection, query and fetch data;
-* Support of Firebird Events (post_event statement);
-* Covered with tests in nodeunit;
-* blob field support;
-* blob stream compatible to node stream class;
-* prepared statements;
+* Synchronous and Asynchronous methods for connection, query and fetch data
+* Support of Firebird Events (post_event statement)
+* Covered with tests in nodeunit
+* blob field support
+* blob stream compatible to node stream class
+* prepared statements
 
 As for now in plans are:
 
-* connection pool support;
-* prepared statements pool;
-* transaction parameters support;
-* continous refactoring;
-* more tests;
-* services api.
+* connection pool support
+* prepared statements pool
+* transaction parameters support
+* continous refactoring
+* more tests
+* services api
 
 # Getting Started
 
