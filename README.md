@@ -1,5 +1,5 @@
-C++ NodeJS module to work with Firebird SQL Server. Uses libfbclient.
-Inspired by ibpp, firebird samples, node-mysql-libmysql, node-postgress and other node modules used as sample source. 
+C++ NodeJS module to work with Firebird SQL Server. Uses fbclient library and with a few tweaks it can use libfbembedded
+
 
 # Features
 
