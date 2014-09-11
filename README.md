@@ -1,31 +1,31 @@
-C++ NodeJS module to work with Firebird SQL Server. Uses libfbclient.
-Inspired by ibpp, firebird samples, node-mysql-libmysql, node-postgress and other node modules used as sample source. 
+C++ NodeJS module to work with Firebird SQL Server. Uses fbclient library and with a few tweaks it can use libfbembedded
+
 
 # Features
 
-* Synchronous and Asynchronous methods for connection, query and fetch data;
-* Support of Firebird Events (post_event statement);
-* Covered with tests in nodeunit;
-* blob field support;
-* blob stream compatible to node stream class;
-* prepared statements;
+* Synchronous and Asynchronous methods for connection, query and fetch data
+* Support of Firebird Events (post_event statement)
+* Covered with tests in nodeunit
+* blob field support
+* blob stream compatible to node stream class
+* prepared statements
 
 As for now in plans are:
 
-* connection pool support;
-* prepared statements pool;
-* transaction parameters support;
-* continous refactoring;
-* more tests;
-* services api.
+* connection pool support
+* prepared statements pool
+* transaction parameters support
+* continous refactoring
+* more tests
+* services api
 
 # Getting Started
 
 
-##Under Linux and Windows
+##Under Linux, Windows and MacOS X
 You will need:
- NodeJS (tested with v0.10.25)
- Firebird (tested with v2.5)
+ NodeJS (tested with v0.10.x)
+ Firebird (tested with v2.5.x)
 
 
 Get Firebird.
@@ -75,7 +75,7 @@ Check also samples directory and [this sample application](https://github.com/xd
 - [node.js and firebird installing on Amazon EC2 instance](http://mapopa.blogspot.com/2011/01/nodejs-and-firebird-installing-on.html) on Mariuz's Blog
 - [Catch Firebird events with Node.js](http://www.king-foo.be/2011/07/catch-firebird-events-with-node-js) on www.king-foo.be 
 - [NodeJS home](http://nodejs.org)
-- [Collection of NodeJS modules](https://github.com/joyent/node/wiki/modules)
+- [Collection of NodeJS modules](https://npmjs.org/)
  
 # Reference
 
@@ -324,7 +324,7 @@ Asynchronously writes BLOB segment (chunk) from buffer and calls callback functi
 
 Represents BLOB stream. Create BLOB stream using `var strm = new fb.Stream(FBblob);`. 
 You may pipe strm to/from NodeJS Stream objects (fs or socket). 
-You may also look at [NodeJS Streams reference](http://nodejs.org/docs/v0.4.4/api/streams.html).
+You may also look at [NodeJS Streams reference](http://nodejs.org/api/stream.html).
 
 
 
