@@ -10,38 +10,37 @@ Persistent<FunctionTemplate> FBEventEmitter::constructor_template;
 
 void FBEventEmitter::Initialize(v8::Handle<v8::Object> target)
   {
-    start_async_symbol = NODE_PSYMBOL("fbStartAsync");
-    stop_async_symbol = NODE_PSYMBOL("fbStopAsync");
     
     Local<FunctionTemplate> t = FunctionTemplate::New();
     
     constructor_template = Persistent<FunctionTemplate>::New(t);
-    constructor_template->SetClassName(String::NewSymbol("FBEventEmitter"));
+    constructor_template->SetClassName(NanNew<String>("FBEventEmitter"));
            
-    target->Set(String::NewSymbol("FBEventEmitter"),  constructor_template->GetFunction());
+    target->Set(NanNew<String>("FBEventEmitter"),  constructor_template->GetFunction());
   }
  
  
 void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
   {
-    HandleScope scope;
+	NanScope();;
     Handle<Value> argv1[11];
-    if(argc>10) ThrowException(Exception::Error(String::New("Cant process more than 10 arguments")));
+    if(argc>10) NanThrowError("Cant process more than 10 arguments");
     argv1[0] = event;
     for(int i=0;i<argc;i++) argv1[i+1] = argv[i];
-    node::MakeCallback(handle_,"emit",argc+1,argv1);
+    NanMakeCallback(handle_,"emit",argc+1,argv1);
+    //node::MakeCallback(handle_,"emit",argc+1,argv1);
   }  
 
 void FBEventEmitter::start_async()
   {
     in_async = true;
-    Emit(start_async_symbol, 0, NULL);  
+    Emit(NanNew("fbStartAsync"), 0, NULL);
   }
   
 void FBEventEmitter::stop_async()
   {
     in_async = false;
-    Emit(stop_async_symbol, 0, NULL);  
+    Emit(NanNew("fbStopAsync"), 0, NULL);
   }
 
 FBEventEmitter::FBEventEmitter () : ObjectWrap () 
@@ -52,11 +51,13 @@ FBEventEmitter::FBEventEmitter () : ObjectWrap ()
    // node::MakeCallback(handle_,"init",0,argv);
   }
 
-Handle<Value>
+/*Handle<Value>
   FBEventEmitter::InAsyncGetter(Local<String> property,
-                                const AccessorInfo &info) 
+                                const AccessorInfo &info) */
+
+NAN_GETTER(FBEventEmitter::InAsyncGetter)
   {
-    HandleScope scope;
-    FBEventEmitter *fbee = ObjectWrap::Unwrap<FBEventEmitter>(info.Holder());
-    return scope.Close(Boolean::New(fbee->in_async));
+    NanScope();
+    FBEventEmitter *fbee = ObjectWrap::Unwrap<FBEventEmitter>(args.This());
+    NanReturnValue(NanNew<Boolean>(fbee->in_async));
   }

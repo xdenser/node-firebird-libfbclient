@@ -8,7 +8,8 @@
                    './src/fb-bindings-fbeventemitter.cc',
                    './src/fb-bindings-statement.cc' ],
       'include_dirs': [
-          '<(module_root_dir)/fb/include'
+          '<(module_root_dir)/fb/include',
+          "<!(node -e \"require('nan')\")"
       ],
       "conditions" : [
             [

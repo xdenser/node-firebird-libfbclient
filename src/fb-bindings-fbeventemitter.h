@@ -12,8 +12,6 @@
 using namespace node;
 using namespace v8;
 
-static Persistent<String> start_async_symbol;
-static Persistent<String> stop_async_symbol;
 
 class FBEventEmitter: public ObjectWrap {
 public: 
@@ -28,9 +26,12 @@ protected:
 
   FBEventEmitter ();
 
-  static Handle<Value>
+  /*static Handle<Value>
   InAsyncGetter(Local<String> property,
                       const AccessorInfo &info);
+  */
+  static NAN_GETTER(InAsyncGetter);
+
 private:
   bool in_async;
 };
