@@ -25,14 +25,18 @@ public:
   Initialize (v8::Handle<v8::Object> target);
   
   static bool HasInstance(v8::Handle<v8::Value> val);
-  void getId(ISC_QUAD* Idp); 
+  void getId(ISC_QUAD* Idp);
   
+
  protected:
-  static Handle<Value>
-  New(const Arguments& args);
   
-  static Handle<Value>
-  ReadSync(const Arguments& args);
+  static NAN_METHOD(New);
+  static NAN_METHOD(ReadSync);
+  static NAN_METHOD(Read);
+  static NAN_METHOD(OpenSync);
+  static NAN_METHOD(CloseSync);
+  static NAN_METHOD(WriteSync);
+  static NAN_METHOD(Write);
   
   struct rw_request {
      Persistent<Function> callback;
@@ -43,34 +47,16 @@ public:
      ISC_STATUS_ARRAY status;
   };
   
+
   static void EIO_After_Read(uv_work_t *req);
   
   static void EIO_Read(uv_work_t *req);
-  
-  static Handle<Value>
-  Read(const Arguments& args);
-  
-  static Handle<Value>
-  OpenSync(const Arguments& args);
-  
-  static Handle<Value>
-  CloseSync(const Arguments& args);
-  
-  static Handle<Value>
-  WriteSync(const Arguments& args);
-  
+
   static void EIO_After_Write(uv_work_t *req);
   
   static void EIO_Write(uv_work_t *req);
   
-  static Handle<Value>
-  Write(const Arguments& args);
-  
-  
-  static Handle<Value>
-  IsReadGetter(Local<String> property,
-                      const AccessorInfo &info);
-
+  static NAN_GETTER(IsReadGetter);
       
   FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status);
   ~FBblob();
@@ -88,7 +74,10 @@ public:
   bool is_read;
   static char err_message[MAX_ERR_MSG_LEN];
   
+
   
-};  
+};
+
+
 
 #endif

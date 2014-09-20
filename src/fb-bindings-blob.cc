@@ -16,13 +16,14 @@ void FBblob::Initialize (v8::Handle<v8::Object> target)
   {
     HandleScope scope;
     
-    Local<FunctionTemplate> t = FunctionTemplate::New(FBblob::New);
+    Local<FunctionTemplate> t = NanNew<FunctionTemplate>(FBblob::New);
 
     t->Inherit(FBEventEmitter::constructor_template);
-        
-    constructor_template = Persistent<FunctionTemplate>::New(t);
+
+    NanAssignPersistent(constructor_template,t);
+
     constructor_template->Inherit(FBEventEmitter::constructor_template);
-    constructor_template->SetClassName(String::NewSymbol("FBblob"));
+    constructor_template->SetClassName(NanNew("FBblob"));
 
     Local<ObjectTemplate> instance_template =
         constructor_template->InstanceTemplate();
@@ -38,10 +39,10 @@ void FBblob::Initialize (v8::Handle<v8::Object> target)
     instance_template->SetInternalFieldCount(1);
     
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
-    instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
-    instance_t->SetAccessor(String::NewSymbol("isReadable"),IsReadGetter);
+    instance_t->SetAccessor(NanNew("inAsyncCall"),InAsyncGetter);
+    instance_t->SetAccessor(NanNew("isReadable"),IsReadGetter);
     
-    target->Set(String::NewSymbol("FBblob"), t->GetFunction());
+    target->Set(NanNew("FBblob"), t->GetFunction());
 
   }
 
@@ -63,9 +64,10 @@ void FBblob::getId(ISC_QUAD* Idp)
     *Idp = blob_id;
   }    
   
-Handle<Value> FBblob::New(const Arguments& args)
-  {
-    HandleScope scope;
+NAN_METHOD(FBblob::New)
+   {
+
+    NanScope();
 
     ISC_QUAD *quad = NULL;
     Connection  *conn = NULL;
@@ -84,23 +86,21 @@ Handle<Value> FBblob::New(const Arguments& args)
     status[1] = 0;
     FBblob *res = new FBblob(quad, conn, status);
     if(status[1]) 
-     return ThrowException(Exception::Error(
-         String::Concat(String::New("In FBblob::New - "),ERR_MSG_STAT(status, FBblob))));
+     return NanThrowError(String::Concat(NanNew("In FBblob::New - "),ERR_MSG_STAT(status, FBblob)));
          
     res->Wrap(args.This());
 
-    return args.This();
+    NanReturnValue(args.This());
   }
   
-Handle<Value> FBblob::ReadSync(const Arguments& args)
+NAN_METHOD(FBblob::ReadSync)
   {
-    HandleScope scope;
+	 NanScope();
     
     FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());
     
     if (!Buffer::HasInstance(args[0])) {
-        return ThrowException(Exception::Error(
-                String::New("First argument needs to be a buffer")));
+        return NanThrowError("First argument needs to be a buffer");
     }
     
     Local<Object> buffer_obj = args[0]->ToObject();
@@ -111,11 +111,10 @@ Handle<Value> FBblob::ReadSync(const Arguments& args)
     ISC_STATUS_ARRAY status;
     int res = blob->read(status, buffer_data, (unsigned short) buffer_length);
     if(res==-1) {
-       return ThrowException(Exception::Error(
-         String::Concat(String::New("In FBblob::_readSync - "),ERR_MSG_STAT(status, FBblob))));
+       return NanThrowError(String::Concat(NanNew("In FBblob::New - "),ERR_MSG_STAT(status, FBblob)));
     }
     
-    return scope.Close(Integer::New(res));
+    NanReturnValue(NanNew<Integer>(res));
   }
   
 void FBblob::EIO_After_Read(uv_work_t *req)
@@ -162,20 +161,18 @@ void FBblob::EIO_Read(uv_work_t *req)
     return;
   }
 
-Handle<Value> FBblob::Read(const Arguments& args)
+NAN_METHOD(FBblob::Read)
   {
-    HandleScope scope;
+	NanScope();
     FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());
     
         
     if (args.Length() != 2){
-       return ThrowException(Exception::Error(
-            String::New("Expecting 2 arguments")));
+       return NanThrowError("Expecting 2 arguments");
     }
     
     if (!Buffer::HasInstance(args[0])) {
-        return ThrowException(Exception::Error(
-                String::New("First argument needs to be a buffer")));
+        return NanThrowError("First argument needs to be a buffer");
     }
     
     Local<Object> buffer_obj = args[0]->ToObject();
@@ -183,8 +180,7 @@ Handle<Value> FBblob::Read(const Arguments& args)
     size_t buffer_length = Buffer::Length(buffer_obj);
     
     if(!args[1]->IsFunction()) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting Function as second argument")));
+      return NanThrowError("Expecting Function as second argument");
     }
         
     struct rw_request *r_req =
@@ -192,8 +188,7 @@ Handle<Value> FBblob::Read(const Arguments& args)
 
     if (!r_req) {
       V8::LowMemoryNotification();
-      return ThrowException(Exception::Error(
-            String::New("Could not allocate memory.")));
+      return NanThrowError("Could not allocate memory.");
     }
     
     r_req->blob = blob;
@@ -212,52 +207,48 @@ Handle<Value> FBblob::Read(const Arguments& args)
     //uv_ref(uv_default_loop());
     blob->Ref();
     
-    return Undefined();
+    NanReturnUndefined();
   }
   
-Handle<Value>
-FBblob::OpenSync(const Arguments& args)
+NAN_METHOD(FBblob::OpenSync)
   {
-    HandleScope scope;
+	NanScope();
     FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());
     
     ISC_STATUS_ARRAY status;
     if(!blob->open(status)){
-       return ThrowException(Exception::Error(
-         String::Concat(String::New("In FBblob::_openSync - "),ERR_MSG_STAT(status, FBblob))));
+       return NanThrowError(
+         String::Concat(String::New("In FBblob::_openSync - "),ERR_MSG_STAT(status, FBblob)));
     } 
     
-    return Undefined();
+    NanReturnUndefined();
   }
   
-Handle<Value>
-FBblob::CloseSync(const Arguments& args)
+NAN_METHOD(FBblob::CloseSync)
   { 
-    HandleScope scope;
+	NanScope();
     FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());
     
     ISC_STATUS_ARRAY status;
     status[1] = 0;
     blob->close(status);
     if(status[1]){
-       return ThrowException(Exception::Error(
-         String::Concat(String::New("In FBblob::_closeSync - "),ERR_MSG_STAT(status, FBblob))));
+       return NanThrowError(
+         String::Concat(String::New("In FBblob::_closeSync - "),ERR_MSG_STAT(status, FBblob)));
     } 
     
-    return Undefined();
+    NanReturnUndefined();
   }
   
-Handle<Value>
-FBblob::WriteSync(const Arguments& args)
+NAN_METHOD(FBblob::WriteSync)
   {
-    HandleScope scope;
+	NanScope();
     FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());  
     ISC_STATUS_ARRAY status;     
     
     
     if( (args.Length() > 0) && !Buffer::HasInstance(args[0])) {
-        return ThrowException(Exception::Error(
-                String::New("First argument needs to be a buffer")));
+        return NanThrowError("First argument needs to be a buffer");
     }
         
     Local<Object> buffer_obj = args[0]->ToObject();
@@ -271,10 +262,10 @@ FBblob::WriteSync(const Arguments& args)
     }
 
     if(isc_put_segment(status, &blob->handle, len, buf))
-      return ThrowException(Exception::Error(
-         String::Concat(String::New("In FBblob::_writeSync - "),ERR_MSG_STAT(status, FBblob))));
+      return NanThrowError(
+         String::Concat(String::New("In FBblob::_writeSync - "),ERR_MSG_STAT(status, FBblob)));
          
-    return scope.Close(Integer::New(len));     
+    NanReturnValue(NanNew<Integer>(len));
   }  
   
 void FBblob::EIO_After_Write(uv_work_t *req)
@@ -315,15 +306,13 @@ void FBblob::EIO_Write(uv_work_t *req)
   }
   
   
-Handle<Value>
- FBblob::Write(const Arguments& args)
+NAN_METHOD(FBblob::Write)
   { 
-    HandleScope scope;
+	NanScope();
     FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());
     
     if( (args.Length() > 0) && !Buffer::HasInstance(args[0])) {
-        return ThrowException(Exception::Error(
-                String::New("First argument needs to be a buffer")));
+        return NanThrowError("First argument needs to be a buffer");
     }
     
     Local<Object> buffer_obj = args[0]->ToObject();
@@ -336,8 +325,7 @@ Handle<Value>
 
     if (!w_req) {
       V8::LowMemoryNotification();
-      return ThrowException(Exception::Error(
-            String::New("Could not allocate memory.")));
+      return NanThrowError("Could not allocate memory.");
     }
     
     w_req->blob = blob;
@@ -369,17 +357,16 @@ Handle<Value>
     //uv_ref(uv_default_loop());
     blob->Ref();
     
-    return Undefined();
+    NanReturnUndefined();
        
   }
   
-Handle<Value>
-FBblob::IsReadGetter(Local<String> property,
-                      const AccessorInfo &info)
+NAN_GETTER(FBblob::IsReadGetter)
   {
-    HandleScope scope;
-    FBblob *blob = ObjectWrap::Unwrap<FBblob>(info.Holder());  
-    return scope.Close(Boolean::New(blob->is_read));
+	NanScope();
+   // FBblob *blob = ObjectWrap::Unwrap<FBblob>(info.Holder());
+	FBblob *blob = ObjectWrap::Unwrap<FBblob>(args.This());
+    NanReturnValue(NanNew<Boolean>(blob->is_read));
   }                        
   
 FBblob::FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status): FBEventEmitter () 
