@@ -52,11 +52,8 @@ class Connection : public FBEventEmitter {
  
  protected:
  
- static Handle<Value>
-  New (const Arguments& args);
-
-  static Handle<Value>
-  ConnectSync (const Arguments& args);
+  static NAN_METHOD(New);
+  static NAN_METHOD(ConnectSync);
  
   struct connect_request {
      Persistent<Function> callback;
@@ -71,29 +68,18 @@ class Connection : public FBEventEmitter {
   static void EIO_After_Connect(uv_work_t *req);
   
   static void EIO_Connect(uv_work_t *req);
+
+  static NAN_METHOD(Connect);
+  static NAN_METHOD(Disconnect);
   
-  static Handle<Value>
-  Connect (const Arguments& args);
+  static NAN_GETTER(ConnectedGetter);
+  static NAN_GETTER(InTransactionGetter);
   
-  static Handle<Value>
-  Disconnect(const Arguments& args);
-  
-  static Handle<Value> ConnectedGetter(Local<String> property,
-                                      const AccessorInfo &info);
-  
-  static Handle<Value>
-  InTransactionGetter(Local<String> property,
-                      const AccessorInfo &info);
-  
-  static Handle<Value>
-  CommitSync (const Arguments& args);
+  static NAN_METHOD(CommitSync);
+  static NAN_METHOD(RollbackSync);
+  static NAN_METHOD(StartSync);
     
-  static Handle<Value>
-  RollbackSync (const Arguments& args);
-  
-  static Handle<Value>
-  StartSync (const Arguments& args);
-  
+
   enum TransReqType {
     rCommit,
     rRollback,
@@ -111,17 +97,10 @@ class Connection : public FBEventEmitter {
   
   static void EIO_TransactionRequest(uv_work_t *req);
   
-  static Handle<Value>
-  Commit (const Arguments& args);
-  
-  static Handle<Value>
-  Rollback (const Arguments& args);
-  
-  static Handle<Value>
-  Start (const Arguments& args);
-  
-  static Handle<Value>
-  QuerySync(const Arguments& args);
+  static NAN_METHOD(Commit);
+  static NAN_METHOD(Rollback);
+  static NAN_METHOD(Start);
+  static NAN_METHOD(QuerySync);
 
   struct query_request {
      Persistent<Function> callback;
@@ -137,21 +116,13 @@ class Connection : public FBEventEmitter {
     
   static void EIO_Query(uv_work_t *req);
   
-  static Handle<Value>
-  Query(const Arguments& args);
+  static NAN_METHOD(Query);
+  
+  static NAN_METHOD(addEvent);
+  static NAN_METHOD(deleteEvent);
+  static NAN_METHOD(PrepareSync);
+  static NAN_METHOD(NewBlobSync);
 
-  static Handle<Value>
-  addEvent(const Arguments& args);
-
-  static Handle<Value>
-  deleteEvent(const Arguments& args);
-  
-  static Handle<Value>
-  PrepareSync (const Arguments& args);
-  
-  static Handle<Value>
-  NewBlobSync (const Arguments& args);
-  
   static time_t 
   get_gmt_delta();
 

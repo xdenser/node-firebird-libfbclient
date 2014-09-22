@@ -12,7 +12,7 @@ void
   {
     // HandleScope scope;
     
-    Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(New);
+    Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(Connection::New);
     
     t->InstanceTemplate()->SetInternalFieldCount(1);
     t->SetClassName(NanNew("Connection"));
