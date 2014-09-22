@@ -158,9 +158,8 @@ void event_block::isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR 
     // this is event nitification proc
     // here we emit node events 
 void event_block::event_notification(uv_async_t *w, int revents){
-        
+        NanScope();
         ISC_STATUS_ARRAY Vector;
-        HandleScope scope;
 	    Local<Value> argv[2];
 	
         event_block* eb = static_cast<event_block*>(w->data);
@@ -194,8 +193,8 @@ void event_block::event_notification(uv_async_t *w, int revents){
 	}
 	// requeue events
 	if(!eb->queue()) {
-            ThrowException(Exception::Error(
-            String::Concat(String::New("While isc_que_events in event_notification - "),ERR_MSG(eb, event_block))));
+            NanThrowError(
+            String::Concat(String::New("While isc_que_events in event_notification - "),ERR_MSG(eb, event_block)));
         }			      
         
         // exit if block was marked as bad
@@ -218,12 +217,12 @@ void event_block::event_notification(uv_async_t *w, int revents){
 Handle<Value> 
     event_block::que_event(event_block *eb)
     { 
-    
+      NanScope();
       if(!eb->queue()) {
-            return ThrowException(Exception::Error(
-            String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block))));
+            return NanThrowError(
+            String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block)));
       }
-      return Undefined();
+      NanReturnUndefined();
     }
     
 int event_block::hasEvent(char *Event)
@@ -307,7 +306,8 @@ void event_block::removeEvent(char *Event)
 Handle<Value> 
     event_block::RegEvent(event_block** rootp, char *Event, Connection *aconn, isc_db_handle *db)
     {
-      event_block* root = *rootp;
+      NanScope();
+	  event_block* root = *rootp;
       // Check if we already have registered that event
       event_block* res = event_block::FindBlock(root,Event);
       // Exit if yes
@@ -327,8 +327,7 @@ Handle<Value>
         res = new event_block(aconn, db);
         if(!res){
     	    V8::LowMemoryNotification();
-    	    return ThrowException(Exception::Error(
-			      	  String::New("Could not allocate memory.")));
+    	    return NanThrowError("Could not allocate memory.");
 	}
         res->event_->data = res;
         uv_async_init(uv_default_loop(),res->event_, event_block::event_notification);
@@ -346,18 +345,17 @@ Handle<Value>
       
       // Cancel old queue if any 
       if(!res->cancel()){
-    	    return ThrowException(Exception::Error(
-        	String::Concat(String::New("While cancel_events - "),ERR_MSG(res, event_block))));
+    	    return NanThrowError(
+        	String::Concat(String::New("While cancel_events - "),ERR_MSG(res, event_block)));
       }        
 
       // Add event to block
       if(!res->addEvent(Event)) {
     	    V8::LowMemoryNotification();
-    	    return ThrowException(Exception::Error(
-			      	  String::New("Could not allocate memory.")));
+    	    return NanThrowError("Could not allocate memory.");
       }
 
-      return event_block::que_event(res); 
+      NanReturnValue(event_block::que_event(res));
 
     }
     
@@ -374,15 +372,16 @@ event_block* event_block::FindBlock(event_block* root, char *Event)
 Handle<Value> 
     event_block::RemoveEvent(event_block** root, char *Event)
     {
-      // Find event_block with Event name
+      NanScope();
+	  // Find event_block with Event name
       event_block* eb = event_block::FindBlock( *root, Event);
       if(eb)
       {
         // If we have found it
         // it was queued and should be canceled
         if(!eb->cancel()){
-    	    return ThrowException(Exception::Error(
-        	    String::Concat(String::New("While cancel_events - "),ERR_MSG(eb, event_block))));
+    	    return NanThrowError(
+        	    String::Concat(String::New("While cancel_events - "),ERR_MSG(eb, event_block)));
     	}        
     	// Remove it from event list
         eb->removeEvent(Event);
@@ -409,7 +408,7 @@ Handle<Value>
       }	
       // No block with that name 
       // may be throw error ???
-      return Undefined();
+      NanReturnUndefined();
     }
     
     event_block::event_block(Connection *aconn,isc_db_handle *adb)
