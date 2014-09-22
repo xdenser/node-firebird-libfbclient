@@ -10,12 +10,12 @@
 void
   Connection::Initialize (v8::Handle<v8::Object> target)
   {
-    HandleScope scope;
+    // HandleScope scope;
     
-    Local<FunctionTemplate> t = FunctionTemplate::New(New);
+    Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(New);
     
     t->InstanceTemplate()->SetInternalFieldCount(1);
-    t->SetClassName(String::NewSymbol("Connection"));
+    t->SetClassName(NanNew("Connection"));
     t->Inherit(FBEventEmitter::constructor_template);
     // Methods 
 
@@ -37,12 +37,12 @@ void
     
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
-    instance_t->SetAccessor(String::NewSymbol("connected"), ConnectedGetter);
-    instance_t->SetAccessor(String::NewSymbol("inTransaction"), InTransactionGetter);
-    instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
+    instance_t->SetAccessor(NanNew("connected"), ConnectedGetter);
+    instance_t->SetAccessor(NanNew("inTransaction"), InTransactionGetter);
+    instance_t->SetAccessor(NanNew("inAsyncCall"),InAsyncGetter);
    
     
-    target->Set(String::NewSymbol("Connection"), t->GetFunction());  
+    target->Set(NanNew("Connection"), t->GetFunction());
   }
   
 bool Connection::Connect (const char* Database,const char* User,const char* Password,const char* Role)
@@ -379,30 +379,26 @@ void Connection::dounref()
 	this->Unref();
 }
 
- 
-Handle<Value>
-  Connection::New (const Arguments& args)
+NAN_METHOD(Connection::New)
   {
-    HandleScope scope;
+	 NanScope();
 
     Connection *connection = new Connection();
     connection->Wrap(args.This());
 
-    return scope.Close(args.This());
+    NanReturnValue(args.This());
   }
-  
-Handle<Value>
-  Connection::ConnectSync (const Arguments& args)
-  {
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
 
-    HandleScope scope;
+NAN_METHOD(Connection::ConnectSync)
+  {
+
+    NanScope();
+    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
 
     if (args.Length() < 4 || !args[0]->IsString() ||
          !args[1]->IsString() || !args[2]->IsString() ||
          !args[3]->IsString()) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting 4 string arguments")));
+      return NanThrowError("Expecting 4 string arguments");
     }
 
     String::Utf8Value Database(args[0]->ToString());
@@ -414,11 +410,11 @@ Handle<Value>
     bool r = connection->Connect(*Database,*User,*Password,*Role);
 
     if (!r) {
-      return ThrowException(Exception::Error(
-            String::Concat(String::New("While connecting - "),ERR_MSG(connection, Connection))));
+      return NanThrowError(
+            String::Concat(String::New("While connecting - "),ERR_MSG(connection, Connection)));
     }
     
-    return Undefined();
+    NanReturnUndefined();
   }
 
    
@@ -470,10 +466,9 @@ void Connection::EIO_Connect(uv_work_t *req)
    
   }
   
-Handle<Value>
-  Connection::Connect (const Arguments& args)
+NAN_METHOD(Connection::Connect)
   {
-    HandleScope scope;
+	NanScope();
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     
     
@@ -482,15 +477,13 @@ Handle<Value>
 
     if (!conn_req) {
       V8::LowMemoryNotification();
-      return ThrowException(Exception::Error(
-            String::New("Could not allocate memory.")));
+      return NanThrowError("Could not allocate memory.");
     }
     
     if (args.Length() < 5 || !args[0]->IsString() ||
          !args[1]->IsString() || !args[2]->IsString() ||
          !args[3]->IsString() || !args[4]->IsFunction()) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting 4 string arguments and 1 Function")));
+      return NanThrowError("Expecting 4 string arguments and 1 Function");
     }
     
     conn_req->conn = conn;
@@ -510,100 +503,86 @@ Handle<Value>
    // uv_ref(uv_default_loop());
     conn->Ref();
     
-    return Undefined();
+    NanReturnUndefined();
   }
-  
-Handle<Value>
-  Connection::Disconnect(const Arguments& args)
-  {
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
 
-    HandleScope scope;
+NAN_METHOD(Connection::Disconnect)
+  {
+    NanScope();
+    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
     //printf("disconnect\n");
     if(!connection->Close()){
-      return ThrowException(Exception::Error(
-            String::Concat(String::New("While closing - "),ERR_MSG(connection, Connection))));
+      return NanThrowError(
+            String::Concat(String::New("While closing - "),ERR_MSG(connection, Connection)));
     }     
    
-    return Undefined();
+    NanReturnUndefined();
   }
   
-Handle<Value> 
-  Connection::ConnectedGetter(Local<String> property,
-                                      const AccessorInfo &info) 
+NAN_GETTER(Connection::ConnectedGetter)
   {
-    HandleScope scope;
-    Connection *connection = ObjectWrap::Unwrap<Connection>(info.Holder());
-
-    return scope.Close(Boolean::New(connection->connected));
-  }
-  
-Handle<Value>
-  Connection::InTransactionGetter(Local<String> property,
-                      const AccessorInfo &info) 
-  {
-    HandleScope scope;
-    Connection *connection = ObjectWrap::Unwrap<Connection>(info.Holder());
-
-    return scope.Close(Boolean::New(connection->trans));
-  }
-  
-Handle<Value>
-  Connection::CommitSync (const Arguments& args)
-  {
+    NanScope();
     Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    NanReturnValue(NanNew<Boolean>(connection->connected));
+  }
+  
+NAN_GETTER(Connection::InTransactionGetter)
+  {
+    NanScope();
+    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    NanReturnValue(NanNew<Boolean>(connection->trans));
+  }
 
-    HandleScope scope;
+NAN_METHOD(Connection::CommitSync)
+  {
+    NanScope();
+    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
     
     bool r = connection->commit_transaction();
 
     if (!r) {
-      return ThrowException(Exception::Error(
-            String::Concat(String::New("While commitSync - "),ERR_MSG(connection, Connection))));
+      return NanThrowError(
+            String::Concat(String::New("While commitSync - "),ERR_MSG(connection, Connection)));
     }
     
-    return Undefined();
+    NanReturnUndefined();
   } 
     
-Handle<Value>
-  Connection::RollbackSync (const Arguments& args)
+NAN_METHOD(Connection::RollbackSync)
   {
+    NanScope();
     Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
-
-    HandleScope scope;
     
     bool r = connection->rollback_transaction();
 
     if (!r) {
-      return ThrowException(Exception::Error(
-            String::Concat(String::New("While rollbackSync - "),ERR_MSG(connection, Connection))));
+      return NanThrowError(
+            String::Concat(String::New("While rollbackSync - "),ERR_MSG(connection, Connection)));
     }
     
-    return Undefined();
+    NanReturnUndefined();
   } 
   
-Handle<Value>
-  Connection::StartSync (const Arguments& args)
+NAN_METHOD(Connection::StartSync)
   {
+    NanScope();
     Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
-
-    HandleScope scope;
     
     bool r = connection->start_transaction();
 
     if (!r) {
-      return ThrowException(Exception::Error(
-            String::New(connection->err_message)));
+      return NanThrowError(
+            String::New(connection->err_message));
     }
     
-    return Undefined();
+    NanReturnUndefined();
   }
   
   
 void Connection::EIO_After_TransactionRequest(uv_work_t *req)
   {
   //  uv_unref(uv_default_loop());
-    HandleScope scope;
+    NanScope();
     struct transaction_request *tr_req = (struct transaction_request *)(req->data);
     delete req;
     Local<Value> argv[1];
@@ -648,10 +627,9 @@ void Connection::EIO_TransactionRequest(uv_work_t *req)
   }
 
   
-Handle<Value>
- Connection::Commit (const Arguments& args)
+NAN_METHOD(Connection::Commit)
   {
-    HandleScope scope;
+    NanScope();
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     
     struct transaction_request *tr_req =
@@ -659,13 +637,11 @@ Handle<Value>
 
     if (!tr_req) {
       V8::LowMemoryNotification();
-      return ThrowException(Exception::Error(
-            String::New("Could not allocate memory.")));
+      return NanThrowError("Could not allocate memory.");
     }
     
     if (args.Length() < 1) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting Callback Function argument")));
+      return NanThrowError("Expecting Callback Function argument");
     }
     
     tr_req->conn = conn;
@@ -682,13 +658,12 @@ Handle<Value>
     //uv_ref(uv_default_loop());
     conn->Ref();
     
-    return Undefined();
+    NanReturnUndefined();
   }
   
-Handle<Value>
-  Connection::Rollback (const Arguments& args)
+NAN_METHOD(Connection::Rollback)
   {
-    HandleScope scope;
+    NanScope();
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     
     struct transaction_request *tr_req =
@@ -696,13 +671,11 @@ Handle<Value>
 
     if (!tr_req) {
       V8::LowMemoryNotification();
-      return ThrowException(Exception::Error(
-            String::New("Could not allocate memory.")));
+      return NanThrowError("Could not allocate memory.");
     }
     
     if (args.Length() < 1) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting Callback Function argument")));
+      return NanThrowError("Expecting Callback Function argument");
     }
     
     tr_req->conn = conn;
@@ -718,13 +691,12 @@ Handle<Value>
    // uv_ref(uv_default_loop());
     conn->Ref();
     
-    return Undefined();
+    NanReturnUndefined();
   } 
   
-Handle<Value>
-  Connection::Start (const Arguments& args)
+NAN_METHOD(Connection::Start)
   {
-    HandleScope scope;
+    NanScope();
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     
     struct transaction_request *tr_req =
@@ -732,13 +704,11 @@ Handle<Value>
 
     if (!tr_req) {
       V8::LowMemoryNotification();
-      return ThrowException(Exception::Error(
-            String::New("Could not allocate memory.")));
+      return NanThrowError("Could not allocate memory.");
     }
     
     if (args.Length() < 1) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting Callback Function argument")));
+      return NanThrowError("Expecting Callback Function argument");
     }
     
     tr_req->conn = conn;
@@ -754,20 +724,16 @@ Handle<Value>
    // uv_ref(uv_default_loop());
     conn->Ref();
     
-    return Undefined();
+    NanReturnUndefined();
   } 
   
-Handle<Value>
-  Connection::QuerySync(const Arguments& args)
+NAN_METHOD(Connection::QuerySync)
   {
+    NanScope();
     Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
     int statement_type;
-    
-    HandleScope scope;
-    
     if (args.Length() < 1 || !args[0]->IsString()){
-       return ThrowException(Exception::Error(
-            String::New("Expecting a string query argument.")));
+       return NanThrowError("Expecting a string query argument.");
     }
     
     String::Utf8Value Query(args[0]->ToString());
@@ -776,8 +742,8 @@ Handle<Value>
     isc_stmt_handle stmt = NULL;
     bool r = connection->process_statement(&sqlda,*Query, &stmt, &statement_type);
     if(!r) {
-      return ThrowException(Exception::Error(
-            String::Concat(String::New("In querySync - "),ERR_MSG(connection, Connection))));
+      return NanThrowError(
+            String::Concat(String::New("In querySync - "),ERR_MSG(connection, Connection)));
     }
     
     Local<Value> argv[3];
@@ -795,7 +761,7 @@ Handle<Value>
     }
     
 
-    return scope.Close(js_result); 
+   NanReturnValue(js_result);
         
   }
   
@@ -803,7 +769,7 @@ Handle<Value>
 void Connection::EIO_After_Query(uv_work_t *req)
   {
    // uv_unref(uv_default_loop());
-    HandleScope scope;
+    NanScope();
     struct query_request *q_req = (struct query_request *)(req->data);
 	delete req;
    
@@ -858,10 +824,9 @@ void Connection::EIO_Query(uv_work_t *req)
     return;
   }
   
-Handle<Value>
-  Connection::Query(const Arguments& args)
+NAN_METHOD(Connection::Query)
   {
-    HandleScope scope;
+    NanScope();
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     
     struct query_request *q_req =
@@ -869,14 +834,12 @@ Handle<Value>
 
     if (!q_req) {
       V8::LowMemoryNotification();
-      return ThrowException(Exception::Error(
-            String::New("Could not allocate memory.")));
+      return NanThrowError("Could not allocate memory.");
     }
     
     if (args.Length() < 2 || !args[0]->IsString() ||
           !args[1]->IsFunction()) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting 1 string argument and 1 Function")));
+      return NanThrowError("Expecting 1 string argument and 1 Function");
     }
     
     q_req->conn = conn;
@@ -895,21 +858,17 @@ Handle<Value>
    //uv_ref(uv_default_loop());
     conn->Ref();
     
-    return Undefined();
+    NanReturnUndefined();
     
   }
   
-Handle<Value>
-  Connection::addEvent(const Arguments& args)
+NAN_METHOD(Connection::addEvent)
   {
-    
-    
-    HandleScope scope;
+    NanScope();
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     
     if (args.Length() < 1 || !args[0]->IsString()) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting 1 string argument")));
+      return NanThrowError("Expecting 1 string argument");
     }
     
     String::Utf8Value Event(args[0]->ToString());
@@ -918,38 +877,33 @@ Handle<Value>
         
        // event_block* eb;
         
-        return event_block::RegEvent(&(conn->fb_events), *Event, conn, &conn->db);
-        
+     NanReturnValue(event_block::RegEvent(&(conn->fb_events), *Event, conn, &conn->db));
     }
     
-    return Undefined();
+   NanReturnUndefined();
   
   }
   
-Handle<Value>
-  Connection::deleteEvent(const Arguments& args)
+NAN_METHOD(Connection::deleteEvent)
   {
   
-    HandleScope scope;
+    NanScope();
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     
     if (args.Length() < 1 || !args[0]->IsString()) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting 1 string argument")));
+      return NanThrowError("Expecting 1 string argument");
     }
     
     String::Utf8Value Event(args[0]->ToString());
     
-    return event_block::RemoveEvent(&(conn->fb_events), *Event);
+    NanReturnValue(event_block::RemoveEvent(&(conn->fb_events), *Event));
 
   }
   
-Handle<Value>
-  Connection::PrepareSync (const Arguments& args)
+NAN_METHOD(Connection::PrepareSync)
   {
+    NanScope();
     Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
-    
-    HandleScope scope;
         
     if (args.Length() < 1 || !args[0]->IsString()){
        return ThrowException(Exception::Error(
@@ -964,8 +918,8 @@ Handle<Value>
     bool r = connection->prepare_statement(&insqlda,&outsqlda,*Query, &stmt);
     
     if(!r) {
-      return ThrowException(Exception::Error(
-            String::Concat(String::New("In prepareSync - "),ERR_MSG(connection, Connection))));
+      return NanThrowError(
+            String::Concat(String::New("In prepareSync - "),ERR_MSG(connection, Connection)));
     }
     
     Local<Value> argv[4];
@@ -977,13 +931,12 @@ Handle<Value>
     Persistent<Object> js_result(FBStatement::constructor_template->
                                      GetFunction()->NewInstance(4, argv));
 
-    return scope.Close(js_result); 
+    NanReturnValue(js_result);
   }
 
-Handle<Value>
-  Connection::NewBlobSync (const Arguments& args)
+NAN_METHOD(Connection::NewBlobSync)
   {
-    HandleScope scope;
+    NanScope();
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     Local<Value> argv[2];
     
@@ -992,7 +945,7 @@ Handle<Value>
     
     Local<Object> js_blob(FBblob::constructor_template->
                                      GetFunction()->NewInstance(2, argv));
-    return scope.Close(js_blob);
+    NanReturnValue(js_blob);
   }
   
    Connection::Connection () : FBEventEmitter () 
