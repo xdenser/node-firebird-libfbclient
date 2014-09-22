@@ -18,13 +18,13 @@
     
     HandleScope scope;
     
-    Local<FunctionTemplate> t = FunctionTemplate::New(New);
+    Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(FBResult::New);
 
     t->Inherit(FBEventEmitter::constructor_template);
     
-    constructor_template = Persistent<FunctionTemplate>::New(t);
+    NanAssignPersistent(constructor_template,t);
     constructor_template->Inherit(FBEventEmitter::constructor_template);
-    constructor_template->SetClassName(String::NewSymbol("FBResult"));
+    constructor_template->SetClassName(NanNew("FBResult"));
 
     Local<ObjectTemplate> instance_template =
         constructor_template->InstanceTemplate();
@@ -36,17 +36,16 @@
     instance_template->SetInternalFieldCount(1);
     
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
-    instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
+    instance_t->SetAccessor(NanNew("inAsyncCall"),InAsyncGetter);
     
-    target->Set(String::NewSymbol("FBResult"), t->GetFunction());
+    target->Set(NanNew("FBResult"), t->GetFunction());
   }
   
   
-Handle<Value>
-  FBResult::New (const Arguments& args)
+NAN_METHOD(FBResult::New)
   {
   // XSQLDA **asqldap, isc_stmt_handle *astmtp
-    HandleScope scope;
+    NanScope();
     
     REQ_EXT_ARG(0, js_sqldap);
     REQ_EXT_ARG(1, js_stmtp);
@@ -62,7 +61,7 @@ Handle<Value>
     FBResult *res = new FBResult(asqldap, astmtp, conn);
     res->Wrap(args.This());
 
-    return args.This();
+    NanReturnValue(args.This());
   }
   
   bool FBResult::prepare_sqlda(XSQLDA *sqlda)
@@ -195,7 +194,7 @@ void get_date(struct tm* times, Local<Object> js_date, int* msp)
   
 Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
   {
-    HandleScope scope;
+    NanScope();
     int i;
     XSQLVAR* var;
     PARAMVARY   *vary2;
@@ -225,8 +224,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
         case SQL_ARRAY:
         case SQL_BLOB:      
                             if(!FBblob::HasInstance(args[i])) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting FBblob as argument #%d.",i+1))));
+                              return NanThrowError(errmsg1f(errm,"Expecting FBblob as argument #%d.",i+1));
                             obj = args[i]->ToObject();  
                             blob = ObjectWrap::Unwrap<FBblob>(obj);  
                             
@@ -324,7 +322,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
       }
       if(var->sqltype & 1) *var->sqlind = 0;
     }
-    return Undefined();
+    NanReturnUndefined();
   }
 
 short getCharsetSize(XSQLVAR *var){
@@ -356,7 +354,7 @@ Local<Value>
     short		bpc, chars; // bytes per char 
     
     
-    HandleScope scope;
+    NanScope();
     
     Local<Function> con;
     Local<Value> argv[7];
@@ -450,20 +448,20 @@ Local<Value>
 	            isc_decode_timestamp((ISC_TIMESTAMP *)var->sqldata, &times);
 	            js_date = Date::New(0)->ToObject();
 	            argv[0] = Integer::New(times.tm_year+1900);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setFullYear") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setFullYear") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mon);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMonth") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setMonth") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mday);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setDate") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setDate") ))->Call(js_date,1,argv);
 	            
 	            argv[0] = Integer::New(times.tm_hour);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setHours") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setHours") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_min);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMinutes") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setMinutes") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_sec);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setSeconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setSeconds") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMilliseconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setMilliseconds") ))->Call(js_date,1,argv);
 	            
 	            js_field = js_date;
 	            break;
@@ -481,16 +479,16 @@ Local<Value>
 	           
 	            
 	            argv[0] = Integer::New(times.tm_year+1900);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setFullYear") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setFullYear") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mon);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMonth") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setMonth") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mday);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setDate") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setDate") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(0);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setHours") ))->Call(js_date,1,argv);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMinutes") ))->Call(js_date,1,argv);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setSeconds") ))->Call(js_date,1,argv);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMilliseconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setHours") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setMinutes") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setSeconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setMilliseconds") ))->Call(js_date,1,argv);
 	            
 	            
 	            //js_field = con->Call(js_date, 3, argv);
@@ -513,20 +511,20 @@ Local<Value>
 	            
 	            js_date = Date::New(0)->ToObject();
 	            argv[0] = Integer::New(times.tm_year+1900);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setFullYear") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setFullYear") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mon);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMonth") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setMonth") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_mday);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setDate") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setDate") ))->Call(js_date,1,argv);
 	            
 	            argv[0] = Integer::New(times.tm_hour);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setHours") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setHours") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_min);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMinutes") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setMinutes") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(times.tm_sec);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setSeconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setSeconds") ))->Call(js_date,1,argv);
 	            argv[0] = Integer::New(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
-	            Local<Function>::Cast(js_date->Get( String::NewSymbol("setMilliseconds") ))->Call(js_date,1,argv);
+	            Local<Function>::Cast(js_date->Get( NanNew("setMilliseconds") ))->Call(js_date,1,argv);
 	            
 	            js_field = js_date;
 	            break;            
@@ -548,7 +546,7 @@ Local<Value>
 
     }
     
-    return scope.Close(js_field);
+    NanReturnValue(js_field);
   }
   
 Local<Object> 
@@ -556,7 +554,7 @@ Local<Object>
   {
     short  i, num_cols;
    
-    HandleScope scope;
+    NanScope();
     Local<Object> js_result_row;   
     Local<Value> js_field;
     
@@ -581,14 +579,13 @@ Local<Object>
             js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
     }    
     
-    return scope.Close(js_result_row);
+    NanReturnValue(js_result_row);
   }  
 
-Handle<Value>
-  FBResult::FetchSync(const Arguments& args) 
+NAN_METHOD(FBResult::FetchSync)
   {
   
-    HandleScope scope;
+    NanScope();
     
     FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(args.This());
     
@@ -604,30 +601,27 @@ Handle<Value>
     Local<Value> js_result = Local<Value>::New(Null());
     
     if (args.Length() < 2){
-       return ThrowException(Exception::Error(
-            String::New("Expecting 2 arguments")));
+       return NanThrowError("Expecting 2 arguments");
     }
     
     int rowCount = -1;
     if(args[0]->IsInt32()){
        rowCount = args[0]->IntegerValue();
     }
-    else if(! (args[0]->IsString() && args[0]->Equals(String::New("all")))){
-       return ThrowException(Exception::Error(
-            String::New("Expecting integer or string as first argument")));
+    else if(! (args[0]->IsString() && args[0]->Equals(NanNew("all")))){
+       return NanThrowError("Expecting integer or string as first argument");
     };
     if(rowCount<=0) rowCount = -1;
     
     bool rowAsObject = false;
     if(args[1]->IsBoolean()){
          rowAsObject = args[1]->BooleanValue();
-    }else if(args[1]->IsString() && args[1]->Equals(String::New("array"))){
+    }else if(args[1]->IsString() && args[1]->Equals(NanNew("array"))){
          rowAsObject = false;
-    }else if(args[1]->IsString() && args[1]->Equals(String::New("object"))){
+    }else if(args[1]->IsString() && args[1]->Equals(NanNew("object"))){
          rowAsObject = true;
     } else{
-     return ThrowException(Exception::Error(
-            String::New("Expecting bool or string('array'|'object') as second argument")));
+     return NanThrowError("Expecting bool or string('array'|'object') as second argument");
     };   
     
     Local<Value> js_field;
@@ -657,22 +651,22 @@ Handle<Value>
     }
     
     if ((fetch_stat != 100L) && fetch_stat) 
-          return ThrowException(Exception::Error(
-            String::Concat(String::New("While FetchSync - "),ERR_MSG(fb_res,FBResult))));
+          return NanThrowError(
+            String::Concat(String::New("While FetchSync - "),ERR_MSG(fb_res,FBResult)));
 
     
 //    if(j==1) js_result = res->Get(0);
 //    else 
     js_result = res;
     
-    return scope.Close(js_result);
+    NanReturnValue(js_result);
 
   }
 
 void FBResult::EIO_After_Fetch(uv_work_t *req)
   {
    // uv_unref(uv_default_loop());
-    HandleScope scope;
+    NanScope();
     struct fetch_request *f_req = (struct fetch_request *)(req->data);
 	delete req;
     short i, num_cols;
@@ -782,10 +776,9 @@ void FBResult::EIO_Fetch(uv_work_t *req)
     return ;
   }
   
-Handle<Value>
-  FBResult::Fetch(const Arguments& args) 
+NAN_METHOD(FBResult::Fetch)
   {
-    HandleScope scope;
+    NanScope();
     FBResult *res = ObjectWrap::Unwrap<FBResult>(args.This());
     
     struct fetch_request *f_req =
@@ -793,35 +786,31 @@ Handle<Value>
 
     if (!f_req) {
       V8::LowMemoryNotification();
-      return ThrowException(Exception::Error(
-            String::New("Could not allocate memory.")));
+      return NanThrowError("Could not allocate memory.");
     }
     
     if (args.Length() != 4){
-       return ThrowException(Exception::Error(
-            String::New("Expecting 4 arguments")));
+       return NanThrowError("Expecting 4 arguments");
     }
     
     f_req->rowCount = -1;
     if(args[0]->IsInt32()){
        f_req->rowCount = args[0]->IntegerValue();
     }
-    else if(! (args[0]->IsString() && args[0]->Equals(String::New("all")))){
-       return ThrowException(Exception::Error(
-            String::New("Expecting integer or string as first argument")));
+    else if(! (args[0]->IsString() && args[0]->Equals(NanNew("all")))){
+       return NanThrowError("Expecting integer or string as first argument");
     };
     if(f_req->rowCount<=0) f_req->rowCount = -1;
     
     f_req->rowAsObject = false;
     if(args[1]->IsBoolean()){
          f_req->rowAsObject = args[1]->BooleanValue();
-    }else if(args[1]->IsString() && args[1]->Equals(String::New("array"))){
+    }else if(args[1]->IsString() && args[1]->Equals(NanNew("array"))){
          f_req->rowAsObject = false;
-    }else if(args[1]->IsString() && args[1]->Equals(String::New("object"))){
+    }else if(args[1]->IsString() && args[1]->Equals(NanNew("object"))){
          f_req->rowAsObject = true;
     } else{
-     return ThrowException(Exception::Error(
-            String::New("Expecting bool or string('array'|'object') as second argument")));
+     return NanThrowError("Expecting bool or string('array'|'object') as second argument");
     };
     
 /*    if(!args[2]->IsFunction())  f_req->rowCallback = Persistent<Value>::New(Null());
@@ -830,8 +819,7 @@ Handle<Value>
     f_req->rowCallback  = Persistent<Value>::New(args[2]);
     
     if(!args[3]->IsFunction()) {
-      return ThrowException(Exception::Error(
-            String::New("Expecting Function as fourth argument")));
+      return NanThrowError("Expecting Function as fourth argument");
     }
 
     
@@ -847,7 +835,7 @@ Handle<Value>
     //uv_ref(uv_default_loop());
     res->Ref();
     
-    return Undefined();
+    NanReturnUndefined();
   }
 
   

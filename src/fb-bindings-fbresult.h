@@ -37,15 +37,13 @@ public:
  Local<Object> getCurrentRow(bool asObject);
    
 protected:  
- static Handle<Value>
-  New (const Arguments& args);
+  static NAN_METHOD(New);
   
     
   static Local<Value> 
   GetFieldValue(XSQLVAR *var, Connection* conn);
 
-  static Handle<Value>
-  FetchSync(const Arguments& args);
+  static NAN_METHOD(FetchSync);
 
   struct fetch_request {
      Persistent<Value> rowCallback;
@@ -61,8 +59,7 @@ protected:
 
   static void EIO_Fetch(uv_work_t *req);
   
-  static Handle<Value>
-  Fetch(const Arguments& args);
+  static NAN_METHOD(Fetch);
   
   FBResult(XSQLDA *asqldap, isc_stmt_handle *astmtp, Connection *conn); 
   
