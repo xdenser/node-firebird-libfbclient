@@ -24,11 +24,9 @@ public:
  Initialize (v8::Handle<v8::Object> target);
 
 protected:
- static Handle<Value>
- New (const Arguments& args);
+ static NAN_METHOD(New);
  
- static Handle<Value>
- ExecSync (const Arguments& args);
+ static NAN_METHOD(ExecSync);
  
  struct exec_request {
      FBStatement *statement;
@@ -39,8 +37,7 @@ protected:
     
  static void EIO_Exec(uv_work_t *req);
  
- static Handle<Value>
- Exec (const Arguments& args);
+ static NAN_METHOD(Exec);
  
   
  FBStatement(XSQLDA *insqlda, XSQLDA *outsqlda, isc_stmt_handle *astmtp, Connection* aconn); 
