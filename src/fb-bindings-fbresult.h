@@ -33,7 +33,7 @@ public:
  static bool prepare_sqlda(XSQLDA *sqlda);
  static void clean_sqlda(XSQLDA *sqlda);
  static bool clone_sqlda(XSQLDA *src_sqlda,XSQLDA **dest_sqlda);
- static Handle<Value> set_params(XSQLDA *sqlda, const Arguments& args);
+ static Handle<Value> set_params(XSQLDA *sqlda, _NAN_METHOD_ARGS_TYPE args);
  Local<Object> getCurrentRow(bool asObject);
    
 protected:  
