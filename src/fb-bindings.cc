@@ -43,7 +43,7 @@ char * ErrorMessage(const ISC_STATUS *pvector, char *err_msg, int max_len)
 void
 init (Handle<Object> target)
 {
-  HandleScope scope;
+  NanScope();
   
   event_block::Init();
   FBEventEmitter::Initialize(target);
