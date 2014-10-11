@@ -196,7 +196,7 @@ Represents results of SQL query if any. You should use this object to fetch rows
 Each row may be represented as array of field values or as object with named fields.
 
 ### Data types
-Here is Interbase to Node data type accordance:
+Here is Firebird to Node data type accordance:
 
 Firebird		Node  
 DATE	->	Date  
