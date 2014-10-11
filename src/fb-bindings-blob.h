@@ -39,7 +39,7 @@ public:
   static NAN_METHOD(Write);
   
   struct rw_request {
-     Persistent<Function> callback;
+	 NanCallback  *callback;
      FBblob *blob;
      char* buffer;
      size_t length;

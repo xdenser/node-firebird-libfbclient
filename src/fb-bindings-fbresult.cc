@@ -16,18 +16,17 @@
    FBResult::Initialize (v8::Handle<v8::Object> target)
   {
     
-    HandleScope scope;
+    NanScope();
     
     Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(FBResult::New);
 
-    t->Inherit(FBEventEmitter::constructor_template);
+    t->Inherit(NanNew(FBEventEmitter::constructor_template));
     
     NanAssignPersistent(constructor_template,t);
-    constructor_template->Inherit(FBEventEmitter::constructor_template);
-    constructor_template->SetClassName(NanNew("FBResult"));
 
-    Local<ObjectTemplate> instance_template =
-        constructor_template->InstanceTemplate();
+    t->SetClassName(NanNew("FBResult"));
+
+    Local<ObjectTemplate> instance_template = t->InstanceTemplate();
         
     NODE_SET_PROTOTYPE_METHOD(t, "fetchSync", FetchSync);
     NODE_SET_PROTOTYPE_METHOD(t, "fetch", Fetch);
@@ -165,34 +164,34 @@ char* errmsg2f(char* buf,const char* msg, int arg1, int arg2)
 
 void get_date(struct tm* times, Local<Object> js_date, int* msp)
 {
-  HandleScope scope;
+  NanScope();
   Local<Value> val;
   
-  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getFullYear") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( NanNew("getFullYear") ))->Call(js_date,0,NULL);
   times->tm_year = (int) (val->Int32Value()) - 1900;
   
-  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getMonth") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( NanNew("getMonth") ))->Call(js_date,0,NULL);
   times->tm_mon = val->Int32Value();
 
-  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getDate") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( NanNew("getDate") ))->Call(js_date,0,NULL);
   times->tm_mday = val->Int32Value();
 
-  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getHours") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( NanNew("getHours") ))->Call(js_date,0,NULL);
   times->tm_hour = val->Int32Value();
   
-  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getMinutes") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( NanNew("getMinutes") ))->Call(js_date,0,NULL);
   times->tm_min = val->Int32Value();
 
-  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getSeconds") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( NanNew("getSeconds") ))->Call(js_date,0,NULL);
   times->tm_sec = val->Int32Value();
   
-  val = Local<Function>::Cast(js_date->Get( String::NewSymbol("getMilliseconds") ))->Call(js_date,0,NULL);
+  val = Local<Function>::Cast(js_date->Get( NanNew("getMilliseconds") ))->Call(js_date,0,NULL);
   *msp = val->Int32Value();
   
 }
 
   
-Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
+void FBResult::set_params(XSQLDA *sqlda, _NAN_METHOD_ARGS_TYPE args)
   {
     NanScope();
     int i;
@@ -201,7 +200,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
     FBblob *blob; 
     Local<Object> obj;
     char errm[512];
-    double date_num;
+   // double date_num;
     double double_val;
     struct tm  times;
     int m_sec;
@@ -209,8 +208,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
     int64_t int_val;
 //    char *txt;
     
-    if( sqlda->sqld >  args.Length() ) return ThrowException(Exception::Error(
-                                                             String::New(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld,(int)args.Length()))));
+    if( sqlda->sqld >  args.Length() ) return NanThrowError(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld,(int)args.Length()));
     for(i = 0, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
     {
       
@@ -223,8 +221,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
       { 
         case SQL_ARRAY:
         case SQL_BLOB:      
-                            if(!FBblob::HasInstance(args[i])) 
-                              return NanThrowError(errmsg1f(errm,"Expecting FBblob as argument #%d.",i+1));
+                            if(!FBblob::HasInstance(args[i])) return NanThrowError(errmsg1f(errm,"Expecting FBblob as argument #%d.",i+1));
                             obj = args[i]->ToObject();  
                             blob = ObjectWrap::Unwrap<FBblob>(obj);  
                             
@@ -234,33 +231,25 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
                             break;
                             
         case SQL_TIMESTAMP: 
-                            if(!args[i]->IsDate()) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting Date as argument #%d.",i+1))));
+                            if(!args[i]->IsDate()) return NanThrowError(errmsg1f(errm,"Expecting Date as argument #%d.",i+1));
                                                 
                             get_date( &times, args[i]->ToObject(), &m_sec);                            
                             isc_encode_timestamp(&times, (ISC_TIMESTAMP *)var->sqldata);
                             ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time = ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time + m_sec*10;
                             break;          
         case SQL_TYPE_TIME:  
-                            if(!args[i]->IsDate()) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting Date as argument #%d.",i+1))));
+                            if(!args[i]->IsDate()) return NanThrowError(errmsg1f(errm,"Expecting Date as argument #%d.",i+1));
                             get_date( &times, args[i]->ToObject(), &m_sec);                            
                             isc_encode_sql_time(&times, (ISC_TIME *)var->sqldata);
                             *((ISC_TIME *)var->sqldata) = *((ISC_TIME *)var->sqldata) + m_sec*10;
                             break;                                          
         case SQL_TYPE_DATE:  
-                            if(!args[i]->IsDate()) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting Date as argument #%d.",i+1))));
+                            if(!args[i]->IsDate()) return NanThrowError(errmsg1f(errm,"Expecting Date as argument #%d.",i+1));
                             get_date( &times, args[i]->ToObject(), &m_sec);                            
                             isc_encode_sql_date(&times, (ISC_DATE *)var->sqldata);
                             break;                               
         case SQL_TEXT:      
-                            if(!args[i]->IsString()) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting String as argument #%d.",i+1))));
+                            if(!args[i]->IsString()) return NanThrowError(errmsg1f(errm,"Expecting String as argument #%d.",i+1));
                             {                           
                             String::Utf8Value txt(args[i]->ToString());  
                             s_len = strlen(*txt);
@@ -272,9 +261,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
 
 	case SQL_VARYING:		    
 	                    
-	                    if(!args[i]->IsString()) 
-                              return ThrowException(Exception::Error(
-                                                       String::New(errmsg1f(errm,"Expecting String as  argument #%d.",i+1))));
+	                    if(!args[i]->IsString()) return NanThrowError(errmsg1f(errm,"Expecting String as  argument #%d.",i+1));
                             {                           
                             String::Utf8Value txt(args[i]->ToString());  
                             
@@ -322,7 +309,7 @@ Handle<Value> FBResult::set_params(XSQLDA *sqlda, const Arguments& args)
       }
       if(var->sqltype & 1) *var->sqlind = 0;
     }
-    NanReturnUndefined();
+    
   }
 
 short getCharsetSize(XSQLVAR *var){
@@ -345,12 +332,12 @@ Local<Value>
   {
     short       dtype;  
     PARAMVARY   *vary2;
-    short       len; 
+  //  short       len; 
     struct tm   times;
     ISC_QUAD    bid;
-    time_t      rawtime;
-    double      time_val;
-    int 	    days;
+    //time_t      rawtime;
+  //  double      time_val;
+   // int 	    days;
     short		bpc, chars; // bytes per char 
     
     
@@ -360,7 +347,7 @@ Local<Value>
     Local<Value> argv[7];
     
     Local<Object> js_date, js_obj;
-    Local<Value> js_field = Local<Value>::New(Null());
+    Local<Value> js_field = NanNull();
     dtype = var->sqltype & ~1;
     if ((var->sqltype & 1) && (*var->sqlind < 0))
     {
@@ -373,13 +360,13 @@ Local<Value>
             case SQL_TEXT:
             	bpc = getCharsetSize(var);
             	chars =  var->sqllen/(bpc != 0 ? bpc : 1);
-                js_field = String::New(var->sqldata,var->sqllen );
+                js_field = NanNew<String>(var->sqldata,var->sqllen );
                 if(Local<String>::Cast(js_field)->Length() > chars )
                 {
                 	js_obj = js_field->ToObject(); 
-                	argv[0] = Integer::New(0);
-                	argv[1] = Integer::New(chars);
-                	js_field = Local<Function>::Cast(js_obj->Get(String::NewSymbol("slice")))->Call(js_obj,2,argv);
+                	argv[0] = NanNew<Integer>(0);
+                	argv[1] = NanNew<Integer>(chars);
+                	js_field = NanMakeCallback(js_obj,"slice",2,argv);
                 }
                 
                //  printf(" char lengh %d/%d, %d, 1 %hx, 2 %hx, 3 %hx, 4 %hx \n",var->sqllen,Local<String>::Cast(js_field)->Length(), var->sqlsubtype, var->sqldata[0],var->sqldata[1],var->sqldata[2],var->sqldata[3]);
@@ -389,7 +376,7 @@ Local<Value>
             case SQL_VARYING:
                 vary2 = (PARAMVARY*) var->sqldata;
                 vary2->vary_string[vary2->vary_length] = '\0';
-                js_field = String::New((const char*)(vary2->vary_string));
+                js_field = NanNew<String>((const char*)(vary2->vary_string));
                 break;
 
             case SQL_SHORT:
@@ -397,21 +384,21 @@ Local<Value>
 	    case SQL_INT64:
 		{
 		ISC_INT64	value;
-		short		field_width;
+	//	short		field_width;
 		short		dscale;
 		switch (dtype)
 		    {
 		    case SQL_SHORT:
 			value = (ISC_INT64) *(short *) var->sqldata;
-			field_width = 6;
+		//	field_width = 6;
 			break;
 		    case SQL_LONG:
 			value = (ISC_INT64) *(int *) var->sqldata;
-			field_width = 11;
+		//	field_width = 11;
 			break;
 		    case SQL_INT64:
 			value = (ISC_INT64) *(ISC_INT64 *) var->sqldata;
-			field_width = 21;
+		//	field_width = 21;
 			break;
 		    }
 		ISC_INT64	tens;    
@@ -422,46 +409,45 @@ Local<Value>
 		    {
 		    tens = 1;
 		    for (i = 0; i > dscale; i--) tens *= 10;
-                    js_field = Number::New((double) value / tens); 
+                    js_field = NanNew<Number>((double) value / tens); 
                     
 		    }
 		else if (dscale)
 		      {
 		       tens = 1;
 		       for (i = 0; i < dscale; i++) tens *= 10;
-		       js_field = Integer::New(value * tens); 
+		       js_field = NanNew<Integer>(value * tens); 
 	              }		    
 		else
-		      js_field = Integer::New( value);
+		      js_field = NanNew<Integer>( value);
 		}
                 break;
 
             case SQL_FLOAT:
-                js_field = Number::New(double( *(float *) (var->sqldata) ));  
+                js_field = NanNew<Number>(double( *(float *) (var->sqldata) ));  
                 break;
 
             case SQL_DOUBLE:
-                js_field = Number::New(*(double *) (var->sqldata));
+                js_field = NanNew<Number>(*(double *) (var->sqldata));
                 break;
 
             case SQL_TIMESTAMP: 
 	            isc_decode_timestamp((ISC_TIMESTAMP *)var->sqldata, &times);
-	            js_date = Date::New(0)->ToObject();
-	            argv[0] = Integer::New(times.tm_year+1900);
-	            Local<Function>::Cast(js_date->Get( NanNew("setFullYear") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_mon);
-	            Local<Function>::Cast(js_date->Get( NanNew("setMonth") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_mday);
-	            Local<Function>::Cast(js_date->Get( NanNew("setDate") ))->Call(js_date,1,argv);
-	            
-	            argv[0] = Integer::New(times.tm_hour);
-	            Local<Function>::Cast(js_date->Get( NanNew("setHours") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_min);
-	            Local<Function>::Cast(js_date->Get( NanNew("setMinutes") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_sec);
-	            Local<Function>::Cast(js_date->Get( NanNew("setSeconds") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
-	            Local<Function>::Cast(js_date->Get( NanNew("setMilliseconds") ))->Call(js_date,1,argv);
+	            js_date = NanNew<Date>(0);
+	            argv[0] = NanNew<Integer>(times.tm_year+1900);
+	            NanMakeCallback(js_date,"setFullYear",1,argv);
+	            argv[0] = NanNew<Integer>(times.tm_mon);
+	            NanMakeCallback(js_date,"setMonth",1,argv);
+	            argv[0] = NanNew<Integer>(times.tm_mday);
+	            NanMakeCallback(js_date,"setDate",1,argv);
+	            argv[0] = NanNew<Integer>(times.tm_hour);
+	            NanMakeCallback(js_date,"setHours",1,argv);
+	            argv[0] = NanNew<Integer>(times.tm_min);
+	            NanMakeCallback(js_date,"setMinutes",1,argv);
+	            argv[0] = NanNew<Integer>(times.tm_sec);
+	            NanMakeCallback(js_date,"setSeconds",1,argv);
+	            argv[0] = NanNew<Integer>(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
+	            NanMakeCallback(js_date,"setMilliseconds",1,argv);
 	            
 	            js_field = js_date;
 	            break;
@@ -475,21 +461,20 @@ Local<Value>
 	            
 	            
 	            //time_val = (static_cast<double>(days) - 40587) * 86400 * 1000;
-	            js_date = Date::New(0)->ToObject();
+	            js_date = NanNew<Date>(0);
 	           
 	            
-	            argv[0] = Integer::New(times.tm_year+1900);
-	            Local<Function>::Cast(js_date->Get( NanNew("setFullYear") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_mon);
-	            Local<Function>::Cast(js_date->Get( NanNew("setMonth") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_mday);
-	            Local<Function>::Cast(js_date->Get( NanNew("setDate") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(0);
-	            Local<Function>::Cast(js_date->Get( NanNew("setHours") ))->Call(js_date,1,argv);
-	            Local<Function>::Cast(js_date->Get( NanNew("setMinutes") ))->Call(js_date,1,argv);
-	            Local<Function>::Cast(js_date->Get( NanNew("setSeconds") ))->Call(js_date,1,argv);
-	            Local<Function>::Cast(js_date->Get( NanNew("setMilliseconds") ))->Call(js_date,1,argv);
-	            
+	            argv[0] = NanNew<Integer>(times.tm_year+1900);
+	            NanMakeCallback(js_date,"setFullYear",1,argv);
+	            argv[0] = NanNew<Integer>(times.tm_mon);
+	            NanMakeCallback(js_date,"setMonth",1,argv);
+	            argv[0] = NanNew<Integer>(times.tm_mday);
+	            NanMakeCallback(js_date,"setDate",1,argv);
+	            argv[0] = NanNew<Integer>(0);
+	            NanMakeCallback(js_date,"setHours",1,argv);
+	            NanMakeCallback(js_date,"setMinutes",1,argv);
+	            NanMakeCallback(js_date,"setSeconds",1,argv);
+	            NanMakeCallback(js_date,"setMilliseconds",1,argv);
 	            
 	            //js_field = con->Call(js_date, 3, argv);
 	            /*js_date = Object::New();
@@ -509,23 +494,21 @@ Local<Value>
            case SQL_TYPE_TIME:    
 	            isc_decode_sql_time((ISC_TIME *)var->sqldata, &times);
 	            
-	            js_date = Date::New(0)->ToObject();
-	            argv[0] = Integer::New(times.tm_year+1900);
-	            Local<Function>::Cast(js_date->Get( NanNew("setFullYear") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_mon);
-	            Local<Function>::Cast(js_date->Get( NanNew("setMonth") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_mday);
-	            Local<Function>::Cast(js_date->Get( NanNew("setDate") ))->Call(js_date,1,argv);
-	            
-	            argv[0] = Integer::New(times.tm_hour);
-	            Local<Function>::Cast(js_date->Get( NanNew("setHours") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_min);
-	            Local<Function>::Cast(js_date->Get( NanNew("setMinutes") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(times.tm_sec);
-	            Local<Function>::Cast(js_date->Get( NanNew("setSeconds") ))->Call(js_date,1,argv);
-	            argv[0] = Integer::New(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
-	            Local<Function>::Cast(js_date->Get( NanNew("setMilliseconds") ))->Call(js_date,1,argv);
-	            
+	            js_date = NanNew<Date>(0);
+	      	    argv[0] = NanNew<Integer>(times.tm_year+1900);
+	      	    NanMakeCallback(js_date,"setFullYear",1,argv);
+	      	    argv[0] = NanNew<Integer>(times.tm_mon);
+	      	    NanMakeCallback(js_date,"setMonth",1,argv);
+	      	    argv[0] = NanNew<Integer>(times.tm_mday);
+	      	    NanMakeCallback(js_date,"setDate",1,argv);
+	      	    argv[0] = NanNew<Integer>(times.tm_hour);
+	      	    NanMakeCallback(js_date,"setHours",1,argv);
+	      	    argv[0] = NanNew<Integer>(times.tm_min);
+	      	    NanMakeCallback(js_date,"setMinutes",1,argv);
+	      	    argv[0] = NanNew<Integer>(times.tm_sec);
+	      	    NanMakeCallback(js_date,"setSeconds",1,argv);
+	      	    argv[0] = NanNew<Integer>(  (( ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time) % 10000) / 10);
+	      	    NanMakeCallback(js_date,"setMilliseconds",1,argv);
 	            js_field = js_date;
 	            break;            
 
@@ -534,9 +517,9 @@ Local<Value>
                 /* Print the blob id on blobs or arrays */
                 bid = *(ISC_QUAD *) var->sqldata;
                 
-                argv[0] = External::New(&bid);
-		argv[1] = External::New(conn);
-                Local<Object> js_blob(FBblob::constructor_template->
+                argv[0] = NanNew<External>(&bid);
+		        argv[1] = NanNew<External>(conn);
+                Local<Object> js_blob(NanNew(FBblob::constructor_template)->
                                      GetFunction()->NewInstance(2, argv));
 
                 js_field = js_blob;
@@ -546,7 +529,7 @@ Local<Value>
 
     }
     
-    NanReturnValue(js_field);
+    return js_field;
   }
   
 Local<Object> 
@@ -563,23 +546,23 @@ Local<Object>
  
     
     if(asObject)
-            js_result_row = Object::New();
+            js_result_row = NanNew<Object>();
          else 
-            js_result_row = Array::New();
+            js_result_row = NanNew<Array>();
         
     for (i = 0; i < num_cols; i++)
     {
             js_field = FBResult::GetFieldValue((XSQLVAR *) &sqldap->sqlvar[i], connection);
             if(asObject)
             { 
-            	js_result_row->Set(String::New(sqldap->sqlvar[i].aliasname,sqldap->sqlvar[i].aliasname_length), js_field);
+            	js_result_row->Set(NanNew<String>(sqldap->sqlvar[i].aliasname,sqldap->sqlvar[i].aliasname_length), js_field);
             	//js_result_row->Set(String::New(sqldap->sqlvar[i].sqlname,sqldap->sqlvar[i]), js_field);
             }
             else
-            js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
+            js_result_row->Set(NanNew<Integer>(i), js_field);
     }    
     
-    NanReturnValue(js_result_row);
+    return js_result_row;
   }  
 
 NAN_METHOD(FBResult::FetchSync)
@@ -590,15 +573,15 @@ NAN_METHOD(FBResult::FetchSync)
     FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(args.This());
     
     int            fetch_stat;
-    short 	   i, num_cols;	
+  //  short 	   i, num_cols;	
     XSQLDA         *sqlda;
     
     uint32_t       j = 0;
     sqlda = fb_res->sqldap;
-    if(!sqlda){ return Undefined();}
-    num_cols = sqlda->sqld;
+    if(!sqlda){ NanReturnUndefined();}
+   // num_cols = sqlda->sqld;
     
-    Local<Value> js_result = Local<Value>::New(Null());
+    Local<Value> js_result = NanNull();
     
     if (args.Length() < 2){
        return NanThrowError("Expecting 2 arguments");
@@ -627,7 +610,7 @@ NAN_METHOD(FBResult::FetchSync)
     Local<Value> js_field;
     Local<Object> js_result_row;   
         
-    Local<Array> res = Array::New(); 
+    Local<Array> res = NanNew<Array>(); 
     while (((fetch_stat = isc_dsql_fetch(fb_res->status, &fb_res->stmt, SQL_DIALECT_V6, sqlda)) == 0)&&((rowCount==-1)||(rowCount>0)))
     {
         js_result_row = fb_res->getCurrentRow(rowAsObject);
@@ -646,13 +629,13 @@ NAN_METHOD(FBResult::FetchSync)
             else
             js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
         }*/
-        res->Set(Integer::NewFromUnsigned(j++), js_result_row);
+        res->Set(NanNew<Uint32>(j++), js_result_row);
         if(rowCount>0) rowCount--;
     }
     
     if ((fetch_stat != 100L) && fetch_stat) 
           return NanThrowError(
-            String::Concat(String::New("While FetchSync - "),ERR_MSG(fb_res,FBResult)));
+            String::Concat(NanNew("While FetchSync - "),ERR_MSG(fb_res,FBResult)));
 
     
 //    if(j==1) js_result = res->Get(0);
@@ -669,8 +652,8 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
     NanScope();
     struct fetch_request *f_req = (struct fetch_request *)(req->data);
 	delete req;
-    short i, num_cols;
-    num_cols = f_req->res->sqldap->sqld;
+   // short i, num_cols;
+   // num_cols = f_req->res->sqldap->sqld;
     
     Local<Value> js_field;
     Local<Object> js_result_row;   
@@ -699,12 +682,12 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
         	js_result_row->Set(Integer::NewFromUnsigned(i), js_field);
         }
         */
-        if(f_req->rowCallback->IsFunction()){
+        if(f_req->rowCallback){
     	    argv[0] = js_result_row;
         
 	    TryCatch try_catch;
-
-	    Local<Value> ret = Persistent<Function>::Cast(f_req->rowCallback)->Call(Context::GetCurrent()->Global(), 1, argv);
+	    
+	    Local<Value> ret = f_req->rowCallback->Call(1, argv);
 
 	    if (try_catch.HasCaught()) {
     		node::FatalException(try_catch);
@@ -724,8 +707,8 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
 	    else
 	    {
 	      argc = 2;
-	      argv[0] = Local<Value>::New(Null());
-	      argv[1] = Local<Value>::New(False());
+	      argv[0] = NanNull();
+	      argv[1] = NanFalse();
 	    }
 	}
 	else
@@ -738,27 +721,25 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
     else 
     if(f_req->fetchStat!=100L){
           argc = 1;
-          argv[0] = Exception::Error(
-            String::Concat(String::New("While fetching - "),ERR_MSG(f_req->res,FBResult)));
+          argv[0] = NanError(*NanAsciiString(
+            String::Concat(NanNew("While fetching - "),ERR_MSG(f_req->res,FBResult))));
     }
     else
     {
           argc = 2;
-          argv[0] = Local<Value>::New(Null());
-          argv[1] = Local<Value>::New(True());
+          argv[0] = NanNull();
+          argv[1] = NanTrue();
     }
 
    
     TryCatch try_catch;
-    f_req->eofCallback->Call(Context::GetCurrent()->Global(), argc, argv);
+    f_req->eofCallback->Call(argc, argv);
 
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
     }
     
 
-    f_req->rowCallback.Dispose();
-    f_req->eofCallback.Dispose();
     f_req->res->stop_async();
     f_req->res->Unref();
     free(f_req);
@@ -816,7 +797,8 @@ NAN_METHOD(FBResult::Fetch)
 /*    if(!args[2]->IsFunction())  f_req->rowCallback = Persistent<Value>::New(Null());
     else  f_req->rowCallback = Persistent<Function>::New(Local<Function>::Cast(args[2]));
 */   
-    f_req->rowCallback  = Persistent<Value>::New(args[2]);
+    if(args[2]->IsFunction()) f_req->rowCallback  = new NanCallback(Local<Function>::Cast(args[2]));
+    else f_req->rowCallback = NULL; 
     
     if(!args[3]->IsFunction()) {
       return NanThrowError("Expecting Function as fourth argument");
@@ -824,7 +806,7 @@ NAN_METHOD(FBResult::Fetch)
 
     
     f_req->res = res;
-    f_req->eofCallback = Persistent<Function>::New(Local<Function>::Cast(args[3]));
+    f_req->eofCallback = new NanCallback(Local<Function>::Cast(args[3]));
     
     res->start_async();
 
@@ -863,7 +845,7 @@ NAN_METHOD(FBResult::Fetch)
 	   if (status[1]){
 		    SQLCODE = isc_sqlcode(status);
 		    if(SQLCODE!=-901) // print error message if error is not 'Invalid Statement Handle', wich is normal when connection closed before FBresult is freed
-		      printf("Error in free statement %s, %d, %d\n",ErrorMessage(status,err_message,sizeof(this->err_message)),status[1],SQLCODE);
+		      printf("Error in free statement %s, %d, %ld\n",ErrorMessage(status,err_message,sizeof(this->err_message)),status[1],SQLCODE);
 		   /*ThrowException(Exception::Error(
 		              String::Concat(String::New("In FBResult::~FBResult, isc_dsql_free_statement - "),ERR_MSG(this, FBStatement))));
 		   */           

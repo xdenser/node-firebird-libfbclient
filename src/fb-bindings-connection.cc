@@ -16,7 +16,7 @@ void
     
     t->InstanceTemplate()->SetInternalFieldCount(1);
     t->SetClassName(NanNew("Connection"));
-    t->Inherit(FBEventEmitter::constructor_template);
+    t->Inherit(NanNew(FBEventEmitter::constructor_template));
     // Methods 
 
     NODE_SET_PROTOTYPE_METHOD(t, "connectSync", ConnectSync);
@@ -411,7 +411,7 @@ NAN_METHOD(Connection::ConnectSync)
 
     if (!r) {
       return NanThrowError(
-            String::Concat(String::New("While connecting - "),ERR_MSG(connection, Connection)));
+            String::Concat(NanNew("While connecting - "),ERR_MSG(connection, Connection)));
     }
     
     NanReturnUndefined();
@@ -420,29 +420,27 @@ NAN_METHOD(Connection::ConnectSync)
    
 void Connection::EIO_After_Connect(uv_work_t *req)
   {
-   // uv_unref(uv_default_loop());
-    HandleScope scope;
+    NanScope();
     struct connect_request *conn_req = (struct connect_request *)(req->data);
 	delete req;
     Local<Value> argv[1];
     
     if (!conn_req->res) {
-       argv[0] = Exception::Error(
-            String::Concat(String::New("While connecting - "),ERR_MSG(conn_req->conn, Connection)));
+       argv[0] = NanError(*NanAsciiString(
+            String::Concat(NanNew("While connecting - "),ERR_MSG(conn_req->conn, Connection))));
     }
     else{
-     argv[0] = Local<Value>::New(Null());
+     argv[0] = NanNull();
     }
    
     TryCatch try_catch;
 
-    conn_req->callback->Call(Context::GetCurrent()->Global(), 1, argv);
+    conn_req->callback->Call( 1, argv);
 
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
     }
     
-    conn_req->callback.Dispose();
     conn_req->conn->stop_async();
     conn_req->conn->Unref();
     free(conn_req);
@@ -487,7 +485,7 @@ NAN_METHOD(Connection::Connect)
     }
     
     conn_req->conn = conn;
-    conn_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[4]));
+    conn_req->callback =  new NanCallback(Local<Function>::Cast(args[4]));
     conn_req->Database = new String::Utf8Value(args[0]->ToString());
     conn_req->User     = new String::Utf8Value(args[1]->ToString());
     conn_req->Password = new String::Utf8Value(args[2]->ToString());
@@ -513,7 +511,7 @@ NAN_METHOD(Connection::Disconnect)
     //printf("disconnect\n");
     if(!connection->Close()){
       return NanThrowError(
-            String::Concat(String::New("While closing - "),ERR_MSG(connection, Connection)));
+            String::Concat(NanNew("While closing - "),ERR_MSG(connection, Connection)));
     }     
    
     NanReturnUndefined();
@@ -542,7 +540,7 @@ NAN_METHOD(Connection::CommitSync)
 
     if (!r) {
       return NanThrowError(
-            String::Concat(String::New("While commitSync - "),ERR_MSG(connection, Connection)));
+            String::Concat(NanNew("While commitSync - "),ERR_MSG(connection, Connection)));
     }
     
     NanReturnUndefined();
@@ -557,7 +555,7 @@ NAN_METHOD(Connection::RollbackSync)
 
     if (!r) {
       return NanThrowError(
-            String::Concat(String::New("While rollbackSync - "),ERR_MSG(connection, Connection)));
+            String::Concat(NanNew("While rollbackSync - "),ERR_MSG(connection, Connection)));
     }
     
     NanReturnUndefined();
@@ -571,8 +569,7 @@ NAN_METHOD(Connection::StartSync)
     bool r = connection->start_transaction();
 
     if (!r) {
-      return NanThrowError(
-            String::New(connection->err_message));
+      return NanThrowError(connection->err_message);
     }
     
     NanReturnUndefined();
@@ -588,21 +585,20 @@ void Connection::EIO_After_TransactionRequest(uv_work_t *req)
     Local<Value> argv[1];
     
     if (!tr_req->result) {
-       argv[0] = Exception::Error(ERR_MSG(tr_req->conn, Connection));
+       argv[0] = NanError(*NanAsciiString(ERR_MSG(tr_req->conn, Connection)));
     }
     else{
-     argv[0] = Local<Value>::New(Null());
+     argv[0] = NanNull();
     }
    
     TryCatch try_catch;
 
-    tr_req->callback->Call(Context::GetCurrent()->Global(), 1, argv);
+    tr_req->callback->Call(1, argv);
 
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
     }
 
-    tr_req->callback.Dispose();
     tr_req->conn->stop_async();
     tr_req->conn->Unref();
     free(tr_req);
@@ -645,7 +641,7 @@ NAN_METHOD(Connection::Commit)
     }
     
     tr_req->conn = conn;
-    tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+    tr_req->callback = new NanCallback(Local<Function>::Cast(args[0]));
     tr_req->type = rCommit;
     
     conn->start_async();
@@ -679,7 +675,7 @@ NAN_METHOD(Connection::Rollback)
     }
     
     tr_req->conn = conn;
-    tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+    tr_req->callback = new NanCallback(Local<Function>::Cast(args[0]));
     tr_req->type = rRollback;
     
     conn->start_async();
@@ -712,7 +708,7 @@ NAN_METHOD(Connection::Start)
     }
     
     tr_req->conn = conn;
-    tr_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+    tr_req->callback = new NanCallback(Local<Function>::Cast(args[0]));
     tr_req->type = rStart;
     
     conn->start_async();
@@ -743,21 +739,21 @@ NAN_METHOD(Connection::QuerySync)
     bool r = connection->process_statement(&sqlda,*Query, &stmt, &statement_type);
     if(!r) {
       return NanThrowError(
-            String::Concat(String::New("In querySync - "),ERR_MSG(connection, Connection)));
+            String::Concat(NanNew("In querySync - "),ERR_MSG(connection, Connection)));
     }
     
     Local<Value> argv[3];
 
-    argv[0] = External::New(sqlda);
-    argv[1] = External::New(&stmt);
-    argv[2] = External::New(connection);
-    Local<Object> js_result(FBResult::constructor_template->
+    argv[0] = NanNew<External>(sqlda);
+    argv[1] = NanNew<External>(&stmt);
+    argv[2] = NanNew<External>(connection);
+    Local<Object> js_result(NanNew(FBResult::constructor_template)->
                                      GetFunction()->NewInstance(3, argv));
     	
     if(statement_type==isc_info_sql_stmt_exec_procedure){
     	FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
     	Local<Value> js_value = fb_res->getCurrentRow(true);
-    	return scope.Close(js_value);
+    	NanReturnValue(js_value);
     }
     
 
@@ -777,35 +773,35 @@ void Connection::EIO_After_Query(uv_work_t *req)
     Local<Value> argv[3];
     if (!q_req->result) {
          argv[0] = Exception::Error(
-            String::Concat(String::New("While query - "),ERR_MSG(q_req->conn, Connection)));
-       argv[1] = Local<Value>::New(Null());        
+            String::Concat(NanNew("While query - "),ERR_MSG(q_req->conn, Connection)));
+       argv[1] = NanNull();        
     }
     else{
-     argv[0] = External::New(q_req->sqlda);
-     argv[1] = External::New(&q_req->stmt);
-     argv[2] = External::New(q_req->conn);
+     argv[0] = NanNew<External>(q_req->sqlda);
+     argv[1] = NanNew<External>(&q_req->stmt);
+     argv[2] = NanNew<External>(q_req->conn);
      
-     Local<Object> js_result(FBResult::constructor_template->
+     Local<Object> js_result(NanNew(FBResult::constructor_template)->
                                      GetFunction()->NewInstance(3, argv));
      
      if(q_req->statement_type==isc_info_sql_stmt_exec_procedure ){
     	 FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
     	 argv[1] = fb_res->getCurrentRow(true);
      }
-     else  argv[1] = Local<Value>::New(js_result);    
-     argv[0] = Local<Value>::New(Null());
+     else  argv[1] = NanNew(js_result);    
+     argv[0] = NanNull();
     }
    
       
     TryCatch try_catch;
     
-    q_req->callback->Call(Context::GetCurrent()->Global(), 2, argv);
+    q_req->callback->Call( 2, argv);
     
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
     }
     
-    q_req->callback.Dispose();
+    
     q_req->conn->stop_async();
     q_req->conn->Unref();
     free(q_req);
@@ -843,7 +839,7 @@ NAN_METHOD(Connection::Query)
     }
     
     q_req->conn = conn;
-    q_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[1]));
+    q_req->callback = new NanCallback(Local<Function>::Cast(args[1]));
     q_req->Query = new String::Utf8Value(args[0]->ToString());
     q_req->sqlda = NULL;
     q_req->stmt = 0;
@@ -877,7 +873,7 @@ NAN_METHOD(Connection::addEvent)
         
        // event_block* eb;
         
-     NanReturnValue(event_block::RegEvent(&(conn->fb_events), *Event, conn, &conn->db));
+      event_block::RegEvent(&(conn->fb_events), *Event, conn, &conn->db);
     }
     
    NanReturnUndefined();
@@ -896,7 +892,9 @@ NAN_METHOD(Connection::deleteEvent)
     
     String::Utf8Value Event(args[0]->ToString());
     
-    NanReturnValue(event_block::RemoveEvent(&(conn->fb_events), *Event));
+    event_block::RemoveEvent(&(conn->fb_events), *Event);
+    
+    NanReturnUndefined();
 
   }
   
@@ -906,8 +904,7 @@ NAN_METHOD(Connection::PrepareSync)
     Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
         
     if (args.Length() < 1 || !args[0]->IsString()){
-       return ThrowException(Exception::Error(
-            String::New("Expecting a string query argument.")));
+       return NanThrowError("Expecting a string query argument.");
     }
     
     String::Utf8Value Query(args[0]->ToString());
@@ -919,16 +916,16 @@ NAN_METHOD(Connection::PrepareSync)
     
     if(!r) {
       return NanThrowError(
-            String::Concat(String::New("In prepareSync - "),ERR_MSG(connection, Connection)));
+            String::Concat(NanNew("In prepareSync - "),ERR_MSG(connection, Connection)));
     }
     
     Local<Value> argv[4];
 
-    argv[0] = External::New(insqlda);
-    argv[1] = External::New(outsqlda);
-    argv[2] = External::New(&stmt);
-    argv[3] = External::New(connection);
-    Persistent<Object> js_result(FBStatement::constructor_template->
+    argv[0] = NanNew<External>(insqlda);
+    argv[1] = NanNew<External>(outsqlda);
+    argv[2] = NanNew<External>(&stmt);
+    argv[3] = NanNew<External>(connection);
+    Local<Object> js_result(NanNew(FBStatement::constructor_template)->
                                      GetFunction()->NewInstance(4, argv));
 
     NanReturnValue(js_result);
@@ -940,10 +937,10 @@ NAN_METHOD(Connection::NewBlobSync)
     Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
     Local<Value> argv[2];
     
-    argv[0] = Local<Value>::New(Null());
-    argv[1] = External::New(conn);
+    argv[0] = NanNull();
+    argv[1] = NanNew<External>(conn);
     
-    Local<Object> js_blob(FBblob::constructor_template->
+    Local<Object> js_blob(NanNew(FBblob::constructor_template)->
                                      GetFunction()->NewInstance(2, argv));
     NanReturnValue(js_blob);
   }

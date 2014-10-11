@@ -17,6 +17,14 @@
 
 //#define DEBUG
 
+#if (NODE_MODULE_VERSION > 0x000B)
+#define _UV_NOTIFICATION_SIGNATURE (uv_async_s *w)   
+#endif
+
+#if (NODE_MODULE_VERSION < 0x000C)
+#define _UV_NOTIFICATION_SIGNATURE (uv_async_t *w, int revents) 
+#endif
+
 #define MAX_EVENTS_PER_BLOCK	15
 
 using namespace node;
@@ -72,10 +80,9 @@ public:
 
     // this is event nitification proc
     // here we emit node events 
-    static void event_notification(uv_async_t *w, int revents);
+    static void event_notification _UV_NOTIFICATION_SIGNATURE;
     
-    static Handle<Value> 
-    que_event(event_block *eb);
+    static void que_event(event_block *eb);
     
     int hasEvent(char *Event);
     
@@ -83,12 +90,12 @@ public:
     
     void removeEvent(char *Event);
     
-    static Handle<Value> 
+    static void
     RegEvent(event_block** rootp, char *Event, Connection *aconn, isc_db_handle *db);
     
     static event_block* FindBlock(event_block* root, char *Event);
     
-    static Handle<Value> 
+    static void
     RemoveEvent(event_block** root, char *Event);
     
     event_block(Connection *aconn,isc_db_handle *adb);

@@ -11,12 +11,12 @@ Persistent<FunctionTemplate> FBEventEmitter::constructor_template;
 void FBEventEmitter::Initialize(v8::Handle<v8::Object> target)
   {
     
-    Local<FunctionTemplate> t = FunctionTemplate::New();
+    Local<FunctionTemplate> t = NanNew<FunctionTemplate>();
     
-    constructor_template = Persistent<FunctionTemplate>::New(t);
-    constructor_template->SetClassName(NanNew<String>("FBEventEmitter"));
+    NanAssignPersistent(constructor_template,t);
+    t->SetClassName(NanNew<String>("FBEventEmitter"));
            
-    target->Set(NanNew<String>("FBEventEmitter"),  constructor_template->GetFunction());
+    target->Set(NanNew<String>("FBEventEmitter"),  t->GetFunction());
   }
  
  
@@ -27,7 +27,7 @@ void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
     if(argc>10) NanThrowError("Cant process more than 10 arguments");
     argv1[0] = event;
     for(int i=0;i<argc;i++) argv1[i+1] = argv[i];
-    NanMakeCallback(handle_,"emit",argc+1,argv1);
+    NanMakeCallback(handle(),"emit",argc+1,argv1);
     //node::MakeCallback(handle_,"emit",argc+1,argv1);
   }  
 

@@ -18,7 +18,7 @@
 
 void event_block::Init()
 {
-  fbevent_symbol = NODE_PSYMBOL("fbevent");
+  NanAssignPersistent(fbevent_symbol,NanNew<String>("fbevent"));
 }
 
 #ifdef DEBUG    
@@ -157,7 +157,7 @@ void event_block::isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR 
     }
     // this is event nitification proc
     // here we emit node events 
-void event_block::event_notification(uv_async_t *w, int revents){
+void event_block::event_notification _UV_NOTIFICATION_SIGNATURE {
         NanScope();
         ISC_STATUS_ARRAY Vector;
 	    Local<Value> argv[2];
@@ -187,14 +187,14 @@ void event_block::event_notification(uv_async_t *w, int revents){
         // and then emit
 	for(i=0; i < count; i++){
 	  if(Vector[i]){
-	   EvNames[i] = String::New(eb->event_names[i]);
+	   EvNames[i] = NanNew<String>(eb->event_names[i]);
 	   emit_events = true;
 	  } 
 	}
 	// requeue events
 	if(!eb->queue()) {
             NanThrowError(
-            String::Concat(String::New("While isc_que_events in event_notification - "),ERR_MSG(eb, event_block)));
+            String::Concat(NanNew("While isc_que_events in event_notification - "),ERR_MSG(eb, event_block)));
         }			      
         
         // exit if block was marked as bad
@@ -206,23 +206,22 @@ void event_block::event_notification(uv_async_t *w, int revents){
 	for( i=0; i < count; i++){
 	   if(Vector[i]) {
 	     argv[0] = EvNames[i];
-	     argv[1] = Integer::New(Vector[i]);
-             ((FBEventEmitter*) conn)->Emit(fbevent_symbol,2,argv);
+	     argv[1] = NanNew<Integer>(Vector[i]);
+             ((FBEventEmitter*) conn)->Emit(NanNew(fbevent_symbol),2,argv);
            }     
         }
 
     }
     
     
-Handle<Value> 
+void
     event_block::que_event(event_block *eb)
     { 
       NanScope();
       if(!eb->queue()) {
             return NanThrowError(
-            String::Concat(String::New("While isc_que_events - "),ERR_MSG(eb, event_block)));
+            String::Concat(NanNew("While isc_que_events - "),ERR_MSG(eb, event_block)));
       }
-      NanReturnUndefined();
     }
     
 int event_block::hasEvent(char *Event)
@@ -303,7 +302,7 @@ void event_block::removeEvent(char *Event)
           
     }
     
-Handle<Value> 
+void
     event_block::RegEvent(event_block** rootp, char *Event, Connection *aconn, isc_db_handle *db)
     {
       NanScope();
@@ -311,7 +310,7 @@ Handle<Value>
       // Check if we already have registered that event
       event_block* res = event_block::FindBlock(root,Event);
       // Exit if yes
-      if(res) return Undefined();
+      if(res) return;
   
       // Search for available event block
       res = root;
@@ -346,7 +345,7 @@ Handle<Value>
       // Cancel old queue if any 
       if(!res->cancel()){
     	    return NanThrowError(
-        	String::Concat(String::New("While cancel_events - "),ERR_MSG(res, event_block)));
+        	String::Concat(NanNew("While cancel_events - "),ERR_MSG(res, event_block)));
       }        
 
       // Add event to block
@@ -355,7 +354,7 @@ Handle<Value>
     	    return NanThrowError("Could not allocate memory.");
       }
 
-      NanReturnValue(event_block::que_event(res));
+      event_block::que_event(res);
 
     }
     
@@ -369,7 +368,7 @@ event_block* event_block::FindBlock(event_block* root, char *Event)
       return res;
     }
     
-Handle<Value> 
+void 
     event_block::RemoveEvent(event_block** root, char *Event)
     {
       NanScope();
@@ -381,7 +380,7 @@ Handle<Value>
         // it was queued and should be canceled
         if(!eb->cancel()){
     	    return NanThrowError(
-        	    String::Concat(String::New("While cancel_events - "),ERR_MSG(eb, event_block)));
+        	    String::Concat(NanNew("While cancel_events - "),ERR_MSG(eb, event_block)));
     	}        
     	// Remove it from event list
         eb->removeEvent(Event);
@@ -408,7 +407,7 @@ Handle<Value>
       }	
       // No block with that name 
       // may be throw error ???
-      NanReturnUndefined();
+      // NanReturnUndefined();
     }
     
     event_block::event_block(Connection *aconn,isc_db_handle *adb)

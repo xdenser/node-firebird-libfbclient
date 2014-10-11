@@ -17,16 +17,12 @@ void FBblob::Initialize (v8::Handle<v8::Object> target)
   //  HandleScope scope;
     
     Local<FunctionTemplate> t = NanNew<FunctionTemplate>(FBblob::New);
-
-    t->Inherit(FBEventEmitter::constructor_template);
-
     NanAssignPersistent(constructor_template,t);
 
-    constructor_template->Inherit(FBEventEmitter::constructor_template);
-    constructor_template->SetClassName(NanNew("FBblob"));
+    t->Inherit(NanNew(FBEventEmitter::constructor_template));
+    t->SetClassName(NanNew("FBblob"));
 
-    Local<ObjectTemplate> instance_template =
-        constructor_template->InstanceTemplate();
+    Local<ObjectTemplate> instance_template =  t->InstanceTemplate();
         
     NODE_SET_PROTOTYPE_METHOD(t, "_readSync", ReadSync);
     NODE_SET_PROTOTYPE_METHOD(t, "_read", Read);
@@ -54,7 +50,7 @@ bool FBblob::HasInstance(v8::Handle<v8::Value> val)
   if (obj->GetIndexedPropertiesExternalArrayDataType() == kExternalUnsignedByteArray)
     return true;
 */
-       if (constructor_template->HasInstance(obj))
+       if (NanHasInstance(constructor_template,obj))
         return true;
 
        return false;
@@ -120,34 +116,34 @@ NAN_METHOD(FBblob::ReadSync)
 void FBblob::EIO_After_Read(uv_work_t *req)
   {
    // uv_unref(uv_default_loop());
-    HandleScope scope;
+	NanScope();
     struct rw_request *r_req = (struct rw_request *)(req->data);
 	delete req;
     Local<Value> argv[3];
     int argc;
     
-    Buffer *slowBuffer = Buffer::New(r_req->buffer, (size_t) r_req->length);
+    
+    /*
     Local<Object> global = Context::GetCurrent()->Global();
+    Buffer *slowBuffer = Buffer::New(r_req->buffer, (size_t) r_req->length);
     Local<Function> bufferConstructor =  Local<Function>::Cast(global->Get(String::New("Buffer")));
-    Handle<Value> cArgs[3] = {slowBuffer->handle_, Integer::New(r_req->length), Integer::New(0) };
+    Handle<Value> cArgs[3] = {slowBuffer->handle_, Integer::New(r_req->length), Integer::New(0) }; */
     
     if(r_req->res!=-1)
     {
-      argv[0] = Local<Value>::New(Null());
-      argv[1] = bufferConstructor->NewInstance(3,cArgs);
-      argv[2] = Integer::New(r_req->res);
+      argv[0] = NanNull();
+      argv[1] = NanBufferUse(r_req->buffer, (size_t) r_req->length); //bufferConstructor->NewInstance(3,cArgs);
+      argv[2] = NanNew<Integer>(r_req->res);
       argc = 3;
     }
     else
     {
-      argv[0] =  Exception::Error(
-            String::Concat(String::New("FBblob::EIO_After_Read - "),ERR_MSG_STAT(r_req->status, FBblob)));
+      argv[0] =  NanError(*NanAsciiString(
+            String::Concat(NanNew("FBblob::EIO_After_Read - "),ERR_MSG_STAT(r_req->status, FBblob))));
       argc = 1;        
     }  
     
-    r_req->callback->Call(global, argc, argv);
-    
-    r_req->callback.Dispose();
+    r_req->callback->Call(argc, argv);
     r_req->blob->stop_async();
     r_req->blob->Unref();
     free(r_req);
@@ -192,7 +188,7 @@ NAN_METHOD(FBblob::Read)
     }
     
     r_req->blob = blob;
-    r_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[1]));
+    r_req->callback = new NanCallback(Local<Function>::Cast(args[1]));
     r_req->buffer = buffer_data;
     r_req->length = buffer_length;
     r_req->res = 0;
@@ -218,7 +214,7 @@ NAN_METHOD(FBblob::OpenSync)
     ISC_STATUS_ARRAY status;
     if(!blob->open(status)){
        return NanThrowError(
-         String::Concat(String::New("In FBblob::_openSync - "),ERR_MSG_STAT(status, FBblob)));
+         String::Concat(NanNew("In FBblob::_openSync - "),ERR_MSG_STAT(status, FBblob)));
     } 
     
     NanReturnUndefined();
@@ -234,7 +230,7 @@ NAN_METHOD(FBblob::CloseSync)
     blob->close(status);
     if(status[1]){
        return NanThrowError(
-         String::Concat(String::New("In FBblob::_closeSync - "),ERR_MSG_STAT(status, FBblob)));
+         String::Concat(NanNew("In FBblob::_closeSync - "),ERR_MSG_STAT(status, FBblob)));
     } 
     
     NanReturnUndefined();
@@ -257,13 +253,13 @@ NAN_METHOD(FBblob::WriteSync)
     
     if( (args.Length() > 1) && args[1]->IsInt32() )
     {
-      int16_t alen = (int16_t) args[1]->IntegerValue();
+      size_t alen = (size_t) args[1]->IntegerValue();
       if(alen < len) len = alen;
     }
 
     if(isc_put_segment(status, &blob->handle, len, buf))
       return NanThrowError(
-         String::Concat(String::New("In FBblob::_writeSync - "),ERR_MSG_STAT(status, FBblob)));
+         String::Concat(NanNew("In FBblob::_writeSync - "),ERR_MSG_STAT(status, FBblob)));
          
     NanReturnValue(NanNew<Integer>(len));
   }  
@@ -271,26 +267,23 @@ NAN_METHOD(FBblob::WriteSync)
 void FBblob::EIO_After_Write(uv_work_t *req)
   {
     //uv_unref(uv_default_loop());
-    HandleScope scope;
+    NanScope();
     struct rw_request *w_req = (struct rw_request *)(req->data);
 	delete req;
     Local<Value> argv[1];
-    Local<Object> global = Context::GetCurrent()->Global();
     
-    if(!w_req->callback->IsNull()){
+    if(w_req->callback){
 
 	if(w_req->status[1]){
-    	    argv[0] =  Exception::Error(
-        	String::Concat(String::New("FBblob::EIO_After_Read - "),ERR_MSG_STAT(w_req->status, FBblob)));
+    	    argv[0] =  NanError(*NanAsciiString(
+        	String::Concat(NanNew("FBblob::EIO_After_Read - "),ERR_MSG_STAT(w_req->status, FBblob))));
 	}        
 	else
-    	    argv[0] = Local<Value>::New(Null());
+    	    argv[0] = NanNull();
     	    
-        w_req->callback->Call(global, 1, argv);
+        w_req->callback->Call(1, argv);
     };
     
-    w_req->callback.Dispose();
-//    w_req->blob->Emit();
     w_req->blob->stop_async();
     w_req->blob->Unref();
     free(w_req);
@@ -334,16 +327,16 @@ NAN_METHOD(FBblob::Write)
     int cb_arg = 1;    
     if( (args.Length() > 1) && args[1]->IsInt32() )
     {
-      int16_t alen = (int16_t) args[1]->IntegerValue();
+      size_t alen = (size_t) args[1]->IntegerValue();
       if(alen < len) len = alen;
       w_req->length = len;
       cb_arg = 2;
     }
     
     if( (args.Length() > cb_arg) && args[cb_arg]->IsFunction()) {
-      w_req->callback = Persistent<Function>::New(Local<Function>::Cast(args[cb_arg]));  
+      w_req->callback = new NanCallback(Local<Function>::Cast(args[cb_arg]));  
     }
-    else w_req->callback = Persistent<Function>::New(Local<Function>::Cast(Local<Value>::New(Null())));
+    else w_req->callback = NULL;
 
     w_req->res = 0;
 
