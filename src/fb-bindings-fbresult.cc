@@ -208,7 +208,10 @@ void FBResult::set_params(XSQLDA *sqlda, _NAN_METHOD_ARGS_TYPE args)
     int64_t int_val;
 //    char *txt;
     
-    if( sqlda->sqld >  args.Length() ) return NanThrowError(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld,(int)args.Length()));
+    if( sqlda->sqld >  args.Length() ) {
+    	 NanThrowError(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld,(int)args.Length()));
+    	 return ;
+    }
     for(i = 0, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
     {
       
@@ -221,7 +224,10 @@ void FBResult::set_params(XSQLDA *sqlda, _NAN_METHOD_ARGS_TYPE args)
       { 
         case SQL_ARRAY:
         case SQL_BLOB:      
-                            if(!FBblob::HasInstance(args[i])) return NanThrowError(errmsg1f(errm,"Expecting FBblob as argument #%d.",i+1));
+                            if(!FBblob::HasInstance(args[i])){
+                            	NanThrowError(errmsg1f(errm,"Expecting FBblob as argument #%d.",i+1));
+                            	return ;
+                            }
                             obj = args[i]->ToObject();  
                             blob = ObjectWrap::Unwrap<FBblob>(obj);  
                             
@@ -231,25 +237,37 @@ void FBResult::set_params(XSQLDA *sqlda, _NAN_METHOD_ARGS_TYPE args)
                             break;
                             
         case SQL_TIMESTAMP: 
-                            if(!args[i]->IsDate()) return NanThrowError(errmsg1f(errm,"Expecting Date as argument #%d.",i+1));
+                            if(!args[i]->IsDate()) {
+                            	NanThrowError(errmsg1f(errm,"Expecting Date as argument #%d.",i+1));
+                            	return ;
+                            }
                                                 
                             get_date( &times, args[i]->ToObject(), &m_sec);                            
                             isc_encode_timestamp(&times, (ISC_TIMESTAMP *)var->sqldata);
                             ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time = ((ISC_TIMESTAMP *)var->sqldata)->timestamp_time + m_sec*10;
                             break;          
         case SQL_TYPE_TIME:  
-                            if(!args[i]->IsDate()) return NanThrowError(errmsg1f(errm,"Expecting Date as argument #%d.",i+1));
+                            if(!args[i]->IsDate()){
+                            	NanThrowError(errmsg1f(errm,"Expecting Date as argument #%d.",i+1));
+                            	return ;
+                            }
                             get_date( &times, args[i]->ToObject(), &m_sec);                            
                             isc_encode_sql_time(&times, (ISC_TIME *)var->sqldata);
                             *((ISC_TIME *)var->sqldata) = *((ISC_TIME *)var->sqldata) + m_sec*10;
                             break;                                          
         case SQL_TYPE_DATE:  
-                            if(!args[i]->IsDate()) return NanThrowError(errmsg1f(errm,"Expecting Date as argument #%d.",i+1));
+                            if(!args[i]->IsDate()){
+                            	NanThrowError(errmsg1f(errm,"Expecting Date as argument #%d.",i+1));
+                            	return ;
+                            }
                             get_date( &times, args[i]->ToObject(), &m_sec);                            
                             isc_encode_sql_date(&times, (ISC_DATE *)var->sqldata);
                             break;                               
         case SQL_TEXT:      
-                            if(!args[i]->IsString()) return NanThrowError(errmsg1f(errm,"Expecting String as argument #%d.",i+1));
+                            if(!args[i]->IsString()){
+                            	NanThrowError(errmsg1f(errm,"Expecting String as argument #%d.",i+1));
+                            	return ;
+                            }
                             {                           
                             String::Utf8Value txt(args[i]->ToString());  
                             s_len = strlen(*txt);
@@ -261,7 +279,10 @@ void FBResult::set_params(XSQLDA *sqlda, _NAN_METHOD_ARGS_TYPE args)
 
 	case SQL_VARYING:		    
 	                    
-	                    if(!args[i]->IsString()) return NanThrowError(errmsg1f(errm,"Expecting String as  argument #%d.",i+1));
+	                    if(!args[i]->IsString()) {
+	                    	NanThrowError(errmsg1f(errm,"Expecting String as  argument #%d.",i+1));
+	                    	return ;
+	                    }
                             {                           
                             String::Utf8Value txt(args[i]->ToString());  
                             
@@ -686,7 +707,7 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
         
 	    TryCatch try_catch;
 	    
-	    Local<Value> ret = f_req->rowCallback->Call(1, argv);
+	    Local<Value> ret = NanNew(f_req->rowCallback->Call(1, argv));
 
 	    if (try_catch.HasCaught()) {
     		node::FatalException(try_catch);

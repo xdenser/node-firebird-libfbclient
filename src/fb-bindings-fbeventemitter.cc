@@ -27,7 +27,7 @@ void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
     if(argc>10) NanThrowError("Cant process more than 10 arguments");
     argv1[0] = event;
     for(int i=0;i<argc;i++) argv1[i+1] = argv[i];
-    NanMakeCallback(handle(),"emit",argc+1,argv1);
+    NanMakeCallback(NanObjectWrapHandle(this),"emit",argc+1,argv1);
     //node::MakeCallback(handle_,"emit",argc+1,argv1);
   }  
 

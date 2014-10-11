@@ -219,8 +219,9 @@ void
     { 
       NanScope();
       if(!eb->queue()) {
-            return NanThrowError(
+            NanThrowError(
             String::Concat(NanNew("While isc_que_events - "),ERR_MSG(eb, event_block)));
+            return ;
       }
     }
     
@@ -326,7 +327,8 @@ void
         res = new event_block(aconn, db);
         if(!res){
     	    V8::LowMemoryNotification();
-    	    return NanThrowError("Could not allocate memory.");
+    	    NanThrowError("Could not allocate memory.");
+    	    return ;
 	}
         res->event_->data = res;
         uv_async_init(uv_default_loop(),res->event_, event_block::event_notification);
@@ -344,14 +346,16 @@ void
       
       // Cancel old queue if any 
       if(!res->cancel()){
-    	    return NanThrowError(
+    	    NanThrowError(
         	String::Concat(NanNew("While cancel_events - "),ERR_MSG(res, event_block)));
+    	    return;
       }        
 
       // Add event to block
       if(!res->addEvent(Event)) {
     	    V8::LowMemoryNotification();
-    	    return NanThrowError("Could not allocate memory.");
+    	    NanThrowError("Could not allocate memory.");
+    	    return ;
       }
 
       event_block::que_event(res);
@@ -379,8 +383,9 @@ void
         // If we have found it
         // it was queued and should be canceled
         if(!eb->cancel()){
-    	    return NanThrowError(
-        	    String::Concat(NanNew("While cancel_events - "),ERR_MSG(eb, event_block)));
+        	NanThrowError(
+        	        	    String::Concat(NanNew("While cancel_events - "),ERR_MSG(eb, event_block)));
+    	    return ;
     	}        
     	// Remove it from event list
         eb->removeEvent(Event);
