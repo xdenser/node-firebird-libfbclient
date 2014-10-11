@@ -22,7 +22,7 @@ void FBEventEmitter::Initialize(v8::Handle<v8::Object> target)
  
 void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
   {
-	NanScope();;
+	NanScope();
     Handle<Value> argv1[11];
     if(argc>10) NanThrowError("Cant process more than 10 arguments");
     argv1[0] = event;
@@ -33,13 +33,15 @@ void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
 
 void FBEventEmitter::start_async()
   {
-    in_async = true;
+	NanScope();
+	in_async = true;
     Emit(NanNew("fbStartAsync"), 0, NULL);
   }
   
 void FBEventEmitter::stop_async()
   {
-    in_async = false;
+	NanScope();
+	in_async = false;
     Emit(NanNew("fbStopAsync"), 0, NULL);
   }
 

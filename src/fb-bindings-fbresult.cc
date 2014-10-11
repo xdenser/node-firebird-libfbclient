@@ -341,7 +341,7 @@ Local<Value>
     short		bpc, chars; // bytes per char 
     
     
-    NanScope();
+    NanEscapableScope();
     
     Local<Function> con;
     Local<Value> argv[7];
@@ -383,21 +383,21 @@ Local<Value>
             case SQL_LONG:
 	    case SQL_INT64:
 		{
-		ISC_INT64	value;
+		ISC_INT64	val = 0;
 	//	short		field_width;
 		short		dscale;
 		switch (dtype)
 		    {
 		    case SQL_SHORT:
-			value = (ISC_INT64) *(short *) var->sqldata;
+			val = (ISC_INT64) *(short *) var->sqldata;
 		//	field_width = 6;
 			break;
 		    case SQL_LONG:
-			value = (ISC_INT64) *(int *) var->sqldata;
+			val = (ISC_INT64) *(int *) var->sqldata;
 		//	field_width = 11;
 			break;
 		    case SQL_INT64:
-			value = (ISC_INT64) *(ISC_INT64 *) var->sqldata;
+			val = (ISC_INT64) *(ISC_INT64 *) var->sqldata;
 		//	field_width = 21;
 			break;
 		    }
@@ -409,17 +409,17 @@ Local<Value>
 		    {
 		    tens = 1;
 		    for (i = 0; i > dscale; i--) tens *= 10;
-                    js_field = NanNew<Number>((double) value / tens); 
+                    js_field = NanNew<Number>((double) val / tens); 
                     
 		    }
 		else if (dscale)
 		      {
 		       tens = 1;
 		       for (i = 0; i < dscale; i++) tens *= 10;
-		       js_field = NanNew<Integer>(value * tens); 
+		       js_field = NanNew<Integer>(val * tens); 
 	              }		    
 		else
-		      js_field = NanNew<Integer>( value);
+		      js_field = NanNew<Integer>( val);
 		}
                 break;
 
@@ -519,8 +519,7 @@ Local<Value>
                 
                 argv[0] = NanNew<External>(&bid);
 		        argv[1] = NanNew<External>(conn);
-                Local<Object> js_blob(NanNew(FBblob::constructor_template)->
-                                     GetFunction()->NewInstance(2, argv));
+                Local<Object> js_blob = NanNew(FBblob::constructor_template)->GetFunction()->NewInstance(2, argv);
 
                 js_field = js_blob;
                 break;
@@ -529,7 +528,7 @@ Local<Value>
 
     }
     
-    return js_field;
+    return NanEscapeScope(js_field);
   }
   
 Local<Object> 
@@ -537,7 +536,7 @@ Local<Object>
   {
     short  i, num_cols;
    
-    NanScope();
+    NanEscapableScope();
     Local<Object> js_result_row;   
     Local<Value> js_field;
     
@@ -562,7 +561,7 @@ Local<Object>
             js_result_row->Set(NanNew<Integer>(i), js_field);
     }    
     
-    return js_result_row;
+    return NanEscapeScope(js_result_row);
   }  
 
 NAN_METHOD(FBResult::FetchSync)

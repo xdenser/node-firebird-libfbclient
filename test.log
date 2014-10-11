@@ -1,0 +1,560 @@
+
+[1mtest-async[22m
+✔ AsyncConnection
+✔ AsyncQueryWithError
+✔ AsyncFetch
+✔ InAsyncCallConnection
+
+[1mtest-binding[22m
+✔ ConnectionBinding
+✔ SafeConnectionBinding
+✔ FBResultBinding
+✔ FBblobBinding
+✔ FBstatementBinding
+
+[1mtest-blob[22m
+[31m✖ textBlob[39m
+
+Error: Expected 1 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-blob.js:41:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property '_openSync' of undefined
+    at Object.module.exports.testCase.textBlob (/home/xdenser/node-firebird-libfbclient/tests/def/test-blob.js:48:15)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-blob.js:32:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+[31m✖ asyncRead[39m
+
+Error: Expected 2 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-blob.js:41:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property '_openSync' of undefined
+    at Object.module.exports.testCase.asyncRead (/home/xdenser/node-firebird-libfbclient/tests/def/test-blob.js:62:15)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-blob.js:32:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+[31m✖ readAll[39m
+
+Error: Expected 2 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-blob.js:41:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property '_readAll' of undefined
+    at Object.module.exports.testCase.readAll (/home/xdenser/node-firebird-libfbclient/tests/def/test-blob.js:77:15)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-blob.js:32:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+
+[1mtest-blob-stream[22m
+✔ fileInsert
+
+[1mtest-concurrent-fetch[22m
+✔ FetchFromSameConnection
+
+[1mtest-concurrent-query[22m
+✔ TwoSmallQueries
+✔ AHundredOfQueries
+
+[1mtest-datatypes[22m
+[31m✖ char1[39m
+
+Assertion Message: [35mchar(1)[39m
+AssertionError: char(1)
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.char1 (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:55:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ char10[39m
+
+Assertion Message: [35mchar(10)[39m
+AssertionError: char(10)
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.char10 (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:62:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ charMAX[39m
+
+Assertion Message: [35mchar(8185)[39m
+AssertionError: char(8185)
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.charMAX (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:73:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ DateMin[39m
+
+Error: Expected 1 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:49:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property 'toString' of undefined
+    at Object.module.exports.testCase.DateMin (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:80:27)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+[31m✖ DateToday[39m
+
+Error: Expected 1 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:49:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property 'toString' of undefined
+    at Object.module.exports.testCase.DateToday (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:91:27)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+[31m✖ DateMax[39m
+
+Error: Expected 1 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:49:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property 'toString' of undefined
+    at Object.module.exports.testCase.DateMax (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:98:27)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+[31m✖ Decimal18_2min[39m
+
+Assertion Message: [35mDECIMAL(18,2) min[39m
+AssertionError: DECIMAL(18,2) min
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.Decimal18_2min (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:105:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ Decimal18_2max[39m
+
+Assertion Message: [35mDECIMAL(18,2) max[39m
+AssertionError: DECIMAL(18,2) max
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.Decimal18_2max (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:112:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ Decimal18_18min[39m
+
+Assertion Message: [35mDECIMAL(18,18) min[39m
+AssertionError: DECIMAL(18,18) min
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.Decimal18_18min (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:119:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ Decimal18_18max[39m
+
+Assertion Message: [35mDECIMAL(18,18) max[39m
+AssertionError: DECIMAL(18,18) max
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.Decimal18_18max (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:127:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ DoublePrecisionMin[39m
+
+Assertion Message: [35mDOUBLE PRECISION Min[39m
+AssertionError: DOUBLE PRECISION Min
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.DoublePrecisionMin (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:134:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ DoublePrecisionMax[39m
+
+Assertion Message: [35mDOUBLE PRECISION Max[39m
+AssertionError: DOUBLE PRECISION Max
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.DoublePrecisionMax (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:141:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ FloatMin[39m
+
+Assertion Message: [35mFloat Min[39m
+AssertionError: Float Min
+    at Object.ok (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.FloatMin (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:148:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ FloatMax[39m
+
+Assertion Message: [35mFloat Max[39m
+AssertionError: Float Max
+    at Object.ok (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.FloatMax (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:155:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ IntegerMin[39m
+
+Assertion Message: [35mInteger Min[39m
+AssertionError: Integer Min
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.IntegerMin (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:162:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ IntegerMax[39m
+
+Assertion Message: [35mInteger Max[39m
+AssertionError: Integer Max
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.IntegerMax (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:169:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ SmallIntMin[39m
+
+Assertion Message: [35mSmallInt Min[39m
+AssertionError: SmallInt Min
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.SmallIntMin (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:176:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ SmallIntMax[39m
+
+Assertion Message: [35mSmallInt Max[39m
+AssertionError: SmallInt Max
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.SmallIntMax (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:183:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ TimeMin[39m
+
+Error: Expected 1 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:49:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property 'toString' of undefined
+    at Object.module.exports.testCase.TimeMin (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:190:27)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+[31m✖ TimeMax[39m
+
+Error: Expected 1 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:49:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property 'toString' of undefined
+    at Object.module.exports.testCase.TimeMax (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:197:27)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+[31m✖ TimeStampMin[39m
+
+Error: Expected 1 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:49:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property 'toString' of undefined
+    at Object.module.exports.testCase.TimeStampMin (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:204:27)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+[31m✖ TimeStampMax[39m
+
+Error: Expected 1 assertions, 0 ran
+    at test.done (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:121:25)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:219:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.tearDown (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:49:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+TypeError: Cannot read property 'toString' of undefined
+    at Object.module.exports.testCase.TimeStampMax (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:211:27)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:163:13
+
+[31m✖ Varchar1[39m
+
+Assertion Message: [35mchar(1)[39m
+AssertionError: char(1)
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.Varchar1 (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:218:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ Varchar10[39m
+
+Assertion Message: [35mchar(10)[39m
+AssertionError: char(10)
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.Varchar10 (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:225:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+[31m✖ VarcharMAX[39m
+
+Assertion Message: [35mchar(8185)[39m
+AssertionError: char(8185)
+    at Object.equal (/home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/types.js:83:39)
+    at Object.module.exports.testCase.VarcharMAX (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:235:18)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:232:20
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:168:13
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:131:25
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:165:17
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:463:34
+    at Object.module.exports.testCase.setUp (/home/xdenser/node-firebird-libfbclient/tests/def/test-datatypes.js:40:12)
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/lib/core.js:260:35
+    at /home/xdenser/node-firebird-libfbclient/node_modules/nodeunit/deps/async.js:458:21
+
+
+[1mtest-events[22m
+✔ noEvent

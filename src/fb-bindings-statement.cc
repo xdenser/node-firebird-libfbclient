@@ -12,30 +12,22 @@ Persistent<FunctionTemplate> FBStatement::constructor_template;
 void
  FBStatement::Initialize (v8::Handle<v8::Object> target)
  {
-    //HandleScope scope;
-    
-    error_symbol = NODE_PSYMBOL("error");
-    result_symbol= NODE_PSYMBOL("result");
+	NanScope();
     
     Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(FBStatement::New);
-
-    t->Inherit(FBResult::constructor_template);
-    
     NanAssignPersistent(constructor_template,t);
-    constructor_template->Inherit(FBResult::constructor_template);
-    constructor_template->SetClassName(NanNew("FBStatement"));
+
+    t->Inherit(NanNew(FBResult::constructor_template));
+    t->SetClassName(NanNew("FBStatement"));
 
     Local<ObjectTemplate> instance_template =
-        constructor_template->InstanceTemplate();
+        t->InstanceTemplate();
         
     NODE_SET_PROTOTYPE_METHOD(t, "execSync", ExecSync);
     NODE_SET_PROTOTYPE_METHOD(t, "exec", Exec);
 
 
     instance_template->SetInternalFieldCount(1);
-    
-//    Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
-//    instance_t->SetAccessor(String::NewSymbol("inAsyncCall"),InAsyncGetter);
     
     target->Set(NanNew("FBStatement"), t->GetFunction());
    
@@ -71,8 +63,7 @@ NAN_METHOD(FBStatement::ExecSync)
     
     FBStatement *fb_stmt = ObjectWrap::Unwrap<FBStatement>(args.This());
     
-    Handle<Value> sp_res =  FBResult::set_params(fb_stmt->in_sqlda, args);
-    if(!sp_res->IsUndefined()) return scope.Close(sp_res);
+    FBResult::set_params(fb_stmt->in_sqlda, args);
 
     if(fb_stmt->retres) 
     {
@@ -80,7 +71,7 @@ NAN_METHOD(FBStatement::ExecSync)
       if (fb_stmt->status[1])
       {
         return NanThrowError(
-           String::Concat(String::New("In FBStatement::execSync, free_statement - "),ERR_MSG(fb_stmt, FBStatement)));
+           String::Concat(NanNew("In FBStatement::execSync, free_statement - "),ERR_MSG(fb_stmt, FBStatement)));
       }
     }
     
@@ -89,7 +80,7 @@ NAN_METHOD(FBStatement::ExecSync)
 	if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
         {
 	      return NanThrowError(
-	             String::Concat(String::New("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement)));
+	             String::Concat(NanNew("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement)));
         }
         
     }
@@ -98,7 +89,7 @@ NAN_METHOD(FBStatement::ExecSync)
 	if (isc_dsql_execute2(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
         {
 	      return NanThrowError(
-	             String::Concat(String::New("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement)));
+	             String::Concat(NanNew("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement)));
         }
         
         if(fb_stmt->sqldap->sqld){ 
@@ -113,20 +104,6 @@ NAN_METHOD(FBStatement::ExecSync)
     if(!fb_stmt->sqldap->sqld) 
           NanReturnUndefined();
 
-/*
-    if(fb_stmt->statement_type != isc_info_sql_stmt_select)    
-    {
-	fb_stmt->status[1]=0;
-	printf("opening cursor \n");
-	isc_dsql_set_cursor_name(fb_stmt->status, &fb_stmt->stmt,fb_stmt->cursor,0);
-	if (fb_stmt->status[1])
-	{
-          return ThrowException(Exception::Error(
-	  String::Concat(String::New("In FBStatement::execSync, set_cursor_name - "),ERR_MSG(fb_stmt, FBStatement))));
-        }
-    }
-*/    
-
     fb_stmt->retres = true;
     
     NanReturnUndefined();
@@ -135,7 +112,6 @@ NAN_METHOD(FBStatement::ExecSync)
  
 void FBStatement::EIO_After_Exec(uv_work_t *req)
  {
-   //uv_unref(uv_default_loop());
    NanScope();
    
    struct exec_request *e_req = (struct exec_request *)(req->data);
@@ -146,41 +122,27 @@ void FBStatement::EIO_After_Exec(uv_work_t *req)
    int argc = 0;
    if(!e_req->result)
    {
-     argv[0] = Exception::Error(
-         String::Concat(String::New("In FBStatement::EIO_After_Exec - "),ERR_MSG(fb_stmt, FBStatement)));
+     argv[0] = NanError(*NanAsciiString(
+         String::Concat(NanNew("In FBStatement::EIO_After_Exec - "),ERR_MSG(fb_stmt, FBStatement))));
      argc = 0;
-     event = error_symbol;     
-     //((EventEmitter*) fb_stmt)->Emit(error_symbol,1,argv);           
+     event = NanNew("error");     
    }
    else
    {
 	if(!fb_stmt->sqldap->sqld) 
 	{
     	    argc = 1; 
-    	    event = result_symbol;     
-    	    argv[0] = Local<Value>::New(Null());	
+    	    event = NanNew("result");     
+    	    argv[0] = NanNull();	
         }
         else
         {
-    /*	    fb_stmt->status[1]=0;
-	    isc_dsql_set_cursor_name(fb_stmt->status, &fb_stmt->stmt,fb_stmt->cursor,0);
-	    if (fb_stmt->status[1])
-	    {		
-    		argv[0] = Exception::Error(
-    		String::Concat(String::New("In FBStatement::EIO_After_Exec, set_cursor_name - "),ERR_MSG(fb_stmt, FBStatement)));
-    		argc = 1;
-    		event = error_symbol;     
-	    }
-	    else
-	    {*/
-	        argv[0] = Local<Value>::New(Null());	
+	        argv[0] = NanNull();	
 	        argc = 1;      
-		event = result_symbol;                             
-	//    }
+    		event = NanNew("result");                             
      
           if(fb_stmt->statement_type != isc_info_sql_stmt_select) 
           {
-            //Local<Object> js_result_row;   
             argv[1] = fb_stmt->getCurrentRow(true);	
             argc = 2;
           }
@@ -229,18 +191,14 @@ NAN_METHOD(FBStatement::Exec)
       return NanThrowError("Could not allocate memory.");
     }
     
-    //FBResult::set_params(fb_stmt->in_sqlda, args);
-    Handle<Value> sp_res =  FBResult::set_params(fb_stmt->in_sqlda, args);
-    if(!sp_res->IsUndefined()) return scope.Close(sp_res);
-
-
+    FBResult::set_params(fb_stmt->in_sqlda, args);
     if(fb_stmt->retres) 
     {
       isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
       if (fb_stmt->status[1])
       {
         return NanThrowError(
-           String::Concat(String::New("In FBStatement::exec, free_statement - "),ERR_MSG(fb_stmt, FBStatement)));
+           String::Concat(NanNew("In FBStatement::exec, free_statement - "),ERR_MSG(fb_stmt, FBStatement)));
       }
     }
     

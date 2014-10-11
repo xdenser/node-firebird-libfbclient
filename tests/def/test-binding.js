@@ -8,8 +8,8 @@ var cfg = require("../config").cfg;
 
 // Require modules
 var
-  fb_binding = require("../../build/Release/binding");
-  safe_con   = require("../../firebird.js");
+  safe_con   = require("../../firebird.js"),
+  fb_binding = safe_con.binding;
 
 exports.ConnectionBinding = function (test) {
   test.expect(19);

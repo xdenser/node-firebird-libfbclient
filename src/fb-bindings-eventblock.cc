@@ -283,8 +283,8 @@ void event_block::removeEvent(char *Event)
       char *rb  = (char*) result_buffer + 1; 
       while(idx)
       { 
-        buf = buf + (*(buf++)) + 4;
-        rb  = rb + (*(buf++)) + 4;
+        buf = buf + (*(buf)) + 4; buf++;
+        rb  = rb + (*(buf)) + 4; buf++;
         idx--;
       }
       char sz = (*buf) + 5;

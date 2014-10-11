@@ -23,7 +23,6 @@ exports.AsyncConnection = function (test) {
          test.ok(!conn.connected,"Disconnected to database");
          test.done();
      });
-
   });
 };
 
@@ -37,7 +36,7 @@ exports.AsyncQueryWithError = function (test) {
           return true;
       });
       conn.query("select * from non_existent_table", function(err,res){
-         test.ok(err,"There is error");    
+         test.ok(err,"There is error"); 
          test.ok(!res,"No result");   
          conn.disconnect();
          test.ok(!conn.connected,"Disconnected from database");
@@ -86,6 +85,5 @@ exports.InAsyncCallConnection = function(test){
  });
  test.ok(conn.inAsyncCall,"inAsyncCall connect");
 }
-
 
 

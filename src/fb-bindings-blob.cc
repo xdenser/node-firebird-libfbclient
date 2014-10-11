@@ -132,7 +132,7 @@ void FBblob::EIO_After_Read(uv_work_t *req)
     if(r_req->res!=-1)
     {
       argv[0] = NanNull();
-      argv[1] = NanBufferUse(r_req->buffer, (size_t) r_req->length); //bufferConstructor->NewInstance(3,cArgs);
+      argv[1] = NanNewBufferHandle(r_req->buffer,(size_t) r_req->length);// NanBufferUse(r_req->buffer, (size_t) r_req->length); //bufferConstructor->NewInstance(3,cArgs);
       argv[2] = NanNew<Integer>(r_req->res);
       argc = 3;
     }

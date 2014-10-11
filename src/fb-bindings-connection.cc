@@ -50,7 +50,7 @@ bool Connection::Connect (const char* Database,const char* User,const char* Pass
     if (db) return false;
     int i = 0, len;
     char dpb[256];
-    char *lc_type = "UTF8";
+    char *lc_type = const_cast<char *>("UTF8");
     
     dpb[i++] = isc_dpb_version1;
     
@@ -108,10 +108,10 @@ bool Connection::Close(){
 bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp, int *statement_type)
   {
      XSQLDA          *sqlda;
-     XSQLVAR         *var;
+  //   XSQLVAR         *var;
      static char     stmt_info[] = { isc_info_sql_stmt_type };
      char            info_buffer[20];
-     short           l, num_cols, i, length, alignment, type, offset;
+     short           l, num_cols;// i, length, alignment, type, offset;
     // int             statement_type;
      int 	     sqlda_size;	
      
@@ -136,11 +136,11 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
      // Start Default Transaction If None Active
      if(!trans) 
       {
-      if (isc_start_transaction(status, &trans, 1, &db, 0, NULL)) return false;
+        if (isc_start_transaction(status, &trans, 1, &db, 0, NULL)) return false;
       }
       
      // Prepare Statement
-     if (isc_dsql_prepare(status, &trans, stmtp, 0, query, SQL_DIALECT_V6, sqlda)) return false;
+     if (isc_dsql_prepare(status, &trans, stmtp, 0, query, SQL_DIALECT_V6, sqlda)) {  return false; }
 
      // Get sql info
      if (!isc_dsql_sql_info(status, stmtp, sizeof (stmt_info), stmt_info, 
@@ -203,7 +203,7 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
      /*
       *     Set up SQLDA.
       */
-    if(!FBResult::prepare_sqlda(sqlda)) return false;
+    if(!FBResult::prepare_sqlda(sqlda)) { return false; };
       
      if(*statement_type == isc_info_sql_stmt_select){
     	 if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
@@ -442,7 +442,7 @@ void Connection::EIO_After_Connect(uv_work_t *req)
     }
     
     conn_req->conn->stop_async();
-    conn_req->conn->Unref();
+   // conn_req->conn->Unref();
     free(conn_req);
     
   }
@@ -499,7 +499,7 @@ NAN_METHOD(Connection::Connect)
 
     
    // uv_ref(uv_default_loop());
-    conn->Ref();
+   // conn->Ref();
     
     NanReturnUndefined();
   }
@@ -732,11 +732,12 @@ NAN_METHOD(Connection::QuerySync)
        return NanThrowError("Expecting a string query argument.");
     }
     
-    String::Utf8Value Query(args[0]->ToString());
+   
+    String::Utf8Value *Query = new String::Utf8Value(args[0]->ToString()); 
     
     XSQLDA *sqlda = NULL;
     isc_stmt_handle stmt = NULL;
-    bool r = connection->process_statement(&sqlda,*Query, &stmt, &statement_type);
+    bool r = connection->process_statement(&sqlda, **Query, &stmt, &statement_type);
     if(!r) {
       return NanThrowError(
             String::Concat(NanNew("In querySync - "),ERR_MSG(connection, Connection)));
@@ -772,8 +773,8 @@ void Connection::EIO_After_Query(uv_work_t *req)
 	
     Local<Value> argv[3];
     if (!q_req->result) {
-         argv[0] = Exception::Error(
-            String::Concat(NanNew("While query - "),ERR_MSG(q_req->conn, Connection)));
+       argv[0] = NanError(*NanAsciiString(
+            String::Concat(NanNew("While query - "),ERR_MSG(q_req->conn, Connection)))); 
        argv[1] = NanNull();        
     }
     else{
@@ -781,21 +782,20 @@ void Connection::EIO_After_Query(uv_work_t *req)
      argv[1] = NanNew<External>(&q_req->stmt);
      argv[2] = NanNew<External>(q_req->conn);
      
-     Local<Object> js_result(NanNew(FBResult::constructor_template)->
-                                     GetFunction()->NewInstance(3, argv));
+     Local<Object> js_result = NanNew(FBResult::constructor_template)->GetFunction()->NewInstance(3, argv);
      
      if(q_req->statement_type==isc_info_sql_stmt_exec_procedure ){
     	 FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
     	 argv[1] = fb_res->getCurrentRow(true);
      }
-     else  argv[1] = NanNew(js_result);    
+     else  argv[1] = js_result;    
      argv[0] = NanNull();
     }
    
       
     TryCatch try_catch;
     
-    q_req->callback->Call( 2, argv);
+    q_req->callback->Call(2, argv);
     
     if (try_catch.HasCaught()) {
         node::FatalException(try_catch);
@@ -805,7 +805,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
     q_req->conn->stop_async();
     q_req->conn->Unref();
     free(q_req);
-    
+   // printf("qury finished \n");
    // scope.Close(argv[1]); 
     
   }
@@ -814,10 +814,10 @@ void Connection::EIO_Query(uv_work_t *req)
   {
     struct query_request *q_req = (struct query_request *)(req->data);
     
-    q_req->result = q_req->conn->process_statement(&q_req->sqlda,**(q_req->Query), &q_req->stmt, &(q_req->statement_type));
+    q_req->result = q_req->conn->process_statement(&q_req->sqlda, **(q_req->Query), &q_req->stmt, &(q_req->statement_type));
     
     delete q_req->Query;
-    return;
+    //return;
   }
   
 NAN_METHOD(Connection::Query)
@@ -840,9 +840,9 @@ NAN_METHOD(Connection::Query)
     
     q_req->conn = conn;
     q_req->callback = new NanCallback(Local<Function>::Cast(args[1]));
-    q_req->Query = new String::Utf8Value(args[0]->ToString());
+    q_req->Query  = new String::Utf8Value(args[0]->ToString());
     q_req->sqlda = NULL;
-    q_req->stmt = 0;
+    q_req->stmt = NULL;
     
     conn->start_async();
 
@@ -853,9 +853,7 @@ NAN_METHOD(Connection::Query)
     
    //uv_ref(uv_default_loop());
     conn->Ref();
-    
     NanReturnUndefined();
-    
   }
   
 NAN_METHOD(Connection::addEvent)

@@ -12,7 +12,7 @@ var
   fb_binding = require("../../firebird");
 var 
   testCase = require("nodeunit").testCase;  
-
+          
 
 var util = {
             getDataTypeResult: function(datatype,value){
@@ -63,7 +63,7 @@ module.exports = testCase({
            res._read(buf,function(err,b,len){
         	 test.ifError(err);
         	 
-                 res._closeSync();
+             res._closeSync();
         	 test.equal(b.toString('utf8',0,len),Data,'blob ');
         	 test.done();	 
            });
