@@ -12,7 +12,6 @@ Persistent<FunctionTemplate> FBStatement::constructor_template;
 void
  FBStatement::Initialize (v8::Handle<v8::Object> target)
  {
-	NanScope();
     
     Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(FBStatement::New);
     NanAssignPersistent(constructor_template,t);

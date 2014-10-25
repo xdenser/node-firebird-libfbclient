@@ -14,7 +14,6 @@ char FBblob::err_message[MAX_ERR_MSG_LEN];
 
 void FBblob::Initialize (v8::Handle<v8::Object> target)
   {
-  //  HandleScope scope;
     
     Local<FunctionTemplate> t = NanNew<FunctionTemplate>(FBblob::New);
     NanAssignPersistent(constructor_template,t);

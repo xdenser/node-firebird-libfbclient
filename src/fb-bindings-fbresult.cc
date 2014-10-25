@@ -16,7 +16,6 @@
    FBResult::Initialize (v8::Handle<v8::Object> target)
   {
     
-    NanScope();
     
     Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(FBResult::New);
 

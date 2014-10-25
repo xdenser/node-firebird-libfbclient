@@ -10,7 +10,6 @@
 void
   Connection::Initialize (v8::Handle<v8::Object> target)
   {
-    // HandleScope scope;
     
     Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(Connection::New);
     
