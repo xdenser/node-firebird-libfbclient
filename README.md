@@ -46,9 +46,13 @@ Clone repository and build module
 
     git clone git://github.com/xdenser/node-firebird-libfbclient.git
     npm install
-    
-or use npm:
-    
+
+Alternate way is to install directly from github
+
+    npm install xdenser/node-firebird-libfbclient
+ 
+or use the version from npmjs:
+
     npm install firebird
 
 To run tests update ./tests/config.js with your test database connection parameters and
