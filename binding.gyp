@@ -18,9 +18,16 @@
                 }
             ],
             [
-                'OS=="win"', {
+                'OS=="win" and target_arch=="ia32"', {
                   "libraries" : [
                       '<(module_root_dir)/fb/lib/fbclient_ms.lib'
+                  ]
+                }
+            ],
+            [
+                'OS=="win" and target_arch=="x64"', {
+                  "libraries" : [
+                      '<(module_root_dir)/fb/lib64/fbclient_ms.lib'
                   ]
                 }
             ],
