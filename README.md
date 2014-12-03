@@ -1,5 +1,8 @@
 C++ NodeJS module to work with Firebird SQL Server. Uses fbclient library and with a few tweaks it can use libfbembedded
 
+![Firebird Logo](https://www.totaljs.com/exports/firebird-logo.png)
+
+[![NPM version][npm-version-image]][npm-url] [![NPM downloads][npm-downloads-image]][npm-url] [![Mozilla License][license-image]][license-url]
 
 # Features
 
@@ -46,9 +49,13 @@ Clone repository and build module
 
     git clone git://github.com/xdenser/node-firebird-libfbclient.git
     npm install
-    
-or use npm:
-    
+
+Alternate way is to install directly from github
+
+    npm install xdenser/node-firebird-libfbclient
+ 
+or use the version from npmjs:
+
     npm install firebird
 
 To run tests update ./tests/config.js with your test database connection parameters and
@@ -326,6 +333,14 @@ Asynchronously writes BLOB segment (chunk) from buffer and calls callback functi
 Represents BLOB stream. Create BLOB stream using `var strm = new fb.Stream(FBblob);`. 
 You may pipe strm to/from NodeJS Stream objects (fs or socket). 
 You may also look at [NodeJS Streams reference](http://nodejs.org/api/stream.html).
+
+
+[license-image]: http://img.shields.io/badge/license-MIT-blue.svg?style=flat
+[license-url]: LICENSE
+
+[npm-url]: https://npmjs.org/package/firebird
+[npm-version-image]: http://img.shields.io/npm/v/firebird.svg?style=flat
+[npm-downloads-image]: http://img.shields.io/npm/dm/firebird.svg?style=flat
 
 
 
