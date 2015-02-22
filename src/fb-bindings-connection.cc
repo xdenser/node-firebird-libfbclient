@@ -474,7 +474,7 @@ NAN_METHOD(Connection::Connect)
          (struct connect_request *)calloc(1, sizeof(struct connect_request));
 
     if (!conn_req) {
-      V8::LowMemoryNotification();
+      NanLowMemoryNotification();
       return NanThrowError("Could not allocate memory.");
     }
     
@@ -632,7 +632,7 @@ NAN_METHOD(Connection::Commit)
          (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
 
     if (!tr_req) {
-      V8::LowMemoryNotification();
+      NanLowMemoryNotification();
       return NanThrowError("Could not allocate memory.");
     }
     
@@ -666,7 +666,7 @@ NAN_METHOD(Connection::Rollback)
          (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
 
     if (!tr_req) {
-      V8::LowMemoryNotification();
+      NanLowMemoryNotification();
       return NanThrowError("Could not allocate memory.");
     }
     
@@ -699,7 +699,7 @@ NAN_METHOD(Connection::Start)
          (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
 
     if (!tr_req) {
-      V8::LowMemoryNotification();
+      NanLowMemoryNotification();
       return NanThrowError("Could not allocate memory.");
     }
     
@@ -829,7 +829,7 @@ NAN_METHOD(Connection::Query)
          (struct query_request *)calloc(1, sizeof(struct query_request));
 
     if (!q_req) {
-      V8::LowMemoryNotification();
+      NanLowMemoryNotification();
       return NanThrowError("Could not allocate memory.");
     }
     

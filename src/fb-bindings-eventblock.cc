@@ -326,7 +326,7 @@ void
         // Create new event block
         res = new event_block(aconn, db);
         if(!res){
-    	    V8::LowMemoryNotification();
+        	NanLowMemoryNotification();
     	    NanThrowError("Could not allocate memory.");
     	    return ;
 	}
@@ -353,7 +353,7 @@ void
 
       // Add event to block
       if(!res->addEvent(Event)) {
-    	    V8::LowMemoryNotification();
+    	    NanLowMemoryNotification();
     	    NanThrowError("Could not allocate memory.");
     	    return ;
       }

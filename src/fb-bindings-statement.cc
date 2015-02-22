@@ -187,7 +187,7 @@ NAN_METHOD(FBStatement::Exec)
          (struct exec_request *)calloc(1, sizeof(struct exec_request));
 
     if (!e_req) {
-      V8::LowMemoryNotification();
+      NanLowMemoryNotification();
       return NanThrowError("Could not allocate memory.");
     }
     

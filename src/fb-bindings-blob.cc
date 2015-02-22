@@ -183,7 +183,7 @@ NAN_METHOD(FBblob::Read)
          (struct rw_request *)calloc(1, sizeof(struct rw_request));
 
     if (!r_req) {
-      V8::LowMemoryNotification();
+      NanLowMemoryNotification();
       return NanThrowError("Could not allocate memory.");
     }
     
@@ -317,7 +317,7 @@ NAN_METHOD(FBblob::Write)
          (struct rw_request *)calloc(1, sizeof(struct rw_request));
 
     if (!w_req) {
-      V8::LowMemoryNotification();
+      NanLowMemoryNotification();
       return NanThrowError("Could not allocate memory.");
     }
     

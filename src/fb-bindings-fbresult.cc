@@ -786,7 +786,7 @@ NAN_METHOD(FBResult::Fetch)
          (struct fetch_request *)calloc(1, sizeof(struct fetch_request));
 
     if (!f_req) {
-      V8::LowMemoryNotification();
+      NanLowMemoryNotification();
       return NanThrowError("Could not allocate memory.");
     }
     
