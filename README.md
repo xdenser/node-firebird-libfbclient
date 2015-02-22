@@ -214,8 +214,8 @@ CHAR	->	String
 VARCHAR	->	String  
 SMALLINT	->	Integer  
 INTEGER	->	Integer  
-NUMERIC	->	Integer, Number (depends on scale)  
-DECIMAL	->	Integer, Number (depends on scale)  
+NUMERIC	->	Number  
+DECIMAL	->	Number  
 FLOAT	->	Number  
 DOUBLE	->	Number  
 BLOB	->	FBblob  

@@ -437,10 +437,10 @@ Local<Value>
 		      {
 		       tens = 1;
 		       for (i = 0; i < dscale; i++) tens *= 10;
-		       js_field = NanNew<Integer>(val * tens); 
+		       js_field = NanNew<Number>(double(val * tens));
 	              }		    
 		else
-		      js_field = NanNew<Integer>( val);
+		      js_field = NanNew<Number>((double) val);
 		}
                 break;
 
@@ -796,7 +796,7 @@ NAN_METHOD(FBResult::Fetch)
     
     f_req->rowCount = -1;
     if(args[0]->IsInt32()){
-       f_req->rowCount = args[0]->IntegerValue();
+       f_req->rowCount = (int) args[0]->IntegerValue();
     }
     else if(! (args[0]->IsString() && args[0]->Equals(NanNew("all")))){
        return NanThrowError("Expecting integer or string as first argument");
