@@ -261,7 +261,7 @@ NAN_METHOD(FBblob::WriteSync)
       return NanThrowError(
          String::Concat(NanNew("In FBblob::_writeSync - "),ERR_MSG_STAT(status, FBblob)));
          
-    NanReturnValue(NanNew<Integer>(len));
+    NanReturnValue(NanNew<Integer>(uint32_t(len)));
   }  
   
 void FBblob::EIO_After_Write(uv_work_t *req)
