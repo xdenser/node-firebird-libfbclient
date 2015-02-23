@@ -23,12 +23,6 @@
     , "url" : "http://github.com/xdenser/node-firebird-libfbclient.git"
     }
   ],
-  "repositories": [
-    {
-      "type": "git",
-      "url": "http://github.com/xdenser/node-firebird-libfbclient.git"
-    }
-  ],
   "dependencies": {
     "nan": "^1.6.0"
   }
