@@ -206,7 +206,7 @@ void event_block::event_notification _UV_NOTIFICATION_SIGNATURE {
 	for( i=0; i < count; i++){
 	   if(Vector[i]) {
 	     argv[0] = EvNames[i];
-	     argv[1] = NanNew<Integer>(Vector[i]);
+	     argv[1] = NanNew<Integer>(uint32_t(Vector[i]));
              ((FBEventEmitter*) conn)->Emit(NanNew(fbevent_symbol),2,argv);
            }     
         }
