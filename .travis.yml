@@ -2,6 +2,9 @@ language: node_js
 node_js:
   - "stable"
   - "iojs"
+notifications:
+  email:
+  - mapopa@gmail.com  
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq firebird2.5-superclassic firebird2.5-dev
