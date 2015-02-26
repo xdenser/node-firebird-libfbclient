@@ -28,7 +28,7 @@ As for now in plans are:
 
 ##Under Linux, Windows and MacOS X
 You will need:
- NodeJS (tested with v0.12.x)
+ NodeJS (tested with v0.12.x or io.js stable)
  Firebird (tested with v2.5.x and v3.x)
  
  On Windows you need the [same requirements](https://github.com/atom/atom/blob/master/docs/build-instructions/windows.md) like Atom editor for building native C++ extensions 
