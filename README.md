@@ -4,6 +4,7 @@ C++ NodeJS module to work with Firebird SQL Server. Uses fbclient library and wi
 
 [![NPM version][npm-version-image]][npm-url] [![NPM downloads][npm-downloads-image]][npm-url] [![Mozilla License][license-image]][license-url]
 [![Build Status](https://travis-ci.org/mariuz/node-firebird-libfbclient.svg?branch=master)](https://travis-ci.org/mariuz/node-firebird-libfbclient)
+[![Build status](https://ci.appveyor.com/api/projects/status/53qual24r2f089ni?svg=true)](https://ci.appveyor.com/project/mariuz/node-firebird-libfbclient)
 
 # Features
 
