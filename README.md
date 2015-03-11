@@ -3,6 +3,11 @@ C++ NodeJS module to work with Firebird SQL Server. Uses fbclient library and wi
 ![Firebird Logo](https://www.totaljs.com/exports/firebird-logo.png)
 
 [![NPM version][npm-version-image]][npm-url] [![NPM downloads][npm-downloads-image]][npm-url] [![Mozilla License][license-image]][license-url]
+[![Build Status](https://travis-ci.org/mariuz/node-firebird-libfbclient.svg?branch=master)](https://travis-ci.org/mariuz/node-firebird-libfbclient)
+[![Build status](https://ci.appveyor.com/api/projects/status/53qual24r2f089ni?svg=true)](https://ci.appveyor.com/project/mariuz/node-firebird-libfbclient)
+
+[![NPM](https://nodei.co/npm/firebird.png?downloads=true&downloadRank=true)](https://nodei.co/npm/firebird/) [![NPM](https://nodei.co/npm-dl/firebird.png?months=6&height=3)](https://nodei.co/npm/firebird/)
+
 
 # Features
 
@@ -27,7 +32,7 @@ As for now in plans are:
 
 ##Under Linux, Windows and MacOS X
 You will need:
- NodeJS (tested with v0.12.x)
+ NodeJS (tested with v0.12.x or io.js stable)
  Firebird (tested with v2.5.x and v3.x)
  
  On Windows you need the [same requirements](https://github.com/atom/atom/blob/master/docs/build-instructions/windows.md) like Atom editor for building native C++ extensions 
