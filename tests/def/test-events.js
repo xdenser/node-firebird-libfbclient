@@ -218,3 +218,70 @@ exports.AddAndDelete = function(test){
   }, 1000);
   
 }
+
+
+exports.WaitForManyFire2 = function(test){
+    
+    var expected = [
+      {
+          eventName: 'event1',
+          genCount: 4,
+          actualCount: 0
+      },
+      {
+          eventName: 'event2',
+          genCount: 0,
+          actualCount: 0
+      },
+      {
+          eventName: 'event3',
+          genCount: 2,
+          actualCount: 0
+      }
+    ], ecnt = expected.reduce(function(r,ev){ return r+ev.genCount;},0)+2;
+    
+    console.log('expected ',ecnt);
+    test.expect(ecnt);
+    Init();
+    var conn = Connect();
+    test.ok(conn.connected,"Connected to database");
+    
+    
+    conn.on("fbevent", function(event,count){
+        var found;
+        console.log('fired event',event,count);
+        expected.some(function(ev){
+            if(ev.eventName==event){
+                found = ev;
+                return true;
+            }
+        });
+        test.ok(found,'event fired is known to us');
+        if(found) found.actualCount++;
+    });
+    
+    var sTime=100;
+    expected.forEach(function(ev){
+        // wait for all events
+        conn.addFBevent(ev.eventName);
+        // generate events at some timeout
+        for(var i=0;i<ev.genCount;i++){
+             setTimeout(function(){
+                console.log('fire event',ev.eventName); 
+                GenEvent(ev.eventName);  
+             },sTime+=1000)
+        }
+    });
+    
+   console.log('setting final setTimeout',sTime+1000);
+   setTimeout(function(){
+       test.ok(expected.every(function(ev){
+           return ev.genCount==ev.actualCount;
+       }),'all events comply');
+       conn.disconnect();
+       CleanUp();
+       test.done();
+           
+   },sTime+1000); 
+      
+}
