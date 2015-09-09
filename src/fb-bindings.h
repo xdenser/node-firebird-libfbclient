@@ -14,17 +14,17 @@
 
 #define MAX_ERR_MSG_LEN 1024
 #define ERR_MSG(obj,class) \
-NanNew<String>(ErrorMessage(obj->status,obj->err_message,sizeof(obj->err_message)))
+Nan::New<String>(ErrorMessage(obj->status,obj->err_message,sizeof(obj->err_message))).ToLocalChecked()
 
 #define ERR_MSG_STAT(status,class) \
-NanNew<String>(ErrorMessage(status,class::err_message,sizeof(class::err_message)))
+Nan::New<String>(ErrorMessage(status,class::err_message,sizeof(class::err_message))).ToLocalChecked()
 
 
 #define REQ_EXT_ARG(I, VAR) \
-if (args.Length() <= (I) || !args[I]->IsExternal()) \
-return NanThrowTypeError( \
+if (info.Length() <= (I) || !info[I]->IsExternal()) \
+return Nan::ThrowTypeError( \
 "Argument " #I " invalid"); \
-Local<External> VAR = Local<External>::Cast(args[I]);
+Local<External> VAR = Local<External>::Cast(info[I]);
 
 char * ErrorMessage(const ISC_STATUS *pvector, char *err_msg, int max_len);
 

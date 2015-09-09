@@ -13,10 +13,10 @@ using namespace node;
 using namespace v8;
 
 
-class FBEventEmitter: public ObjectWrap {
+class FBEventEmitter: public Nan::ObjectWrap {
 public: 
   static void Initialize(v8::Handle<v8::Object> target);
-  static v8::Persistent<v8::FunctionTemplate> constructor_template;
+  static Nan::Persistent<v8::FunctionTemplate> constructor_template;
   void Emit(Handle<String> event, int argc, Handle<Value> argv[]);
 
 protected:

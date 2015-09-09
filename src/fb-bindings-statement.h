@@ -13,12 +13,12 @@
 //#include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-fbresult.h"
 
-static Persistent<String> error_symbol;
-static Persistent<String> result_symbol;
+static Nan::Persistent<String> error_symbol;
+static Nan::Persistent<String> result_symbol;
 
 class FBStatement:public FBResult{
 public:
- static Persistent<FunctionTemplate> constructor_template; 
+ static Nan::Persistent<FunctionTemplate> constructor_template; 
 
  static void
  Initialize (v8::Handle<v8::Object> target);

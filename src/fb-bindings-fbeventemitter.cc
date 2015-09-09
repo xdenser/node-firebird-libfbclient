@@ -6,46 +6,46 @@
 #define BUILDING_NODE_EXTENSION 1
 #include "./fb-bindings-fbeventemitter.h"
 
-Persistent<FunctionTemplate> FBEventEmitter::constructor_template;
+Nan::Persistent<FunctionTemplate> FBEventEmitter::constructor_template;
 
 void FBEventEmitter::Initialize(v8::Handle<v8::Object> target)
   {
     
-    Local<FunctionTemplate> t = NanNew<FunctionTemplate>();
+    Local<FunctionTemplate> t = Nan::New<FunctionTemplate>();
     
-    NanAssignPersistent(constructor_template,t);
-    t->SetClassName(NanNew<String>("FBEventEmitter"));
+    constructor_template.Reset(t);
+    t->SetClassName(Nan::New<String>("FBEventEmitter").ToLocalChecked());
            
-    target->Set(NanNew<String>("FBEventEmitter"),  t->GetFunction());
+    target->Set(Nan::New<String>("FBEventEmitter").ToLocalChecked(),  t->GetFunction());
   }
  
  
 void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
   {
-	NanScope();
+	Nan::HandleScope scope;
     Handle<Value> argv1[11];
-    if(argc>10) NanThrowError("Cant process more than 10 arguments");
+    if(argc>10) Nan::ThrowError("Cant process more than 10 arguments");
     argv1[0] = event;
     for(int i=0;i<argc;i++) argv1[i+1] = argv[i];
-    NanMakeCallback(NanObjectWrapHandle(this),"emit",argc+1,argv1);
+    Nan::MakeCallback(this->handle(),"emit",argc+1,argv1);
     //node::MakeCallback(handle_,"emit",argc+1,argv1);
   }  
 
 void FBEventEmitter::start_async()
   {
-	NanScope();
+	Nan::HandleScope scope;
 	in_async = true;
-    Emit(NanNew("fbStartAsync"), 0, NULL);
+    Emit(Nan::New("fbStartAsync").ToLocalChecked(), 0, NULL);
   }
   
 void FBEventEmitter::stop_async()
   {
-	NanScope();
+	Nan::HandleScope scope;
 	in_async = false;
-    Emit(NanNew("fbStopAsync"), 0, NULL);
+    Emit(Nan::New("fbStopAsync").ToLocalChecked(), 0, NULL);
   }
 
-FBEventEmitter::FBEventEmitter () : ObjectWrap () 
+FBEventEmitter::FBEventEmitter () : Nan::ObjectWrap () 
   {
     in_async = false;
    // Handle<Value> argv[1];
@@ -59,7 +59,7 @@ FBEventEmitter::FBEventEmitter () : ObjectWrap ()
 
 NAN_GETTER(FBEventEmitter::InAsyncGetter)
   {
-    NanScope();
-    FBEventEmitter *fbee = ObjectWrap::Unwrap<FBEventEmitter>(args.This());
-    NanReturnValue(NanNew<Boolean>(fbee->in_async));
+    Nan::HandleScope scope;
+    FBEventEmitter *fbee = Nan::ObjectWrap::Unwrap<FBEventEmitter>(info.This());
+    info.GetReturnValue().Set(Nan::New<Boolean>(fbee->in_async));
   }

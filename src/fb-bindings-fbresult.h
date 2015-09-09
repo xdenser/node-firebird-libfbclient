@@ -23,7 +23,7 @@ class FBResult : public FBEventEmitter {
 
 public:
 
- static Persistent<FunctionTemplate> constructor_template;
+ static Nan::Persistent<FunctionTemplate> constructor_template;
  
  static void
    Initialize (v8::Handle<v8::Object> target);
@@ -33,7 +33,7 @@ public:
  static bool prepare_sqlda(XSQLDA *sqlda);
  static void clean_sqlda(XSQLDA *sqlda);
  static bool clone_sqlda(XSQLDA *src_sqlda,XSQLDA **dest_sqlda);
- static void set_params(XSQLDA *sqlda, _NAN_METHOD_ARGS_TYPE args);
+ static void set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info);
  Local<Object> getCurrentRow(bool asObject);
    
 protected:  
@@ -46,8 +46,8 @@ protected:
   static NAN_METHOD(FetchSync);
 
   struct fetch_request {
-     NanCallback *rowCallback;
-     NanCallback *eofCallback;
+     Nan::Callback *rowCallback;
+     Nan::Callback *eofCallback;
      FBResult *res;
      int rowCount;
      int fetchStat;
