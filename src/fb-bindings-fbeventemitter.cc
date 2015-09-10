@@ -23,7 +23,7 @@ void FBEventEmitter::Initialize(v8::Handle<v8::Object> target)
 void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
   {
 	Nan::HandleScope scope;
-    Handle<Value> argv1[11];
+    Local<Value> argv1[11];
     if(argc>10) Nan::ThrowError("Cant process more than 10 arguments");
     argv1[0] = event;
     for(int i=0;i<argc;i++) argv1[i+1] = argv[i];
