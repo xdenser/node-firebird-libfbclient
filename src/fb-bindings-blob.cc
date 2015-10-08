@@ -137,7 +137,7 @@ void FBblob::EIO_After_Read(uv_work_t *req)
     if(r_req->res!=-1)
     {
       argv[0] = Nan::Null();
-      argv[1] = Nan::NewBuffer(r_req->buffer,(size_t) r_req->length).ToLocalChecked();// NanBufferUse(r_req->buffer, (size_t) r_req->length); //bufferConstructor->NewInstance(3,cArgs);
+      argv[1] = Nan::CopyBuffer(r_req->buffer,(size_t) r_req->length).ToLocalChecked();// NanBufferUse(r_req->buffer, (size_t) r_req->length); //bufferConstructor->NewInstance(3,cArgs);
       argv[2] = Nan::New<Integer>(r_req->res);
       argc = 3;
     }
