@@ -56,7 +56,7 @@ class Connection : public FBEventEmitter {
   static NAN_METHOD(ConnectSync);
  
   struct connect_request {
-     NanCallback *callback;
+     Nan::Callback *callback;
      Connection *conn;
      String::Utf8Value *Database;
      String::Utf8Value *User;
@@ -87,7 +87,7 @@ class Connection : public FBEventEmitter {
   };
     
   struct transaction_request {
-	 NanCallback *callback;
+	 Nan::Callback *callback;
      Connection *conn;
      TransReqType type;
      bool result;
@@ -103,7 +103,7 @@ class Connection : public FBEventEmitter {
   static NAN_METHOD(QuerySync);
 
   struct query_request {
-	 NanCallback *callback;
+	 Nan::Callback *callback;
      Connection *conn;
      String::Utf8Value *Query;
      XSQLDA *sqlda;

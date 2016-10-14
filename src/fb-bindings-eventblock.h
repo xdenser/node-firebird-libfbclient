@@ -37,7 +37,7 @@ using namespace v8;
 *	to support "infinite" number of events.
 */
 typedef char* ev_names[MAX_EVENTS_PER_BLOCK];
-static Persistent<String> fbevent_symbol;
+static Nan::Persistent<String> fbevent_symbol;
 
 class event_block {
 

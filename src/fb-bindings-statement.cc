@@ -7,35 +7,35 @@
 #include "./fb-bindings-statement.h" 
 
 
-Persistent<FunctionTemplate> FBStatement::constructor_template;
+Nan::Persistent<FunctionTemplate> FBStatement::constructor_template;
 
 void
  FBStatement::Initialize (v8::Handle<v8::Object> target)
  {
-	NanScope();
+	Nan::HandleScope scope;
     
-    Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(FBStatement::New);
-    NanAssignPersistent(constructor_template,t);
+    Local<FunctionTemplate> t =  Nan::New<FunctionTemplate>(FBStatement::New);
+    constructor_template.Reset(t);
 
-    t->Inherit(NanNew(FBResult::constructor_template));
-    t->SetClassName(NanNew("FBStatement"));
+    t->Inherit(Nan::New(FBResult::constructor_template));
+    t->SetClassName(Nan::New("FBStatement").ToLocalChecked());
 
     Local<ObjectTemplate> instance_template =
         t->InstanceTemplate();
         
-    NODE_SET_PROTOTYPE_METHOD(t, "execSync", ExecSync);
-    NODE_SET_PROTOTYPE_METHOD(t, "exec", Exec);
+    Nan::SetPrototypeMethod(t, "execSync", ExecSync);
+    Nan::SetPrototypeMethod(t, "exec", Exec);
 
 
     instance_template->SetInternalFieldCount(1);
     
-    target->Set(NanNew("FBStatement"), t->GetFunction());
+    target->Set(Nan::New("FBStatement").ToLocalChecked(), t->GetFunction());
    
  }
  
 NAN_METHOD(FBStatement::New)
   {
-    NanScope();
+    Nan::HandleScope scope;
     
     REQ_EXT_ARG(0, js_in_sqldap);
     REQ_EXT_ARG(1, js_out_sqldap);
@@ -52,26 +52,26 @@ NAN_METHOD(FBStatement::New)
     conn = static_cast<Connection *>(js_connection->Value()); 
     
     FBStatement *res = new FBStatement(insqldap,outsqldap, astmtp, conn);
-    res->Wrap(args.This());
+    res->Wrap(info.This());
 
-    NanReturnValue(args.This());
+    info.GetReturnValue().Set(info.This());
   }
 
 NAN_METHOD(FBStatement::ExecSync)
  { 
-    NanScope();
+    Nan::HandleScope scope;
     
-    FBStatement *fb_stmt = ObjectWrap::Unwrap<FBStatement>(args.This());
+    FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
     
-    FBResult::set_params(fb_stmt->in_sqlda, args);
+    FBResult::set_params(fb_stmt->in_sqlda, info);
 
     if(fb_stmt->retres) 
     {
       isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
       if (fb_stmt->status[1])
       {
-        return NanThrowError(
-           String::Concat(NanNew("In FBStatement::execSync, free_statement - "),ERR_MSG(fb_stmt, FBStatement)));
+        return Nan::ThrowError(
+           String::Concat(Nan::New("In FBStatement::execSync, free_statement - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
       }
     }
     
@@ -79,8 +79,8 @@ NAN_METHOD(FBStatement::ExecSync)
     {    
 	if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
         {
-	      return NanThrowError(
-	             String::Concat(NanNew("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement)));
+	      return Nan::ThrowError(
+	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
         }
         
     }
@@ -88,31 +88,31 @@ NAN_METHOD(FBStatement::ExecSync)
     {
 	if (isc_dsql_execute2(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
         {
-	      return NanThrowError(
-	             String::Concat(NanNew("In FBStatement::execSync - "),ERR_MSG(fb_stmt, FBStatement)));
+	      return Nan::ThrowError(
+	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
         }
         
         if(fb_stmt->sqldap->sqld){ 
            Local<Object> js_result_row;   
            js_result_row = fb_stmt->getCurrentRow(true);
-           NanReturnValue(js_result_row);
+           info.GetReturnValue().Set(js_result_row);
         }  
     
     }    
     
     
     if(!fb_stmt->sqldap->sqld) 
-          NanReturnUndefined();
+          return;
 
     fb_stmt->retres = true;
     
-    NanReturnUndefined();
+    return;
     
  }
  
 void FBStatement::EIO_After_Exec(uv_work_t *req)
  {
-   NanScope();
+   Nan::HandleScope scope;
    
    struct exec_request *e_req = (struct exec_request *)(req->data);
    delete req;
@@ -122,24 +122,24 @@ void FBStatement::EIO_After_Exec(uv_work_t *req)
    int argc = 0;
    if(!e_req->result)
    {
-     argv[0] = NanError(*NanAsciiString(
-         String::Concat(NanNew("In FBStatement::EIO_After_Exec - "),ERR_MSG(fb_stmt, FBStatement))));
+     argv[0] = Nan::Error(*Nan::Utf8String(
+         String::Concat(Nan::New("In FBStatement::EIO_After_Exec - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement))));
      argc = 0;
-     event = NanNew("error");     
+     event = Nan::New("error").ToLocalChecked();     
    }
    else
    {
 	if(!fb_stmt->sqldap->sqld) 
 	{
     	    argc = 1; 
-    	    event = NanNew("result");     
-    	    argv[0] = NanNull();	
+    	    event = Nan::New("result").ToLocalChecked();     
+    	    argv[0] = Nan::Null();	
         }
         else
         {
-	        argv[0] = NanNull();	
+	        argv[0] = Nan::Null();	
 	        argc = 1;      
-    		event = NanNew("result");                             
+    		event = Nan::New("result").ToLocalChecked();                             
      
           if(fb_stmt->statement_type != isc_info_sql_stmt_select) 
           {
@@ -180,25 +180,25 @@ void FBStatement::EIO_Exec(uv_work_t *req)
  
 NAN_METHOD(FBStatement::Exec)
  {
-    NanScope();
-    FBStatement *fb_stmt = ObjectWrap::Unwrap<FBStatement>(args.This());
+    Nan::HandleScope scope;
+    FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
     
     struct exec_request *e_req =
          (struct exec_request *)calloc(1, sizeof(struct exec_request));
 
     if (!e_req) {
-      NanLowMemoryNotification();
-      return NanThrowError("Could not allocate memory.");
+      Nan::LowMemoryNotification();
+      return Nan::ThrowError("Could not allocate memory.");
     }
     
-    FBResult::set_params(fb_stmt->in_sqlda, args);
+    FBResult::set_params(fb_stmt->in_sqlda, info);
     if(fb_stmt->retres) 
     {
       isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
       if (fb_stmt->status[1])
       {
-        return NanThrowError(
-           String::Concat(NanNew("In FBStatement::exec, free_statement - "),ERR_MSG(fb_stmt, FBStatement)));
+        return Nan::ThrowError(
+           String::Concat(Nan::New("In FBStatement::exec, free_statement - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
       }
     }
     
@@ -214,7 +214,7 @@ NAN_METHOD(FBStatement::Exec)
    // uv_ref(uv_default_loop());
     fb_stmt->Ref();
     
-    NanReturnUndefined();
+    return;
  
  }
   

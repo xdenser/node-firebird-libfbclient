@@ -18,7 +18,7 @@
 
 void event_block::Init()
 {
-  NanAssignPersistent(fbevent_symbol,NanNew<String>("fbevent"));
+  fbevent_symbol.Reset(Nan::New<String>("fbevent").ToLocalChecked());
 }
 
 #ifdef DEBUG    
@@ -158,7 +158,7 @@ void event_block::isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR 
     // this is event nitification proc
     // here we emit node events 
 void event_block::event_notification _UV_NOTIFICATION_SIGNATURE {
-        NanScope();
+        Nan::HandleScope scope;
         ISC_STATUS_ARRAY Vector;
 	    Local<Value> argv[2];
 	
@@ -187,14 +187,14 @@ void event_block::event_notification _UV_NOTIFICATION_SIGNATURE {
         // and then emit
 	for(i=0; i < count; i++){
 	  if(Vector[i]){
-	   EvNames[i] = NanNew<String>(eb->event_names[i]);
+	   EvNames[i] = Nan::New<String>(eb->event_names[i]).ToLocalChecked();
 	   emit_events = true;
 	  } 
 	}
 	// requeue events
 	if(!eb->queue()) {
-            NanThrowError(
-            String::Concat(NanNew("While isc_que_events in event_notification - "),ERR_MSG(eb, event_block)));
+            Nan::ThrowError(
+            String::Concat(Nan::New("While isc_que_events in event_notification - ").ToLocalChecked(),ERR_MSG(eb, event_block)));
         }			      
         
         // exit if block was marked as bad
@@ -206,8 +206,8 @@ void event_block::event_notification _UV_NOTIFICATION_SIGNATURE {
 	for( i=0; i < count; i++){
 	   if(Vector[i]) {
 	     argv[0] = EvNames[i];
-	     argv[1] = NanNew<Integer>(uint32_t(Vector[i]));
-             ((FBEventEmitter*) conn)->Emit(NanNew(fbevent_symbol),2,argv);
+	     argv[1] = Nan::New<Integer>(uint32_t(Vector[i]));
+             ((FBEventEmitter*) conn)->Emit(Nan::New(fbevent_symbol),2,argv);
            }     
         }
 
@@ -217,10 +217,10 @@ void event_block::event_notification _UV_NOTIFICATION_SIGNATURE {
 void
     event_block::que_event(event_block *eb)
     { 
-      NanScope();
+      Nan::HandleScope scope;
       if(!eb->queue()) {
-            NanThrowError(
-            String::Concat(NanNew("While isc_que_events - "),ERR_MSG(eb, event_block)));
+            Nan::ThrowError(
+            String::Concat(Nan::New("While isc_que_events - ").ToLocalChecked(),ERR_MSG(eb, event_block)));
             return ;
       }
     }
@@ -306,7 +306,7 @@ void event_block::removeEvent(char *Event)
 void
     event_block::RegEvent(event_block** rootp, char *Event, Connection *aconn, isc_db_handle *db)
     {
-      NanScope();
+      Nan::HandleScope scope;
 	  event_block* root = *rootp;
       // Check if we already have registered that event
       event_block* res = event_block::FindBlock(root,Event);
@@ -326,8 +326,8 @@ void
         // Create new event block
         res = new event_block(aconn, db);
         if(!res){
-        	NanLowMemoryNotification();
-    	    NanThrowError("Could not allocate memory.");
+        	Nan::LowMemoryNotification();
+    	    Nan::ThrowError("Could not allocate memory.");
     	    return ;
 	}
         res->event_->data = res;
@@ -346,15 +346,15 @@ void
       
       // Cancel old queue if any 
       if(!res->cancel()){
-    	    NanThrowError(
-        	String::Concat(NanNew("While cancel_events - "),ERR_MSG(res, event_block)));
+    	    Nan::ThrowError(
+        	String::Concat(Nan::New("While cancel_events - ").ToLocalChecked(),ERR_MSG(res, event_block)));
     	    return;
       }        
 
       // Add event to block
       if(!res->addEvent(Event)) {
-    	    NanLowMemoryNotification();
-    	    NanThrowError("Could not allocate memory.");
+    	    Nan::LowMemoryNotification();
+    	    Nan::ThrowError("Could not allocate memory.");
     	    return ;
       }
 
@@ -375,7 +375,7 @@ event_block* event_block::FindBlock(event_block* root, char *Event)
 void 
     event_block::RemoveEvent(event_block** root, char *Event)
     {
-      NanScope();
+      Nan::HandleScope scope;
 	  // Find event_block with Event name
       event_block* eb = event_block::FindBlock( *root, Event);
       if(eb)
@@ -383,8 +383,8 @@ void
         // If we have found it
         // it was queued and should be canceled
         if(!eb->cancel()){
-        	NanThrowError(
-        	        	    String::Concat(NanNew("While cancel_events - "),ERR_MSG(eb, event_block)));
+        	Nan::ThrowError(
+        	        	    String::Concat(Nan::New("While cancel_events - ").ToLocalChecked(),ERR_MSG(eb, event_block)));
     	    return ;
     	}        
     	// Remove it from event list
@@ -412,7 +412,7 @@ void
       }	
       // No block with that name 
       // may be throw error ???
-      // NanReturnUndefined();
+      // return;
     }
     
     event_block::event_block(Connection *aconn,isc_db_handle *adb)

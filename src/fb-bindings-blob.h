@@ -19,7 +19,7 @@ class FBblob : public FBEventEmitter {
 
 public:
  
-  static Persistent<FunctionTemplate> constructor_template;
+  static Nan::Persistent<FunctionTemplate> constructor_template;
   
   static void
   Initialize (v8::Handle<v8::Object> target);
@@ -39,7 +39,7 @@ public:
   static NAN_METHOD(Write);
   
   struct rw_request {
-	 NanCallback  *callback;
+	 Nan::Callback  *callback;
      FBblob *blob;
      char* buffer;
      size_t length;

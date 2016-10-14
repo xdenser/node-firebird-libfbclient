@@ -12,37 +12,37 @@ void
   {
     // HandleScope scope;
     
-    Local<FunctionTemplate> t =  NanNew<FunctionTemplate>(Connection::New);
+    Local<FunctionTemplate> t =  Nan::New<FunctionTemplate>(Connection::New);
     
     t->InstanceTemplate()->SetInternalFieldCount(1);
-    t->SetClassName(NanNew("Connection"));
-    t->Inherit(NanNew(FBEventEmitter::constructor_template));
+    t->SetClassName(Nan::New("Connection").ToLocalChecked());
+    t->Inherit(Nan::New(FBEventEmitter::constructor_template));
     // Methods 
 
-    NODE_SET_PROTOTYPE_METHOD(t, "connectSync", ConnectSync);
-    NODE_SET_PROTOTYPE_METHOD(t, "connect", Connect);
-    NODE_SET_PROTOTYPE_METHOD(t, "querySync", QuerySync);
-    NODE_SET_PROTOTYPE_METHOD(t, "query", Query);
-    NODE_SET_PROTOTYPE_METHOD(t, "disconnect", Disconnect);
-    NODE_SET_PROTOTYPE_METHOD(t, "commitSync", CommitSync);
-    NODE_SET_PROTOTYPE_METHOD(t, "commit", Commit);
-    NODE_SET_PROTOTYPE_METHOD(t, "rollbackSync", RollbackSync);
-    NODE_SET_PROTOTYPE_METHOD(t, "rollback", Rollback);
-    NODE_SET_PROTOTYPE_METHOD(t, "addFBevent", addEvent);
-    NODE_SET_PROTOTYPE_METHOD(t, "deleteFBevent", deleteEvent);
-    NODE_SET_PROTOTYPE_METHOD(t, "prepareSync", PrepareSync);
-    NODE_SET_PROTOTYPE_METHOD(t, "newBlobSync", NewBlobSync);
-    NODE_SET_PROTOTYPE_METHOD(t, "startTransactionSync", StartSync);
-    NODE_SET_PROTOTYPE_METHOD(t, "startTransaction", Start);
+    Nan::SetPrototypeMethod(t, "connectSync", ConnectSync);
+    Nan::SetPrototypeMethod(t, "connect", Connect);
+    Nan::SetPrototypeMethod(t, "querySync", QuerySync);
+    Nan::SetPrototypeMethod(t, "query", Query);
+    Nan::SetPrototypeMethod(t, "disconnect", Disconnect);
+    Nan::SetPrototypeMethod(t, "commitSync", CommitSync);
+    Nan::SetPrototypeMethod(t, "commit", Commit);
+    Nan::SetPrototypeMethod(t, "rollbackSync", RollbackSync);
+    Nan::SetPrototypeMethod(t, "rollback", Rollback);
+    Nan::SetPrototypeMethod(t, "addFBevent", addEvent);
+    Nan::SetPrototypeMethod(t, "deleteFBevent", deleteEvent);
+    Nan::SetPrototypeMethod(t, "prepareSync", PrepareSync);
+    Nan::SetPrototypeMethod(t, "newBlobSync", NewBlobSync);
+    Nan::SetPrototypeMethod(t, "startTransactionSync", StartSync);
+    Nan::SetPrototypeMethod(t, "startTransaction", Start);
     
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
-    instance_t->SetAccessor(NanNew("connected"), ConnectedGetter);
-    instance_t->SetAccessor(NanNew("inTransaction"), InTransactionGetter);
-    instance_t->SetAccessor(NanNew("inAsyncCall"),InAsyncGetter);
+    Nan::SetAccessor(instance_t, Nan::New("connected").ToLocalChecked(), ConnectedGetter);
+    Nan::SetAccessor(instance_t, Nan::New("inTransaction").ToLocalChecked(), InTransactionGetter);
+    Nan::SetAccessor(instance_t, Nan::New("inAsyncCall").ToLocalChecked(),InAsyncGetter);
    
     
-    target->Set(NanNew("Connection"), t->GetFunction());
+    target->Set(Nan::New("Connection").ToLocalChecked(), t->GetFunction());
   }
   
 bool Connection::Connect (const char* Database,const char* User,const char* Password,const char* Role)
@@ -381,56 +381,56 @@ void Connection::dounref()
 
 NAN_METHOD(Connection::New)
   {
-	 NanScope();
+	 Nan::HandleScope scope;
 
     Connection *connection = new Connection();
-    connection->Wrap(args.This());
+    connection->Wrap(info.This());
 
-    NanReturnValue(args.This());
+    info.GetReturnValue().Set(info.This());
   }
 
 NAN_METHOD(Connection::ConnectSync)
   {
 
-    NanScope();
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
 
-    if (args.Length() < 4 || !args[0]->IsString() ||
-         !args[1]->IsString() || !args[2]->IsString() ||
-         !args[3]->IsString()) {
-      return NanThrowError("Expecting 4 string arguments");
+    if (info.Length() < 4 || !info[0]->IsString() ||
+         !info[1]->IsString() || !info[2]->IsString() ||
+         !info[3]->IsString()) {
+      return Nan::ThrowError("Expecting 4 string arguments");
     }
 
-    String::Utf8Value Database(args[0]->ToString());
-    String::Utf8Value User(args[1]->ToString());
-    String::Utf8Value Password(args[2]->ToString());
-    String::Utf8Value Role(args[3]->ToString());
+    String::Utf8Value Database(info[0]->ToString());
+    String::Utf8Value User(info[1]->ToString());
+    String::Utf8Value Password(info[2]->ToString());
+    String::Utf8Value Role(info[3]->ToString());
     
 
     bool r = connection->Connect(*Database,*User,*Password,*Role);
 
     if (!r) {
-      return NanThrowError(
-            String::Concat(NanNew("While connecting - "),ERR_MSG(connection, Connection)));
+      return Nan::ThrowError(
+            String::Concat(Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }
     
-    NanReturnUndefined();
+    return;
   }
 
    
 void Connection::EIO_After_Connect(uv_work_t *req)
   {
-    NanScope();
+    Nan::HandleScope scope;
     struct connect_request *conn_req = (struct connect_request *)(req->data);
 	delete req;
     Local<Value> argv[1];
     
     if (!conn_req->res) {
-       argv[0] = NanError(*NanAsciiString(
-            String::Concat(NanNew("While connecting - "),ERR_MSG(conn_req->conn, Connection))));
+       argv[0] = Nan::Error(*Nan::Utf8String(
+            String::Concat(Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(conn_req->conn, Connection))));
     }
     else{
-     argv[0] = NanNull();
+     argv[0] = Nan::Null();
     }
    
     TryCatch try_catch;
@@ -466,30 +466,30 @@ void Connection::EIO_Connect(uv_work_t *req)
   
 NAN_METHOD(Connection::Connect)
   {
-	NanScope();
-    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+	Nan::HandleScope scope;
+    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
     
     struct connect_request *conn_req =
          (struct connect_request *)calloc(1, sizeof(struct connect_request));
 
     if (!conn_req) {
-      NanLowMemoryNotification();
-      return NanThrowError("Could not allocate memory.");
+      Nan::LowMemoryNotification();
+      return Nan::ThrowError("Could not allocate memory.");
     }
     
-    if (args.Length() < 5 || !args[0]->IsString() ||
-         !args[1]->IsString() || !args[2]->IsString() ||
-         !args[3]->IsString() || !args[4]->IsFunction()) {
-      return NanThrowError("Expecting 4 string arguments and 1 Function");
+    if (info.Length() < 5 || !info[0]->IsString() ||
+         !info[1]->IsString() || !info[2]->IsString() ||
+         !info[3]->IsString() || !info[4]->IsFunction()) {
+      return Nan::ThrowError("Expecting 4 string arguments and 1 Function");
     }
     
     conn_req->conn = conn;
-    conn_req->callback =  new NanCallback(Local<Function>::Cast(args[4]));
-    conn_req->Database = new String::Utf8Value(args[0]->ToString());
-    conn_req->User     = new String::Utf8Value(args[1]->ToString());
-    conn_req->Password = new String::Utf8Value(args[2]->ToString());
-    conn_req->Role     = new String::Utf8Value(args[3]->ToString());
+    conn_req->callback =  new Nan::Callback(Local<Function>::Cast(info[4]));
+    conn_req->Database = new String::Utf8Value(info[0]->ToString());
+    conn_req->User     = new String::Utf8Value(info[1]->ToString());
+    conn_req->Password = new String::Utf8Value(info[2]->ToString());
+    conn_req->Role     = new String::Utf8Value(info[3]->ToString());
     
     conn->start_async();
     
@@ -501,94 +501,94 @@ NAN_METHOD(Connection::Connect)
    // uv_ref(uv_default_loop());
    // conn->Ref();
     
-    NanReturnUndefined();
+    return;
   }
 
 NAN_METHOD(Connection::Disconnect)
   {
-    NanScope();
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     //printf("disconnect\n");
     if(!connection->Close()){
-      return NanThrowError(
-            String::Concat(NanNew("While closing - "),ERR_MSG(connection, Connection)));
+      return Nan::ThrowError(
+            String::Concat(Nan::New("While closing - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }     
    
-    NanReturnUndefined();
+    return;
   }
   
 NAN_GETTER(Connection::ConnectedGetter)
   {
-    NanScope();
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
-    NanReturnValue(NanNew<Boolean>(connection->connected));
+    Nan::HandleScope scope;
+    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+    info.GetReturnValue().Set(Nan::New<Boolean>(connection->connected));
   }
   
 NAN_GETTER(Connection::InTransactionGetter)
   {
-    NanScope();
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
-    NanReturnValue(NanNew<Boolean>(connection->trans));
+    Nan::HandleScope scope;
+    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+    info.GetReturnValue().Set(Nan::New<Boolean>(connection->trans));
   }
 
 NAN_METHOD(Connection::CommitSync)
   {
-    NanScope();
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
     bool r = connection->commit_transaction();
 
     if (!r) {
-      return NanThrowError(
-            String::Concat(NanNew("While commitSync - "),ERR_MSG(connection, Connection)));
+      return Nan::ThrowError(
+            String::Concat(Nan::New("While commitSync - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }
     
-    NanReturnUndefined();
+    return;
   } 
     
 NAN_METHOD(Connection::RollbackSync)
   {
-    NanScope();
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
     bool r = connection->rollback_transaction();
 
     if (!r) {
-      return NanThrowError(
-            String::Concat(NanNew("While rollbackSync - "),ERR_MSG(connection, Connection)));
+      return Nan::ThrowError(
+            String::Concat(Nan::New("While rollbackSync - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }
     
-    NanReturnUndefined();
+    return;
   } 
   
 NAN_METHOD(Connection::StartSync)
   {
-    NanScope();
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
     bool r = connection->start_transaction();
 
     if (!r) {
-      return NanThrowError(connection->err_message);
+      return Nan::ThrowError(connection->err_message);
     }
     
-    NanReturnUndefined();
+    return;
   }
   
   
 void Connection::EIO_After_TransactionRequest(uv_work_t *req)
   {
   //  uv_unref(uv_default_loop());
-    NanScope();
+    Nan::HandleScope scope;
     struct transaction_request *tr_req = (struct transaction_request *)(req->data);
     delete req;
     Local<Value> argv[1];
     
     if (!tr_req->result) {
-       argv[0] = NanError(*NanAsciiString(ERR_MSG(tr_req->conn, Connection)));
+       argv[0] = Nan::Error(*Nan::Utf8String(ERR_MSG(tr_req->conn, Connection)));
     }
     else{
-     argv[0] = NanNull();
+     argv[0] = Nan::Null();
     }
    
     TryCatch try_catch;
@@ -625,23 +625,23 @@ void Connection::EIO_TransactionRequest(uv_work_t *req)
   
 NAN_METHOD(Connection::Commit)
   {
-    NanScope();
-    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
     struct transaction_request *tr_req =
          (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
 
     if (!tr_req) {
-      NanLowMemoryNotification();
-      return NanThrowError("Could not allocate memory.");
+      Nan::LowMemoryNotification();
+      return Nan::ThrowError("Could not allocate memory.");
     }
     
-    if (args.Length() < 1) {
-      return NanThrowError("Expecting Callback Function argument");
+    if (info.Length() < 1) {
+      return Nan::ThrowError("Expecting Callback Function argument");
     }
     
     tr_req->conn = conn;
-    tr_req->callback = new NanCallback(Local<Function>::Cast(args[0]));
+    tr_req->callback = new Nan::Callback(Local<Function>::Cast(info[0]));
     tr_req->type = rCommit;
     
     conn->start_async();
@@ -654,28 +654,28 @@ NAN_METHOD(Connection::Commit)
     //uv_ref(uv_default_loop());
     conn->Ref();
     
-    NanReturnUndefined();
+    return;
   }
   
 NAN_METHOD(Connection::Rollback)
   {
-    NanScope();
-    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
     struct transaction_request *tr_req =
          (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
 
     if (!tr_req) {
-      NanLowMemoryNotification();
-      return NanThrowError("Could not allocate memory.");
+      Nan::LowMemoryNotification();
+      return Nan::ThrowError("Could not allocate memory.");
     }
     
-    if (args.Length() < 1) {
-      return NanThrowError("Expecting Callback Function argument");
+    if (info.Length() < 1) {
+      return Nan::ThrowError("Expecting Callback Function argument");
     }
     
     tr_req->conn = conn;
-    tr_req->callback = new NanCallback(Local<Function>::Cast(args[0]));
+    tr_req->callback = new Nan::Callback(Local<Function>::Cast(info[0]));
     tr_req->type = rRollback;
     
     conn->start_async();
@@ -687,28 +687,28 @@ NAN_METHOD(Connection::Rollback)
    // uv_ref(uv_default_loop());
     conn->Ref();
     
-    NanReturnUndefined();
+    return;
   } 
   
 NAN_METHOD(Connection::Start)
   {
-    NanScope();
-    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
     struct transaction_request *tr_req =
          (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
 
     if (!tr_req) {
-      NanLowMemoryNotification();
-      return NanThrowError("Could not allocate memory.");
+      Nan::LowMemoryNotification();
+      return Nan::ThrowError("Could not allocate memory.");
     }
     
-    if (args.Length() < 1) {
-      return NanThrowError("Expecting Callback Function argument");
+    if (info.Length() < 1) {
+      return Nan::ThrowError("Expecting Callback Function argument");
     }
     
     tr_req->conn = conn;
-    tr_req->callback = new NanCallback(Local<Function>::Cast(args[0]));
+    tr_req->callback = new Nan::Callback(Local<Function>::Cast(info[0]));
     tr_req->type = rStart;
     
     conn->start_async();
@@ -720,45 +720,45 @@ NAN_METHOD(Connection::Start)
    // uv_ref(uv_default_loop());
     conn->Ref();
     
-    NanReturnUndefined();
+    return;
   } 
   
 NAN_METHOD(Connection::QuerySync)
   {
-    NanScope();
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     int statement_type;
-    if (args.Length() < 1 || !args[0]->IsString()){
-       return NanThrowError("Expecting a string query argument.");
+    if (info.Length() < 1 || !info[0]->IsString()){
+       return Nan::ThrowError("Expecting a string query argument.");
     }
     
    
-    String::Utf8Value *Query = new String::Utf8Value(args[0]->ToString()); 
+    String::Utf8Value *Query = new String::Utf8Value(info[0]->ToString()); 
     
     XSQLDA *sqlda = NULL;
     isc_stmt_handle stmt = NULL;
     bool r = connection->process_statement(&sqlda, **Query, &stmt, &statement_type);
     if(!r) {
-      return NanThrowError(
-            String::Concat(NanNew("In querySync - "),ERR_MSG(connection, Connection)));
+      return Nan::ThrowError(
+            String::Concat(Nan::New("In querySync - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }
     
     Local<Value> argv[3];
 
-    argv[0] = NanNew<External>(sqlda);
-    argv[1] = NanNew<External>(&stmt);
-    argv[2] = NanNew<External>(connection);
-    Local<Object> js_result(NanNew(FBResult::constructor_template)->
+    argv[0] = Nan::New<External>(sqlda);
+    argv[1] = Nan::New<External>(&stmt);
+    argv[2] = Nan::New<External>(connection);
+    Local<Object> js_result(Nan::New(FBResult::constructor_template)->
                                      GetFunction()->NewInstance(3, argv));
     	
     if(statement_type==isc_info_sql_stmt_exec_procedure){
-    	FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
+    	FBResult *fb_res = Nan::ObjectWrap::Unwrap<FBResult>(js_result);
     	Local<Value> js_value = fb_res->getCurrentRow(true);
-    	NanReturnValue(js_value);
+    	info.GetReturnValue().Set(js_value);
     }
     
 
-   NanReturnValue(js_result);
+   info.GetReturnValue().Set(js_result);
         
   }
   
@@ -766,30 +766,30 @@ NAN_METHOD(Connection::QuerySync)
 void Connection::EIO_After_Query(uv_work_t *req)
   {
    // uv_unref(uv_default_loop());
-    NanScope();
+    Nan::HandleScope scope;
     struct query_request *q_req = (struct query_request *)(req->data);
 	delete req;
    
 	
     Local<Value> argv[3];
     if (!q_req->result) {
-       argv[0] = NanError(*NanAsciiString(
-            String::Concat(NanNew("While query - "),ERR_MSG(q_req->conn, Connection)))); 
-       argv[1] = NanNull();        
+       argv[0] = Nan::Error(*Nan::Utf8String(
+            String::Concat(Nan::New("While query - ").ToLocalChecked(),ERR_MSG(q_req->conn, Connection)))); 
+       argv[1] = Nan::Null();        
     }
     else{
-     argv[0] = NanNew<External>(q_req->sqlda);
-     argv[1] = NanNew<External>(&q_req->stmt);
-     argv[2] = NanNew<External>(q_req->conn);
+     argv[0] = Nan::New<External>(q_req->sqlda);
+     argv[1] = Nan::New<External>(&q_req->stmt);
+     argv[2] = Nan::New<External>(q_req->conn);
      
-     Local<Object> js_result = NanNew(FBResult::constructor_template)->GetFunction()->NewInstance(3, argv);
+     Local<Object> js_result = Nan::New(FBResult::constructor_template)->GetFunction()->NewInstance(3, argv);
      
      if(q_req->statement_type==isc_info_sql_stmt_exec_procedure ){
-    	 FBResult *fb_res = ObjectWrap::Unwrap<FBResult>(js_result);
+    	 FBResult *fb_res = Nan::ObjectWrap::Unwrap<FBResult>(js_result);
     	 argv[1] = fb_res->getCurrentRow(true);
      }
      else  argv[1] = js_result;    
-     argv[0] = NanNull();
+     argv[0] = Nan::Null();
     }
    
       
@@ -822,25 +822,25 @@ void Connection::EIO_Query(uv_work_t *req)
   
 NAN_METHOD(Connection::Query)
   {
-    NanScope();
-    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
     struct query_request *q_req =
          (struct query_request *)calloc(1, sizeof(struct query_request));
 
     if (!q_req) {
-      NanLowMemoryNotification();
-      return NanThrowError("Could not allocate memory.");
+      Nan::LowMemoryNotification();
+      return Nan::ThrowError("Could not allocate memory.");
     }
     
-    if (args.Length() < 2 || !args[0]->IsString() ||
-          !args[1]->IsFunction()) {
-      return NanThrowError("Expecting 1 string argument and 1 Function");
+    if (info.Length() < 2 || !info[0]->IsString() ||
+          !info[1]->IsFunction()) {
+      return Nan::ThrowError("Expecting 1 string argument and 1 Function");
     }
     
     q_req->conn = conn;
-    q_req->callback = new NanCallback(Local<Function>::Cast(args[1]));
-    q_req->Query  = new String::Utf8Value(args[0]->ToString());
+    q_req->callback = new Nan::Callback(Local<Function>::Cast(info[1]));
+    q_req->Query  = new String::Utf8Value(info[0]->ToString());
     q_req->sqlda = NULL;
     q_req->stmt = NULL;
     
@@ -853,19 +853,19 @@ NAN_METHOD(Connection::Query)
     
    //uv_ref(uv_default_loop());
     conn->Ref();
-    NanReturnUndefined();
+    return;
   }
   
 NAN_METHOD(Connection::addEvent)
   {
-    NanScope();
-    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
-    if (args.Length() < 1 || !args[0]->IsString()) {
-      return NanThrowError("Expecting 1 string argument");
+    if (info.Length() < 1 || !info[0]->IsString()) {
+      return Nan::ThrowError("Expecting 1 string argument");
     }
     
-    String::Utf8Value Event(args[0]->ToString());
+    String::Utf8Value Event(info[0]->ToString());
     
     if(!event_block::FindBlock(conn->fb_events, *Event)){
         
@@ -874,38 +874,38 @@ NAN_METHOD(Connection::addEvent)
       event_block::RegEvent(&(conn->fb_events), *Event, conn, &conn->db);
     }
     
-   NanReturnUndefined();
+   return;
   
   }
   
 NAN_METHOD(Connection::deleteEvent)
   {
   
-    NanScope();
-    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
-    if (args.Length() < 1 || !args[0]->IsString()) {
-      return NanThrowError("Expecting 1 string argument");
+    if (info.Length() < 1 || !info[0]->IsString()) {
+      return Nan::ThrowError("Expecting 1 string argument");
     }
     
-    String::Utf8Value Event(args[0]->ToString());
+    String::Utf8Value Event(info[0]->ToString());
     
     event_block::RemoveEvent(&(conn->fb_events), *Event);
     
-    NanReturnUndefined();
+    return;
 
   }
   
 NAN_METHOD(Connection::PrepareSync)
   {
-    NanScope();
-    Connection *connection = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
         
-    if (args.Length() < 1 || !args[0]->IsString()){
-       return NanThrowError("Expecting a string query argument.");
+    if (info.Length() < 1 || !info[0]->IsString()){
+       return Nan::ThrowError("Expecting a string query argument.");
     }
     
-    String::Utf8Value Query(args[0]->ToString());
+    String::Utf8Value Query(info[0]->ToString());
     
     XSQLDA *insqlda = NULL;
     XSQLDA *outsqlda = NULL;
@@ -913,34 +913,34 @@ NAN_METHOD(Connection::PrepareSync)
     bool r = connection->prepare_statement(&insqlda,&outsqlda,*Query, &stmt);
     
     if(!r) {
-      return NanThrowError(
-            String::Concat(NanNew("In prepareSync - "),ERR_MSG(connection, Connection)));
+      return Nan::ThrowError(
+            String::Concat(Nan::New("In prepareSync - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }
     
     Local<Value> argv[4];
 
-    argv[0] = NanNew<External>(insqlda);
-    argv[1] = NanNew<External>(outsqlda);
-    argv[2] = NanNew<External>(&stmt);
-    argv[3] = NanNew<External>(connection);
-    Local<Object> js_result(NanNew(FBStatement::constructor_template)->
+    argv[0] = Nan::New<External>(insqlda);
+    argv[1] = Nan::New<External>(outsqlda);
+    argv[2] = Nan::New<External>(&stmt);
+    argv[3] = Nan::New<External>(connection);
+    Local<Object> js_result(Nan::New(FBStatement::constructor_template)->
                                      GetFunction()->NewInstance(4, argv));
 
-    NanReturnValue(js_result);
+    info.GetReturnValue().Set(js_result);
   }
 
 NAN_METHOD(Connection::NewBlobSync)
   {
-    NanScope();
-    Connection *conn = ObjectWrap::Unwrap<Connection>(args.This());
+    Nan::HandleScope scope;
+    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     Local<Value> argv[2];
     
-    argv[0] = NanNull();
-    argv[1] = NanNew<External>(conn);
+    argv[0] = Nan::Null();
+    argv[1] = Nan::New<External>(conn);
     
-    Local<Object> js_blob(NanNew(FBblob::constructor_template)->
+    Local<Object> js_blob(Nan::New(FBblob::constructor_template)->
                                      GetFunction()->NewInstance(2, argv));
-    NanReturnValue(js_blob);
+    info.GetReturnValue().Set(js_blob);
   }
   
    Connection::Connection () : FBEventEmitter () 
