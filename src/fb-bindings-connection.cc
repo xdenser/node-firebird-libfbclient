@@ -48,33 +48,33 @@ void
 bool Connection::Connect (const char* Database,const char* User,const char* Password,const char* Role)
   {
     if (db) return false;
-    int i = 0, len;
+    short i = 0, len;
     char dpb[256];
     char *lc_type = const_cast<char *>("UTF8");
     
     dpb[i++] = isc_dpb_version1;
     
     dpb[i++] = isc_dpb_user_name;
-    len = strlen (User);
+    len = (short) strlen (User);
     dpb[i++] = (char) len;
     strncpy(&(dpb[i]), User, len);
     i += len;
     
     dpb[i++] = isc_dpb_password;
-    len = strlen (Password);
-    dpb[i++] = len;
+    len = (short) strlen (Password);
+    dpb[i++] = (char) len;
     strncpy(&(dpb[i]), Password, len);
     i += len;
 
     dpb[i++] = isc_dpb_sql_role_name;
-    len = strlen (Role);
-    dpb[i++] = len;
+    len = (short) strlen (Role);
+    dpb[i++] = (char) len;
     strncpy(&(dpb[i]), Role, len);
     i += len;
     
     dpb[i++] = isc_dpb_lc_ctype;
-    len = strlen (lc_type);
-    dpb[i++] = len;
+    len = (short) strlen (lc_type);
+    dpb[i++] = (char) len;
     strncpy(&(dpb[i]), lc_type, len);
     i += len;
     
