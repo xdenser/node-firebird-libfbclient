@@ -7,6 +7,9 @@
 #define SRC_FB_BINDINGS_CONNECTION_H_
 #define BUILDING_NODE_EXTENSION 1
 
+#define MAX_USERNAME_LENGTH 31
+#define MAX_ROLENAME_LENGTH 31
+#define MAX_PASSWORD_LENGTH 8 
 
 #include <uv.h>
 #include "./fb-bindings.h"

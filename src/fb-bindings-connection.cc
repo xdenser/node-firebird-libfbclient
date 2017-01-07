@@ -56,18 +56,27 @@ bool Connection::Connect (const char* Database,const char* User,const char* Pass
     
     dpb[i++] = isc_dpb_user_name;
     len = (short) strlen (User);
+	if (len > MAX_USERNAME_LENGTH) {
+		len = MAX_USERNAME_LENGTH;
+	}
     dpb[i++] = (char) len;
     strncpy(&(dpb[i]), User, len);
     i += len;
     
     dpb[i++] = isc_dpb_password;
     len = (short) strlen (Password);
+	if (len > MAX_PASSWORD_LENGTH) {
+		len = MAX_PASSWORD_LENGTH;
+	}
     dpb[i++] = (char) len;
     strncpy(&(dpb[i]), Password, len);
     i += len;
 
     dpb[i++] = isc_dpb_sql_role_name;
     len = (short) strlen (Role);
+	if (len > MAX_ROLENAME_LENGTH) {
+		len = MAX_ROLENAME_LENGTH;
+	}
     dpb[i++] = (char) len;
     strncpy(&(dpb[i]), Role, len);
     i += len;
