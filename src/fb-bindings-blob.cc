@@ -5,7 +5,7 @@
  */
 
 #define BUILDING_NODE_EXTENSION 1
-#include <stdlib.h>
+
 #include "./fb-bindings-blob.h"
 #include "./fb-bindings-connection.h"
 
@@ -107,8 +107,9 @@ NAN_METHOD(FBblob::ReadSync)
     Local<Object> buffer_obj = info[0]->ToObject();
     char *buffer_data = Buffer::Data(buffer_obj);
     size_t buffer_length = Buffer::Length(buffer_obj);
-    //printf("buffer len %d\n",buffer_length);
-    
+	if (buffer_length > USHRT_MAX) {
+		buffer_length = USHRT_MAX;
+	}
     ISC_STATUS_ARRAY status;
     int res = blob->read(status, buffer_data, (unsigned short) buffer_length);
     if(res==-1) {
@@ -128,16 +129,10 @@ void FBblob::EIO_After_Read(uv_work_t *req)
     int argc;
     
     
-    /*
-    Local<Object> global = Context::GetCurrent()->Global();
-    Buffer *slowBuffer = Buffer::New(r_req->buffer, (size_t) r_req->length);
-    Local<Function> bufferConstructor =  Local<Function>::Cast(global->Get(String::New("Buffer")));
-    Handle<Value> cArgs[3] = {slowBuffer->handle_, Integer::New(r_req->length), Integer::New(0) }; */
-    
     if(r_req->res!=-1)
     {
       argv[0] = Nan::Null();
-      argv[1] = Nan::CopyBuffer(r_req->buffer,(size_t) r_req->length).ToLocalChecked();// NanBufferUse(r_req->buffer, (size_t) r_req->length); //bufferConstructor->NewInstance(3,cArgs);
+      argv[1] = Nan::CopyBuffer(r_req->buffer,(size_t) r_req->length).ToLocalChecked();
       argv[2] = Nan::New<Integer>(r_req->res);
       argc = 3;
     }
@@ -195,7 +190,7 @@ NAN_METHOD(FBblob::Read)
     r_req->blob = blob;
     r_req->callback = new Nan::Callback(Local<Function>::Cast(info[1]));
     r_req->buffer = buffer_data;
-    r_req->length = buffer_length;
+    r_req->length = (uint32_t) buffer_length;
     r_req->res = 0;
 
     blob->start_async();
@@ -255,14 +250,17 @@ NAN_METHOD(FBblob::WriteSync)
     Local<Object> buffer_obj = info[0]->ToObject();
     char *buf = Buffer::Data(buffer_obj);
     size_t len = Buffer::Length(buffer_obj);
-    
+	
     if( (info.Length() > 1) && info[1]->IsInt32() )
     {
       size_t alen = (size_t) info[1]->IntegerValue();
       if(alen < len) len = alen;
     }
+	if (len > USHRT_MAX) {
+		len = USHRT_MAX;
+	}
 
-    if(isc_put_segment(status, &blob->handle, len, buf))
+    if(isc_put_segment(status, &blob->handle, (unsigned short) len, buf))
       return Nan::ThrowError(
          String::Concat(Nan::New("In FBblob::_writeSync - ").ToLocalChecked(),ERR_MSG_STAT(status, FBblob)));
          
@@ -334,7 +332,7 @@ NAN_METHOD(FBblob::Write)
     {
       size_t alen = (size_t) info[1]->IntegerValue();
       if(alen < len) len = alen;
-      w_req->length = len;
+      w_req->length = (uint32_t) len;
       cb_arg = 2;
     }
     
@@ -400,7 +398,7 @@ bool FBblob::open(ISC_STATUS *status)
 int FBblob::read(ISC_STATUS *status,char *buf, unsigned short len)
   {
     unsigned short a_read;
-    int res = isc_get_segment(status, &handle, &a_read, len, buf);
+    ISC_STATUS res = isc_get_segment(status, &handle, &a_read, len, buf);
     if(res == isc_segstr_eof) return 0;
     if(res != isc_segment && status[1] != 0) return -1;
     return (int)a_read;

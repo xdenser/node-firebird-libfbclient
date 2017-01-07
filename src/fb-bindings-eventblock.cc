@@ -237,7 +237,10 @@ int event_block::hasEvent(char *Event)
 bool event_block::addEvent(char *Event)
     {
       // allocate memory for event name
-      int len = strlen(Event);
+      size_t len = strlen(Event);
+	  if (len > 255) {
+		  len = 255;
+	  }
       event_names[count] = (char*) calloc(1,len+1);
       if(!event_names[count]) return false;
       
@@ -265,7 +268,11 @@ bool event_block::addEvent(char *Event)
       int *pi = (int*) buf;
       *pi = -1;
       //(int)(*(buf++)) = -1;// *(buf++) = -1; *(buf++) = -1; *buf = -1;
-      blength = prev_size + needed;
+	  size_t needed_size = prev_size + needed;
+	  if (needed_size > SHRT_MAX) {
+		  return false;
+	  }
+	  blength = (short) needed_size;
       memcpy(result_buffer+prev_size,event_buffer+prev_size,needed);
       
       return true;
@@ -299,7 +306,7 @@ void event_block::removeEvent(char *Event)
       
       event_buffer = (ISC_UCHAR*) realloc(event_buffer, new_length); 
       result_buffer = (ISC_UCHAR*) realloc(result_buffer, new_length);             
-      blength = new_length;
+      blength = (short) new_length;
           
     }
     

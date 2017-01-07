@@ -50,7 +50,7 @@ protected:
      Nan::Callback *eofCallback;
      FBResult *res;
      int rowCount;
-     int fetchStat;
+     ISC_STATUS fetchStat;
      bool rowAsObject;
 	 bool result;
   };

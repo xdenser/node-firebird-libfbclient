@@ -442,12 +442,12 @@ void Connection::EIO_After_Connect(uv_work_t *req)
      argv[0] = Nan::Null();
     }
    
-    TryCatch try_catch;
+	Nan::TryCatch try_catch;
 
     conn_req->callback->Call( 1, argv);
 
     if (try_catch.HasCaught()) {
-        node::FatalException(try_catch);
+		Nan::FatalException(try_catch);
     }
     
     conn_req->conn->stop_async();
@@ -600,12 +600,12 @@ void Connection::EIO_After_TransactionRequest(uv_work_t *req)
      argv[0] = Nan::Null();
     }
    
-    TryCatch try_catch;
+	Nan::TryCatch try_catch;
 
     tr_req->callback->Call(1, argv);
 
     if (try_catch.HasCaught()) {
-        node::FatalException(try_catch);
+        Nan::FatalException(try_catch);
     }
 
     tr_req->conn->stop_async();
@@ -758,7 +758,7 @@ NAN_METHOD(Connection::QuerySync)
     argv[1] = Nan::New<External>(&stmt);
     argv[2] = Nan::New<External>(connection);
     Local<Object> js_result(Nan::New(FBResult::constructor_template)->
-                                     GetFunction()->NewInstance(3, argv));
+                                     GetFunction()->NewInstance(Nan::GetCurrentContext(), 3, argv).ToLocalChecked());
     	
     if(statement_type==isc_info_sql_stmt_exec_procedure){
     	FBResult *fb_res = Nan::ObjectWrap::Unwrap<FBResult>(js_result);
@@ -791,7 +791,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
      argv[1] = Nan::New<External>(&q_req->stmt);
      argv[2] = Nan::New<External>(q_req->conn);
      
-     Local<Object> js_result = Nan::New(FBResult::constructor_template)->GetFunction()->NewInstance(3, argv);
+     Local<Object> js_result = Nan::New(FBResult::constructor_template)->GetFunction()->NewInstance(Nan::GetCurrentContext(), 3, argv).ToLocalChecked();
      
      if(q_req->statement_type==isc_info_sql_stmt_exec_procedure ){
     	 FBResult *fb_res = Nan::ObjectWrap::Unwrap<FBResult>(js_result);
@@ -802,12 +802,12 @@ void Connection::EIO_After_Query(uv_work_t *req)
     }
    
       
-    TryCatch try_catch;
+    Nan::TryCatch try_catch;
     
     q_req->callback->Call(2, argv);
     
     if (try_catch.HasCaught()) {
-        node::FatalException(try_catch);
+        Nan::FatalException(try_catch);
     }
     
     
@@ -933,7 +933,7 @@ NAN_METHOD(Connection::PrepareSync)
     argv[2] = Nan::New<External>(&stmt);
     argv[3] = Nan::New<External>(connection);
     Local<Object> js_result(Nan::New(FBStatement::constructor_template)->
-                                     GetFunction()->NewInstance(4, argv));
+                                     GetFunction()->NewInstance(Nan::GetCurrentContext(), 4, argv).ToLocalChecked());
 
     info.GetReturnValue().Set(js_result);
   }
@@ -948,7 +948,7 @@ NAN_METHOD(Connection::NewBlobSync)
     argv[1] = Nan::New<External>(conn);
     
     Local<Object> js_blob(Nan::New(FBblob::constructor_template)->
-                                     GetFunction()->NewInstance(2, argv));
+                                     GetFunction()->NewInstance(Nan::GetCurrentContext(), 2, argv).ToLocalChecked());
     info.GetReturnValue().Set(js_blob);
   }
   

@@ -270,7 +270,7 @@ void FBResult::set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info)
                             }
                             {                           
                             String::Utf8Value txt(info[i]->ToString());  
-                            s_len = strlen(*txt);
+                            s_len = (int16_t) strlen(*txt);
                             if(s_len > var->sqllen) s_len = var->sqllen;                             
                             strncpy(var->sqldata, *txt, s_len);
                             while(s_len < var->sqllen) var->sqldata[s_len++] = ' ';
@@ -286,7 +286,7 @@ void FBResult::set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info)
                             {                           
                             String::Utf8Value txt(info[i]->ToString());  
                             
-                            s_len = strlen(*txt);
+                            s_len = (int16_t) strlen(*txt);
                             if(s_len > var->sqllen) s_len = var->sqllen;
                             vary2 = (PARAMVARY*) var->sqldata;
                             vary2->vary_length = s_len;                            
@@ -541,7 +541,7 @@ Local<Value>
                 
                 argv[0] = Nan::New<External>(&bid);
 		        argv[1] = Nan::New<External>(conn);
-                Local<Object> js_blob = Nan::New(FBblob::constructor_template)->GetFunction()->NewInstance(2, argv);
+                Local<Object> js_blob = Nan::New(FBblob::constructor_template)->GetFunction()->NewInstance(Nan::GetCurrentContext(), 2, argv).ToLocalChecked();
 
                 js_field = js_blob;
                 break;
@@ -593,14 +593,12 @@ NAN_METHOD(FBResult::FetchSync)
     
     FBResult *fb_res = Nan::ObjectWrap::Unwrap<FBResult>(info.This());
     
-    int            fetch_stat;
-  //  short 	   i, num_cols;	
+    ISC_STATUS     fetch_stat;
     XSQLDA         *sqlda;
     
     uint32_t       j = 0;
     sqlda = fb_res->sqldap;
     if(!sqlda){ return;}
-   // num_cols = sqlda->sqld;
     
     Local<Value> js_result = Nan::Null();
     
@@ -608,9 +606,9 @@ NAN_METHOD(FBResult::FetchSync)
        return Nan::ThrowError("Expecting 2 arguments");
     }
     
-    int rowCount = -1;
+    int32_t rowCount = -1;
     if(info[0]->IsInt32()){
-       rowCount = info[0]->IntegerValue();
+       rowCount = (int32_t) info[0]->IntegerValue();
     }
     else if(! (info[0]->IsString() && info[0]->Equals(Nan::New("all").ToLocalChecked()))){
        return Nan::ThrowError("Expecting integer or string as first argument");
@@ -705,13 +703,13 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
         if (f_req->rowCallback) {
     	    argv[0] = js_result_row;
 
-    	    TryCatch try_catch;
+    	    Nan::TryCatch try_catch;
 
 //	        Local<Value> ret = Nan::New(f_req->rowCallback->Call(1, argv));
 	        Local<Value> ret = f_req->rowCallback->Call(1, argv);
 
 	        if (try_catch.HasCaught()) {
-    		    node::FatalException(try_catch);
+				Nan::FatalException(try_catch);
     	    } else if ((!ret->IsBoolean() || ret->BooleanValue())&&f_req->rowCount!=0) {
 	    		uv_work_t* req = new uv_work_t();
                 req->data = f_req;
@@ -740,11 +738,11 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
         argv[1] = Nan::True();
     }
 
-    TryCatch try_catch;
+	Nan::TryCatch try_catch;
     f_req->eofCallback->Call(argc, argv);
 
     if (try_catch.HasCaught()) {
-        node::FatalException(try_catch);
+		Nan::FatalException(try_catch);
     }
 
     f_req->res->stop_async();
@@ -852,7 +850,7 @@ NAN_METHOD(FBResult::Fetch)
 	   if (status[1]){
 		    SQLCODE = isc_sqlcode(status);
 		    if(SQLCODE!=-901) // print error message if error is not 'Invalid Statement Handle', wich is normal when connection closed before FBresult is freed
-		      printf("Error in free statement %s, %d, %ld\n",ErrorMessage(status,err_message,sizeof(this->err_message)),status[1],SQLCODE);
+		      printf("Error in free statement %s, %d, %ld\n",ErrorMessage(status,err_message,sizeof(this->err_message)),(int) status[1],SQLCODE);
 		   /*ThrowException(Exception::Error(
 		              String::Concat(String::New("In FBResult::~FBResult, isc_dsql_free_statement - "),ERR_MSG(this, FBStatement))));
 		   */           

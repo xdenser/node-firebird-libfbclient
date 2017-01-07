@@ -48,7 +48,7 @@ public:
     ISC_LONG event_id;
     ev_names event_names;
     int count;
-    long blength;
+    short blength;
     event_block *next;
 	event_block *prev;
     uv_async_t *event_;

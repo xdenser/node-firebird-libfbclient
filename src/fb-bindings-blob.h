@@ -9,6 +9,7 @@
 
 
 #include "./fb-bindings.h"
+#include <stdlib.h>
 #include <node_buffer.h>
 
 #include "./fb-bindings-fbeventemitter.h"
@@ -42,7 +43,7 @@ public:
 	 Nan::Callback  *callback;
      FBblob *blob;
      char* buffer;
-     size_t length;
+     uint32_t length;
      int res;
      ISC_STATUS_ARRAY status;
   };
