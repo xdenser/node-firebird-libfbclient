@@ -56,6 +56,7 @@ before_test:
   - ps: iex $isql
   - ps: ls $testdbDir
   - ps: cd $sourceDir
+  - ps: cp c:\firebird\server\bin\fbclient.dll $sourceDir\build\Release\
  
 
 # Set build version format here instead of in the admin panel.
