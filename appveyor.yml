@@ -28,7 +28,7 @@ test_script:
   - node --version
   - npm --version
   - ps: $sourceDir = Resolve-Path .
-  - ps: $sourceDir\node_modules\.bin\nodeunit tests/def/
+  - ps: $sourceDir\node_modules\.bin\nodeunit.cmd tests/def/
   # run tests
   #- IF NOT %nodejs_version% == 1 npm test
   #- IF %nodejs_version% == 1 iojs node_modules\tap\bin\tap.js --gc test\js\*-test.js
