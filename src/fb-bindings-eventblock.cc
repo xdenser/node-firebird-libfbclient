@@ -23,41 +23,52 @@ void event_block::Init()
 
 #ifdef DEBUG    
 void event_block::dump_buf(char* buf, int len){
-      printf("buff dump %d\n",len);
-      printf("buff[0] = %d\n", buf[0]);
+      printf("buff dump %d: ",len);
+      //printf("buff[0] = %d\n", buf[0]);
+	  printf("%d : [", buf[0]);
       buf++; len--;
       int c;
       char curr_name[127];
       char* cn;
       while(len > 0){
         c = (unsigned char) buf[0];
-        printf("name len = %d\n",c);
+        //printf("name len = %d\n",c);
+		printf("%d\"", c);
         buf++;len--;
         for(cn = curr_name;c--;len--){
           *cn++ = *buf++;
         }
         *cn++ = 0;
-        printf("event_name = %s\n",curr_name);
-        printf("count = %d\n",(uint32_t) *buf);
+        //printf("event_name = %s\n",curr_name);
+		printf("%s\": ", curr_name);
+        //printf("count = %d\n",(uint32_t) *buf);
+		printf("%d, ", (uint32_t)*buf);
         len = len - sizeof(uint32_t);
         buf = buf + sizeof(uint32_t);
       }
+	  printf("]\n");
     }
 #endif    
     
     // calculates event counts
     // as difference between result_buffer and event_buffer
     // places result in Vector
-void event_block::get_counts(ISC_ULONG* Vector){
+void event_block::get_counts(ISC_STATUS* Vector){
        char *eb, *rb;
        long len = blength;
+	   /*
+	   printf("result_buffer: ");
+	   dump_buf((char*)result_buffer, blength);
+	   printf("event_buffer: ");
+	   dump_buf((char*)event_buffer, blength);
+	   */
        eb = (char*) event_buffer;
        rb = (char*) result_buffer;
        int idx = 0;
        eb++;rb++;len--;
        int c;
-       uint32_t vold;
-       uint32_t vnew;
+       int32_t vold;
+       int32_t vnew;
        while(len){
          c = (unsigned char) rb[0];
          eb =   eb  + c + 1;
@@ -65,20 +76,22 @@ void event_block::get_counts(ISC_ULONG* Vector){
          len =  len - c - 1;
          len = len - sizeof(uint32_t);
          
-         vnew = (uint32_t) *rb;
-         vold = (uint32_t) *eb;
+         vnew = (int32_t) *rb;
+         vold = (int32_t) *eb;
+		 //printf("o:%d,n:%d,v:%d\n", vold, vnew, (int) Vector[idx]);
          eb = eb + 4;
          rb = rb + 4;
-         if(vnew > vold){
-           Vector[idx] = (int) (vnew - vold);
+		 if (vold == -1 && vnew > 0)
+		 {
+			 vnew--;
+			 Vector[idx] = vnew;
+		 }
+		 else
+	     if(vnew > vold){
+           Vector[idx] = (vnew - vold);
          }
-         else
-         if((int)vold == -1 && (int) vnew > 0)
-         {
-          Vector[idx] = (int)--vnew;
-         } 
          else Vector[idx] = 0;
-         
+		// printf("o:%d,n:%d,v:%d\n", vold, vnew, (int) Vector[idx]);
          idx++;
        }
        memcpy(event_buffer,result_buffer,blength);
@@ -146,7 +159,7 @@ void event_block::isc_ev_callback(void *aeb, ISC_USHORT length, const ISC_UCHAR 
         ISC_UCHAR *r = eb->result_buffer;
         while(length--) *r++ = *updated++;
         
-     //   dump_buf((char*) eb->result_buffer, eb->blength);
+       // dump_buf((char*) eb->result_buffer, eb->blength);
         
         eb->traped = true;
 	    eb->queued = false;
@@ -172,7 +185,7 @@ void event_block::event_notification _UV_NOTIFICATION_SIGNATURE {
         // we should not as if this proc was called - the event was trapped for sure
         // get_counts takes care about first (intialization callback call)
         // this is handled with proper buffer initialization with uint32_t(-1)
-        eb->get_counts((ISC_ULONG*) Vector);
+        eb->get_counts((ISC_STATUS*) Vector);
 	
 	    int count = eb->count;
 	    int i;
@@ -339,6 +352,7 @@ void
 	}
         res->event_->data = res;
         uv_async_init(uv_default_loop(),res->event_, event_block::event_notification);
+		uv_unref((uv_handle_t*) res->event_);
        // uv_async_start(EV_DEFAULT_UC_ res->event_);
       //  uv_unref(uv_default_loop());
         

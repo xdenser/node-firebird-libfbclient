@@ -62,8 +62,8 @@ function WaitForFinish(finished,clean,timeout){
        clearTimeout(tid);
        clean.call();
      }
-     else setTimeout(loop,0);
-  },0);
+     else setTimeout(loop,1);
+  },1);
        
 }
 
@@ -76,68 +76,78 @@ function CleanUp(){
 
 
 exports.noEvent = function(test) {
-  test.expect(1);
+  test.expect(2);
   Init();
   var conn = Connect();
-  test.ok(conn.connected,"Connected to database");
+  test.ok(conn.connected,"Not connected to database");
   var eName = "Event1";
+  var regevents = [];
   conn.on("fbevent",function(event,count){
-//    console.log("this should not be called in that test "+event+' '+count ); 
-    test.ok(event,"We got some event");
-    test.ok(event==eName, "We got that event");
-    test.ok(count==1,"One event");
+      //    console.log("this should not be called in that test "+event+' '+count ); 
+      if (count > 0) {
+          regevents.push({ name: event, count: count });
+      }
   });  
   conn.addFBevent(eName);
 //  console.log('after add Event1');
 //  conn.addFBevent('another');
 //  console.log('after add another');
 // Wait 1 sec for event
-  setTimeout(function(){
+  setTimeout(function () {
        conn.disconnect();
        CleanUp();
+       test.equal(regevents.length, 0, "incorrect number of callback calls " + JSON.stringify(regevents));
        test.done();    
   }, 1000);
   
 }
 
 exports.oneEvent = function(test) {
-  test.expect(3);
+  test.expect(4);
   Init();
   
   var conn = Connect();
-  test.ok(conn.connected,"Connected to database");
+  test.ok(conn.connected,"Not connected to database");
   var eName = "Event1";
   var finished = false;
   conn.addFBevent(eName);
-  conn.on("fbevent",function(event,count){
-    test.ok(event==eName, "We got that event");
-    test.ok(count==1,"One event");
-    finished = true;
+  var regevents = [];
+  conn.on("fbevent", function (event, count) {
+      if (count > 0) {
+          regevents.push({ name: event, count: count });
+          finished = true;
+      }
   });  
 
   GenEvent(eName);
   
-  // Wait 2 sec for event
+  // Wait 5 sec for event
   WaitForFinish(function(){ return finished; },
   function(){
        conn.disconnect();
        CleanUp();
+       test.equal(regevents.length, 1, "incorrect number of callback calls" + JSON.stringify(regevents));
+       test.equal(regevents[0].name, eName, "incorrect event name");
+       test.equal(regevents[0].count, 1, "wrong number of events");
        test.done();    
   }, 5000);
 }
 
 exports.oneEventBetween = function(test) {
-  test.expect(3);
+  test.expect(4);
   Init();
   
   var conn = Connect();
   test.ok(conn.connected,"Connected to database");
   var eName = "Event1";
   var finished = false;
-  conn.on("fbevent",function(event,count){
-    test.ok(event==eName, "We got that event");
-    test.ok(count==1,"One event");
-    finished = true;
+  var regevents = [];
+  conn.on("fbevent", function (event, count) {
+      console.log("event", event, count);
+      if (count > 0) {
+          regevents.push({ name: event, count: count });
+          finished = true;
+      }
   });  
 
   conn.addFBevent(eName);
@@ -146,11 +156,14 @@ exports.oneEventBetween = function(test) {
     
   conn.addFBevent("strange");  
    
-  // Wait 2 sec for event
+  // Wait 5 sec for event
   WaitForFinish(function(){ return finished; },
   function(){
        conn.disconnect();
        CleanUp();
+       test.equal(regevents.length, 1, "incorrect number of callback calls" + JSON.stringify(regevents));
+       test.equal(regevents[0].name, eName, "incorrect event name");
+       test.equal(regevents[0].count, 1, "wrong number of events");
        test.done();    
   }, 5000);
 }

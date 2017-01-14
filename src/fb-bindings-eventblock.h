@@ -68,7 +68,7 @@ public:
     // calculates event counts
     // as difference between result_buffer and event_buffer
     // places result in Vector
-    void get_counts(ISC_ULONG* Vector);
+    void get_counts(ISC_STATUS* Vector);
     
     // queue event_buffer to trap event
     bool queue();
