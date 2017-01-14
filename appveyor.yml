@@ -51,6 +51,7 @@ before_test:
   
   - ps: ls C:\firebird\server
   - ps: iex "C:\firebird\server\$env:fb_start"
+  - ps: sleep -s 5
   - ps: ni firebird.log -ItemType File | Out-Null
   - ps: mkdir $testdbDir
   - ps: cd $testdbDir
