@@ -39,7 +39,7 @@ before_test:
   - ps: $sourceDir = Resolve-Path .
   - ps: $testdbDir = "$sourceDir\build\test_db"
   - ps: $createDb = "$sourceDir\tests\createTestDB.sql" 
-  - ps: $isql = c:\firebird\isql.exe -input $createDb
+  - ps: $isql = "c:\firebird\isql.exe -input $createDb"
   
   - ps: mkdir C:\firebird | Out-Null
   - ps: cd C:\firebird
