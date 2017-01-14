@@ -2,6 +2,8 @@
 
 # Test against these versions of Io.js and Node.js.
 environment:
+  fb_download: https://www.dropbox.com/s/i9h93c813nrvt26/fb25.7z?dl=1
+  fb_start: .\bin\fb_inet_server.exe -a -m
   matrix:
   # lts
     - nodejs_version: "6"
@@ -16,6 +18,7 @@ install:
   - IF NOT %nodejs_version% == 1 set PATH=%APPDATA%\npm;%PATH%
   # Typical npm stuff.
   - npm install
+  - npm install nodeunit
     #- IF %nodejs_version% == 0.8 node node_modules\node-gyp\bin\node-gyp.js rebuild --directory test
     #- IF NOT %nodejs_version% == 0.8 npm run rebuild-tests
 
@@ -24,12 +27,31 @@ test_script:
   # Output useful info for debugging.
   - node --version
   - npm --version
+  - .\node_modules\.bin\nodeunit tests/def/
   # run tests
   #- IF NOT %nodejs_version% == 1 npm test
   #- IF %nodejs_version% == 1 iojs node_modules\tap\bin\tap.js --gc test\js\*-test.js
 
 # Don't actually build.
 build: off
+
+before_test:
+  - ps: $sourceDir = Resolve-Path .
+  - ps: $testdbDir = "$sourceDir\build\test_db"
+  - ps: $createDb = "$sourceDir\tests\createTestDB.sql" 
+  - ps: $isql = c:\firebird\isql.exe -input $createDb
+  
+  - ps: mkdir C:\firebird | Out-Null
+  - ps: cd C:\firebird
+  - ps: Start-FileDownload "$env:fb_download" | Out-Null
+  - ps: 7z x ($env:fb_download -replace '.+/([^/]+)\?dl=1','$1')
+  
+  - ps: iex $env:fb_start
+  - ps: ni firebird.log -ItemType File | Out-Null
+  - ps: mkdir $testdbDir
+  - ps: cd $testdbDir
+  - ps: $isql
+ 
 
 # Set build version format here instead of in the admin panel.
 version: "{build}"
