@@ -55,6 +55,7 @@ before_test:
   - ps: cd $testdbDir
   - ps: iex $isql
   - ps: ls $testdbDir
+  - ps: cd $sourceDir
  
 
 # Set build version format here instead of in the admin panel.
