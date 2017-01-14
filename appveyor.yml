@@ -47,6 +47,7 @@ before_test:
   - ps: Start-FileDownload "$env:fb_download" | Out-Null
   - ps: 7z x ($env:fb_download -replace '.+/([^/]+)\?dl=1','$1')
   
+  - ps: ls C:\firebird
   - ps: iex "C:\firebird\$env:fb_start"
   - ps: ni firebird.log -ItemType File | Out-Null
   - ps: mkdir $testdbDir
