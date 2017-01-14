@@ -27,7 +27,8 @@ test_script:
   # Output useful info for debugging.
   - node --version
   - npm --version
-  - .\node_modules\.bin\nodeunit tests/def/
+  - ps $sourceDir = Resolve-Path .
+  - $sourceDir\node_modules\.bin\nodeunit tests/def/
   # run tests
   #- IF NOT %nodejs_version% == 1 npm test
   #- IF %nodejs_version% == 1 iojs node_modules\tap\bin\tap.js --gc test\js\*-test.js
@@ -46,7 +47,7 @@ before_test:
   - ps: Start-FileDownload "$env:fb_download" | Out-Null
   - ps: 7z x ($env:fb_download -replace '.+/([^/]+)\?dl=1','$1')
   
-  - ps: iex $env:fb_start
+  - ps: iex "C:\firebird\$env:fb_start"
   - ps: ni firebird.log -ItemType File | Out-Null
   - ps: mkdir $testdbDir
   - ps: cd $testdbDir
