@@ -28,7 +28,9 @@ test_script:
   - node --version
   - npm --version
   - ps: $sourceDir = Resolve-Path .
-  - ps: $sourceDir\node_modules\.bin\nodeunit tests/def/
+  - ps: $startTest = "$sourceDir\node_modules\.bin\nodeunit.cmd tests/def/" 
+  #- ps: iex $startTest
+  - .\node_modules\.bin\nodeunit.cmd tests/def/" 
   # run tests
   #- IF NOT %nodejs_version% == 1 npm test
   #- IF %nodejs_version% == 1 iojs node_modules\tap\bin\tap.js --gc test\js\*-test.js
@@ -52,7 +54,10 @@ before_test:
   - ps: ni firebird.log -ItemType File | Out-Null
   - ps: mkdir $testdbDir
   - ps: cd $testdbDir
-  - ps: $isql
+  - ps: iex $isql
+  - ps: ls $testdbDir
+  - ps: cd $sourceDir
+  - ps: cp c:\firebird\server\bin\fbclient.dll $sourceDir\build\Release\
  
 
 # Set build version format here instead of in the admin panel.
