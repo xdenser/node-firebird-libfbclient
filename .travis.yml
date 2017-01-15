@@ -24,6 +24,6 @@ before_script:
   - cd build
   - mkdir test_db
   - cd test_db
-  - isql-fb -input ../../tests/createTestDB.sql
+  - sudo isql-fb -input ../../tests/createTestDB.sql
   - cd ../..
 
