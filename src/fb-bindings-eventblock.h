@@ -95,9 +95,8 @@ public:
     
     static event_block* FindBlock(event_block* root, char *Event);
     
-    static void
-    RemoveEvent(event_block** root, char *Event);
-    
+    static void RemoveEvent(event_block** root, char *Event);
+
     event_block(Connection *aconn,isc_db_handle *adb);
     
     ~event_block();

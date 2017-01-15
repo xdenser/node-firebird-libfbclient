@@ -350,9 +350,7 @@ void
     	    Nan::ThrowError("Could not allocate memory.");
     	    return ;
 	}
-        res->event_->data = res;
-        uv_async_init(uv_default_loop(),res->event_, event_block::event_notification);
-		uv_unref((uv_handle_t*) res->event_);
+        //uv_unref((uv_handle_t*) res->event_);
        // uv_async_start(EV_DEFAULT_UC_ res->event_);
       //  uv_unref(uv_default_loop());
         
@@ -424,7 +422,7 @@ void
           *root = NULL;
          }
          eb->next = NULL;
-         free(eb);
+         delete eb;
         } 
         else {
             // if block still has events we should requeue it
@@ -435,6 +433,7 @@ void
       // may be throw error ???
       // return;
     }
+
     
     event_block::event_block(Connection *aconn,isc_db_handle *adb)
     { 
@@ -448,18 +447,25 @@ void
       blength = 0;
       event_id = 0;
       event_ = new uv_async_t();
-      
+	  event_->data = this;
+	  uv_async_init(uv_default_loop(), event_, event_block::event_notification);
+	        
       queued = false;
       traped = false;
     }
-    
+
+	void close_cb(uv_handle_t* handle) {
+		uv_async_t* event_ = (uv_async_t*)handle;
+		delete event_;
+    }
+
 event_block::~event_block()
     {
       cancel();
       for(int i=0;i<count;i++) free(event_names[i]);
       free(event_buffer);
       free(result_buffer);
-      free(event_);
-      if(next) free(next);
+	  uv_close((uv_handle_t*)event_, close_cb);
+      if(next) delete next;
     }
 

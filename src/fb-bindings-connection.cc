@@ -101,7 +101,7 @@ bool Connection::Close(){
        return false;
      }
     
-    if(fb_events) free(fb_events);
+    if(fb_events) delete fb_events;
     fb_events = NULL;
  
     connected = false; 
