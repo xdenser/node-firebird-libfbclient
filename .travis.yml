@@ -21,10 +21,10 @@ before_install:
   - sudo service firebird2.5-superclassic start
   - npm install nodeunit
 before_script:
-  - ls /var/lib/firebird
+  - ls /var/lib/firebird/2.5
   - cd build
   - mkdir test_db
   - cd test_db
-  - isql -input ../../tests/createTestDB.sql
+  - /var/lib/firebird/2.5/bin/isql -input ../../tests/createTestDB.sql
   - cd ../..
 
