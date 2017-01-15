@@ -25,6 +25,6 @@ before_script:
   - mkdir test_db
   - cd test_db
   - sudo isql-fb -input ../../tests/createTestDB.sql
-  - sudo chmod 0666 test.fdb
+  - sudo chmod 0666 TEST.FDB
   - cd ../..
 
