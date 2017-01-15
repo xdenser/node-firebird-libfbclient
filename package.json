@@ -26,4 +26,8 @@
   "dependencies": {
     "nan": "^2.0.9"
   }
+,
+  "scripts": {
+  "test": "nodeunit tests/def"
+ }
 }
