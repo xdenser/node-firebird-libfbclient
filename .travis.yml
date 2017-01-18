@@ -21,6 +21,8 @@ before_install:
   - cat /etc/default/firebird2.5 | grep ENABLE_FIREBIRD_SERVER
   - sudo service firebird2.5-superclassic start
   - sudo cat /etc/firebird/2.5/SYSDBA.password
+  - sudo bash -c '(export FB_VER="2.5"; export FB_FLAVOUR="superclassic";source /usr/share/firebird2.5-common/functions.sh; writeNewPassword masterkey)
+  - sudo cat /etc/firebird/2.5/SYSDBA.password
   - npm install nodeunit
   - sleep 5
 before_script:
