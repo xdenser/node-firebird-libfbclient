@@ -74,10 +74,16 @@ NAN_METHOD(FBStatement::ExecSync)
            String::Concat(Nan::New("In FBStatement::execSync, free_statement - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
       }
     }
+
+	Transaction *tr = NULL;
+
+	if (!fb_stmt->connection->check_trans(&tr)) {
+		return Nan::ThrowError("Failed to get default transaction"); 
+	}
     
     if(fb_stmt->statement_type == isc_info_sql_stmt_select)
     {    
-	if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+	if (isc_dsql_execute(fb_stmt->status, &tr->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
         {
 	      return Nan::ThrowError(
 	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
@@ -86,7 +92,7 @@ NAN_METHOD(FBStatement::ExecSync)
     }
     else
     {
-	if (isc_dsql_execute2(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
+	if (isc_dsql_execute2(fb_stmt->status, &tr->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
         {
 	      return Nan::ThrowError(
 	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
@@ -159,17 +165,23 @@ void FBStatement::EIO_Exec(uv_work_t *req)
  {
     struct exec_request *e_req = (struct exec_request *)(req->data);
     FBStatement *fb_stmt = e_req->statement;
+
+	Transaction *tr = NULL;
+
+	if (!fb_stmt->connection->check_trans(&tr)) {
+		return Nan::ThrowError("Failed to get default transaction");
+	}
     
     if(fb_stmt->statement_type == isc_info_sql_stmt_select)
     {
-        if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+        if (isc_dsql_execute(fb_stmt->status, &tr->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
 	  e_req->result = false;
         else 
 	  e_req->result = true;
     }
     else
     {
-	if (isc_dsql_execute2(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
+	if (isc_dsql_execute2(fb_stmt->status, &tr->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
 	  e_req->result = false;
         else 
 	  e_req->result = true;

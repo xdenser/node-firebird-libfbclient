@@ -16,6 +16,7 @@
 #include "./fb-bindings-fbeventemitter.h"
 #include "./fb-bindings-eventblock.h"
 #include "./fb-bindings-blob.h"
+#include "./fb-bindings-transaction.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -23,11 +24,11 @@ using namespace v8;
 using namespace node;
 
 class Connection : public FBEventEmitter {
+
  public:
   isc_db_handle db;
-  isc_tr_handle trans;
-
- 
+  Transaction* def_trans;
+   
   static void
   Initialize (v8::Handle<v8::Object> target);
  
@@ -35,16 +36,12 @@ class Connection : public FBEventEmitter {
  
   bool Close();
   
-  bool process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp, int *statement_type);
+  bool process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp, int *statement_type, Transaction *atr);
   
-  bool prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *query, isc_stmt_handle *stmtp);
- 
-  bool commit_transaction();
+  bool prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *query, isc_stmt_handle *stmtp, Transaction *atr);
+
+  bool check_trans(Transaction **tr);
     
-  bool rollback_transaction();
-  
-  bool start_transaction();
-  
   void doref();
   
   void dounref();
@@ -81,25 +78,7 @@ class Connection : public FBEventEmitter {
   static NAN_METHOD(CommitSync);
   static NAN_METHOD(RollbackSync);
   static NAN_METHOD(StartSync);
-    
-
-  enum TransReqType {
-    rCommit,
-    rRollback,
-    rStart
-  };
-    
-  struct transaction_request {
-	 Nan::Callback *callback;
-     Connection *conn;
-     TransReqType type;
-     bool result;
-  };
-
-  static void EIO_After_TransactionRequest(uv_work_t *req);
-  
-  static void EIO_TransactionRequest(uv_work_t *req);
-  
+   
   static NAN_METHOD(Commit);
   static NAN_METHOD(Rollback);
   static NAN_METHOD(Start);
@@ -126,8 +105,7 @@ class Connection : public FBEventEmitter {
   static NAN_METHOD(PrepareSync);
   static NAN_METHOD(NewBlobSync);
 
-  static time_t 
-  get_gmt_delta();
+  static time_t  get_gmt_delta();
 
    Connection (); 
 

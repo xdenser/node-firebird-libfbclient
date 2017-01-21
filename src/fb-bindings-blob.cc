@@ -80,7 +80,7 @@ NAN_METHOD(FBblob::New)
     }
 
     status[1] = 0;
-    FBblob *res = new FBblob(quad, conn, status);
+    FBblob *res = new FBblob(quad, conn->def_trans, status);
     if(status[1])  {
      return Nan::ThrowError(
             String::Concat(
@@ -365,16 +365,16 @@ NAN_GETTER(FBblob::IsReadGetter)
     info.GetReturnValue().Set(Nan::New<Boolean>(blob->is_read));
   }                        
   
-FBblob::FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status): FBEventEmitter () 
+FBblob::FBblob(ISC_QUAD *id, Transaction *atrans, ISC_STATUS *status): FBEventEmitter () 
   {
     if(id) blob_id = *id; 
-    connection = conn;
+    trans = atrans;
     is_read = true;
-    if((id == 0) && (connection != 0)) 
+    if((id == 0) && (trans != 0)) 
     {
       handle  = 0;
       //blob_id = 0;
-      isc_create_blob2(status, &(connection->db), &(connection->trans), &handle, &blob_id, 0, NULL); 
+      isc_create_blob2(status, &(trans->connection->db), &(trans->trans), &handle, &blob_id, 0, NULL); 
       is_read = false;
     }
     else handle = NULL;
@@ -391,7 +391,7 @@ FBblob::~FBblob()
 
 bool FBblob::open(ISC_STATUS *status)
   {
-    if(isc_open_blob2(status, &(connection->db), &(connection->trans), &handle, &blob_id, 0, NULL)) return false;
+    if(isc_open_blob2(status, &(trans->connection->db), &(trans->trans), &handle, &blob_id, 0, NULL)) return false;
     return true; 
   }
   

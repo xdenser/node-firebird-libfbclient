@@ -6,7 +6,8 @@
                    './src/fb-bindings-fbresult.cc',
                    './src/fb-bindings-connection.cc','./src/fb-bindings-eventblock.cc',
                    './src/fb-bindings-fbeventemitter.cc',
-                   './src/fb-bindings-statement.cc' ],
+                   './src/fb-bindings-statement.cc',
+		   './src/fb-bindings-transaction.cc' ],
       'include_dirs': [
           '<(module_root_dir)/fb/include',
           "<!(node -e \"require('nan')\")"

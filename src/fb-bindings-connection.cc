@@ -96,8 +96,9 @@ bool Connection::Connect (const char* Database,const char* User,const char* Pass
   
 bool Connection::Close(){
     
-    if(trans)
-     if(!commit_transaction()) {
+    if(def_trans && def_trans->trans)
+     if(!def_trans->commit_transaction()) {
+   	   memcpy(&(def_trans->status), &status, sizeof(status));
        return false;
      }
     
@@ -113,8 +114,26 @@ bool Connection::Close(){
     return true;
     
   }
+
+bool Connection::check_trans(Transaction **tr) {
+	Transaction *ltr = *tr;
+	if (!ltr) {
+		if (!def_trans) {
+			def_trans = new Transaction(this);
+		}
+		ltr = def_trans;
+	}
+	if (!ltr->trans) {
+		if (!ltr->start_transaction()) {
+			memcpy(&(ltr->status), &status, sizeof(status));
+			return false;
+		}
+	}
+	*tr = ltr;
+	return true;
+}
   
-bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp, int *statement_type)
+bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle *stmtp, int *statement_type, Transaction *atr)
   {
      XSQLDA          *sqlda;
   //   XSQLVAR         *var;
@@ -123,7 +142,7 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
      short           l, num_cols;// i, length, alignment, type, offset;
     // int             statement_type;
      int 	     sqlda_size;	
-     
+	 Transaction*tr = atr;
      
      sqlda = *sqldap;
      
@@ -143,13 +162,14 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
      } 
      
      // Start Default Transaction If None Active
-     if(!trans) 
+     if(!check_trans(&tr))
       {
-        if (isc_start_transaction(status, &trans, 1, &db, 0, NULL)) return false;
+		  return false;
+		  //if (isc_start_transaction(status, &trans, 1, &db, 0, NULL)) return false;
       }
-      
+	       
      // Prepare Statement
-     if (isc_dsql_prepare(status, &trans, stmtp, 0, query, SQL_DIALECT_V6, sqlda)) {  return false; }
+     if (isc_dsql_prepare(status, &(tr->trans), stmtp, 0, query, SQL_DIALECT_V6, sqlda)) {  return false; }
 
      // Get sql info
      if (!isc_dsql_sql_info(status, stmtp, sizeof (stmt_info), stmt_info, 
@@ -165,22 +185,22 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
         free(sqlda);
         *sqldap = NULL;
                    
-        if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
+        if (isc_dsql_execute(status, &(tr->trans), stmtp, SQL_DIALECT_V6, NULL))
         {
              return false;
         }
 
         /* Commit DDL statements if that is what sql_info says */
 
-        if (trans && (*statement_type == isc_info_sql_stmt_ddl))
+        if (tr->trans && (*statement_type == isc_info_sql_stmt_ddl))
         {
             //printf("it is ddl !");
-            if (isc_commit_transaction(status, &trans))
+            if (isc_commit_transaction(status, &(tr->trans)))
             {
-             trans = 0;
+				tr->trans = 0;
              return false;    
             }    
-            trans = 0;
+			tr->trans = 0;
         }
 
         return true;
@@ -215,13 +235,13 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
     if(!FBResult::prepare_sqlda(sqlda)) { return false; };
       
      if(*statement_type == isc_info_sql_stmt_select){
-    	 if (isc_dsql_execute(status, &trans, stmtp, SQL_DIALECT_V6, NULL))
+    	 if (isc_dsql_execute(status, &(tr->trans), stmtp, SQL_DIALECT_V6, NULL))
     	 {
     		 return false;
     	 }
      }
      else {
-    	 if (isc_dsql_execute2(status, &trans, stmtp, SQL_DIALECT_V6, NULL, sqlda)){
+    	 if (isc_dsql_execute2(status, &(tr->trans), stmtp, SQL_DIALECT_V6, NULL, sqlda)){
     		 return false;
     	 }
      }
@@ -231,12 +251,13 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
 
   }
 
-bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *query, isc_stmt_handle *stmtp)
+bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *query, isc_stmt_handle *stmtp, Transaction *atr)
   {
      XSQLDA          *in_sqlda;
      XSQLDA          *out_sqlda;
      short 	     num_params, num_cols;
      int 	     sqlda_size;
+	 Transaction *tr = atr;
      
      in_sqlda = *insqlda;
      if(!in_sqlda)
@@ -267,13 +288,15 @@ bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *qu
      } 
      
      // Start Default Transaction If None Active
-     if(!trans) 
-     {
-      if (isc_start_transaction(status, &trans, 1, &db, 0, NULL)) return false;
-     }
+	 if (!check_trans(&tr))
+	 {
+		 return false;
+		 //if (isc_start_transaction(status, &trans, 1, &db, 0, NULL)) return false;
+	 }
+     
      
      // Prepare Statement
-     if (isc_dsql_prepare(status, &trans, stmtp, 0, query, SQL_DIALECT_V6, out_sqlda)) return false;
+     if (isc_dsql_prepare(status, &(tr->trans), stmtp, 0, query, SQL_DIALECT_V6, out_sqlda)) return false;
      
      // Describe bind
      if (isc_dsql_describe_bind(status, stmtp, 1, in_sqlda)) return false;
@@ -327,46 +350,7 @@ bool Connection::prepare_statement(XSQLDA **insqlda, XSQLDA **outsqlda, char *qu
          
     return true;     
   }  
-
   
-bool Connection::commit_transaction()
-  {
-    if (isc_commit_transaction(status, &trans))
-    {
-             trans = 0;
-             return false;    
-    }    
-    trans = 0;
-    return true;
-  }
-    
-bool Connection::rollback_transaction()
-  {
-    if (isc_rollback_transaction(status, &trans))
-    {
-             trans = 0;
-             return false;    
-    }    
-    trans = 0;
-    return true;
-  }
-
-bool Connection::start_transaction()
-  {
-    if(!trans) 
-      {
-        if (isc_start_transaction(status, &trans, 1, &db, 0, NULL))
-        {
-          trans = 0;
-          ERR_MSG(this,Connection);
-          return false;
-        }
-        return true;  
-      }
-      
-    strncpy(err_message, "Old transaction should be commited or rolled back.", MAX_ERR_MSG_LEN);
-    return false;  
-  }
   
 isc_db_handle Connection::get_DB_Handle()
   {
@@ -375,7 +359,10 @@ isc_db_handle Connection::get_DB_Handle()
   
 isc_tr_handle Connection::get_Def_Tr_Handle()
   {
-    return trans;
+	  if (def_trans) {
+		  return def_trans->trans;
+	  }
+	  return 0;
   }   
 
 void Connection::doref()
@@ -537,7 +524,7 @@ NAN_GETTER(Connection::InTransactionGetter)
   {
     Nan::HandleScope scope;
     Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
-    info.GetReturnValue().Set(Nan::New<Boolean>(connection->trans));
+	info.GetReturnValue().Set(Nan::New<Boolean>(connection->def_trans && connection->def_trans->trans));
   }
 
 NAN_METHOD(Connection::CommitSync)
@@ -545,11 +532,14 @@ NAN_METHOD(Connection::CommitSync)
     Nan::HandleScope scope;
     Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
-    bool r = connection->commit_transaction();
+	if (!connection->def_trans) {
+		return Nan::ThrowError("No default transaction");
+	}
+    bool r = connection->def_trans->commit_transaction();
 
     if (!r) {
       return Nan::ThrowError(
-            String::Concat(Nan::New("While commitSync - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
+            String::Concat(Nan::New("While commitSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
     }
     
     return;
@@ -560,11 +550,15 @@ NAN_METHOD(Connection::RollbackSync)
     Nan::HandleScope scope;
     Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
-    bool r = connection->rollback_transaction();
+	if (!connection->def_trans) {
+		return Nan::ThrowError("No default transaction");
+	}
+
+    bool r = connection->def_trans->rollback_transaction();
 
     if (!r) {
       return Nan::ThrowError(
-            String::Concat(Nan::New("While rollbackSync - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
+            String::Concat(Nan::New("While rollbackSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
     }
     
     return;
@@ -575,161 +569,43 @@ NAN_METHOD(Connection::StartSync)
     Nan::HandleScope scope;
     Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     
-    bool r = connection->start_transaction();
+	Transaction *tr = NULL;
 
-    if (!r) {
-      return Nan::ThrowError(connection->err_message);
-    }
-    
+	if (!connection->check_trans(&tr))
+	{
+		return Nan::ThrowError(connection->err_message);
+	}
+	   
     return;
   }
   
   
-void Connection::EIO_After_TransactionRequest(uv_work_t *req)
-  {
-  //  uv_unref(uv_default_loop());
-    Nan::HandleScope scope;
-    struct transaction_request *tr_req = (struct transaction_request *)(req->data);
-    delete req;
-    Local<Value> argv[1];
-    
-    if (!tr_req->result) {
-       argv[0] = Nan::Error(*Nan::Utf8String(ERR_MSG(tr_req->conn, Connection)));
-    }
-    else{
-     argv[0] = Nan::Null();
-    }
-   
-	Nan::TryCatch try_catch;
-
-    tr_req->callback->Call(1, argv);
-
-    if (try_catch.HasCaught()) {
-        Nan::FatalException(try_catch);
-    }
-
-    tr_req->conn->stop_async();
-    tr_req->conn->Unref();
-    free(tr_req);
-
-    
-  }
-  
-void Connection::EIO_TransactionRequest(uv_work_t *req)
-  {
-    struct transaction_request *tr_req = (struct transaction_request *)(req->data);
-    switch(tr_req->type){
-       case rCommit:
-            tr_req->result = tr_req->conn->commit_transaction();
-            break;
-       case rRollback:
-            tr_req->result = tr_req->conn->rollback_transaction();   
-            break;
-       case rStart:
-            tr_req->result = tr_req->conn->start_transaction();   
-    }
-    return;
-  }
-
   
 NAN_METHOD(Connection::Commit)
   {
-    Nan::HandleScope scope;
-    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
-    
-    struct transaction_request *tr_req =
-         (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
-
-    if (!tr_req) {
-      Nan::LowMemoryNotification();
-      return Nan::ThrowError("Could not allocate memory.");
-    }
-    
-    if (info.Length() < 1) {
-      return Nan::ThrowError("Expecting Callback Function argument");
-    }
-    
-    tr_req->conn = conn;
-    tr_req->callback = new Nan::Callback(Local<Function>::Cast(info[0]));
-    tr_req->type = rCommit;
-    
-    conn->start_async();
-
-    uv_work_t* req = new uv_work_t();
-    req->data = tr_req;
-    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  (uv_after_work_cb)EIO_After_TransactionRequest);
-
-    
-    //uv_ref(uv_default_loop());
-    conn->Ref();
-    
-    return;
+	  Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+	  if (!connection->def_trans) {
+		  return Nan::ThrowError("No Transaction was started");
+      }
+	  connection->def_trans->InstCommit(info);
   }
   
 NAN_METHOD(Connection::Rollback)
   {
-    Nan::HandleScope scope;
-    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
-    
-    struct transaction_request *tr_req =
-         (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
-
-    if (!tr_req) {
-      Nan::LowMemoryNotification();
-      return Nan::ThrowError("Could not allocate memory.");
-    }
-    
-    if (info.Length() < 1) {
-      return Nan::ThrowError("Expecting Callback Function argument");
-    }
-    
-    tr_req->conn = conn;
-    tr_req->callback = new Nan::Callback(Local<Function>::Cast(info[0]));
-    tr_req->type = rRollback;
-    
-    conn->start_async();
-
-	uv_work_t* req = new uv_work_t();
-    req->data = tr_req;
-    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  (uv_after_work_cb)EIO_After_TransactionRequest);
-    
-   // uv_ref(uv_default_loop());
-    conn->Ref();
-    
-    return;
+	  Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+	  if (!connection->def_trans) {
+		  return Nan::ThrowError("No Transaction was started");
+	  }
+	  connection->def_trans->InstRollback(info);
   } 
   
 NAN_METHOD(Connection::Start)
   {
-    Nan::HandleScope scope;
-    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
-    
-    struct transaction_request *tr_req =
-         (struct transaction_request *)calloc(1, sizeof(struct transaction_request));
-
-    if (!tr_req) {
-      Nan::LowMemoryNotification();
-      return Nan::ThrowError("Could not allocate memory.");
-    }
-    
-    if (info.Length() < 1) {
-      return Nan::ThrowError("Expecting Callback Function argument");
-    }
-    
-    tr_req->conn = conn;
-    tr_req->callback = new Nan::Callback(Local<Function>::Cast(info[0]));
-    tr_req->type = rStart;
-    
-    conn->start_async();
-
-    uv_work_t* req = new uv_work_t();
-    req->data = tr_req;
-    uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest,  (uv_after_work_cb)EIO_After_TransactionRequest);
-    
-   // uv_ref(uv_default_loop());
-    conn->Ref();
-    
-    return;
+	  Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+	  if (!connection->def_trans) {
+		  connection->def_trans = new Transaction(connection);
+	  }
+	  connection->def_trans->InstStart(info);
   } 
   
 NAN_METHOD(Connection::QuerySync)
@@ -746,7 +622,7 @@ NAN_METHOD(Connection::QuerySync)
     
     XSQLDA *sqlda = NULL;
     isc_stmt_handle stmt = NULL;
-    bool r = connection->process_statement(&sqlda, **Query, &stmt, &statement_type);
+    bool r = connection->process_statement(&sqlda, **Query, &stmt, &statement_type, NULL);
     if(!r) {
       return Nan::ThrowError(
             String::Concat(Nan::New("In querySync - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
@@ -823,7 +699,7 @@ void Connection::EIO_Query(uv_work_t *req)
   {
     struct query_request *q_req = (struct query_request *)(req->data);
     
-    q_req->result = q_req->conn->process_statement(&q_req->sqlda, **(q_req->Query), &q_req->stmt, &(q_req->statement_type));
+    q_req->result = q_req->conn->process_statement(&q_req->sqlda, **(q_req->Query), &q_req->stmt, &(q_req->statement_type), NULL);
     
     delete q_req->Query;
     //return;
@@ -919,7 +795,7 @@ NAN_METHOD(Connection::PrepareSync)
     XSQLDA *insqlda = NULL;
     XSQLDA *outsqlda = NULL;
     isc_stmt_handle stmt = NULL;
-    bool r = connection->prepare_statement(&insqlda,&outsqlda,*Query, &stmt);
+    bool r = connection->prepare_statement(&insqlda,&outsqlda,*Query, &stmt, NULL);
     
     if(!r) {
       return Nan::ThrowError(
@@ -955,7 +831,7 @@ NAN_METHOD(Connection::NewBlobSync)
    Connection::Connection () : FBEventEmitter () 
   {
     db = NULL;
-    trans = NULL;
+    def_trans = NULL;
     fb_events = NULL;
     connected = false;
   }
@@ -964,6 +840,10 @@ NAN_METHOD(Connection::NewBlobSync)
   { 
    // printf("connection free----------\n");
 	if(db!=NULL) Close();
+	if (def_trans) {
+		delete def_trans;
+		def_trans = NULL;
+	}
     assert(db == NULL);
   }
  
