@@ -34,6 +34,8 @@ void
     Nan::SetPrototypeMethod(t, "newBlobSync", NewBlobSync);
     Nan::SetPrototypeMethod(t, "startTransactionSync", StartSync);
     Nan::SetPrototypeMethod(t, "startTransaction", Start);
+	Nan::SetPrototypeMethod(t, "startNewTransactionSync", StartNewTransSync);
+	Nan::SetPrototypeMethod(t, "startNewTransaction", StartNewTrans);
     
     // Properties
     Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
@@ -646,6 +648,37 @@ NAN_METHOD(Connection::QuerySync)
    info.GetReturnValue().Set(js_result);
         
   }
+
+NAN_METHOD(Connection::StartNewTransSync) {
+	Nan::HandleScope scope;
+	Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+
+	Local<Value> argv[1];
+
+	argv[0] = Nan::New<External>(connection);
+	Local<Object> js_result(Nan::New(Transaction::constructor_template)->
+		GetFunction()->NewInstance(Nan::GetCurrentContext(), 1, argv).ToLocalChecked());
+
+	Transaction *tr = Nan::ObjectWrap::Unwrap<Transaction>(js_result);
+	tr->start_transaction();
+	info.GetReturnValue().Set(js_result);
+}
+
+NAN_METHOD(Connection::StartNewTrans) {
+	Nan::HandleScope scope;
+	Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+
+	Local<Value> argv[1];
+
+	argv[0] = Nan::New<External>(connection);
+	Local<Object> js_result(Nan::New(Transaction::constructor_template)->
+		GetFunction()->NewInstance(Nan::GetCurrentContext(), 1, argv).ToLocalChecked());
+
+	Transaction *tr = Nan::ObjectWrap::Unwrap<Transaction>(js_result);
+	tr->InstStart(info);
+	info.GetReturnValue().Set(js_result);
+}
+
   
   
 void Connection::EIO_After_Query(uv_work_t *req)

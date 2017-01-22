@@ -51,6 +51,7 @@ init (Handle<Object> target)
   Connection::Initialize(target);
   FBblob::Initialize(target);
   FBStatement::Initialize (target);
+  Transaction::Initialize(target);
 }
 
 NODE_MODULE(binding, init)

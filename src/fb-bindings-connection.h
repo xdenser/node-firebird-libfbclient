@@ -84,6 +84,9 @@ class Connection : public FBEventEmitter {
   static NAN_METHOD(Start);
   static NAN_METHOD(QuerySync);
 
+  static NAN_METHOD(StartNewTransSync);
+  static NAN_METHOD(StartNewTrans);
+
   struct query_request {
 	 Nan::Callback *callback;
      Connection *conn;

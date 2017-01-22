@@ -3,6 +3,45 @@
 #include "./fb-bindings-transaction.h"
 #include "./fb-bindings-connection.h"
 
+Nan::Persistent<FunctionTemplate> Transaction::constructor_template;
+
+void Transaction::Initialize(v8::Handle<v8::Object> target) {
+	Local<FunctionTemplate> t = Nan::New<FunctionTemplate>(Transaction::New);
+	constructor_template.Reset(t);
+
+	t->Inherit(Nan::New(FBEventEmitter::constructor_template));
+	t->SetClassName(Nan::New("Transaction").ToLocalChecked());
+
+	Local<ObjectTemplate> instance_template = t->InstanceTemplate();
+
+	Nan::SetPrototypeMethod(t, "commit", Commit);
+	Nan::SetPrototypeMethod(t, "rollback", Rollback);
+	Nan::SetPrototypeMethod(t, "start", Start);
+	
+	instance_template->SetInternalFieldCount(1);
+
+	Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
+	Nan::SetAccessor(instance_t, Nan::New("inAsyncCall").ToLocalChecked(), InAsyncGetter);
+	Nan::SetAccessor(instance_t, Nan::New("isTransaction").ToLocalChecked(), InTransactionGetter);
+
+	target->Set(Nan::New("Transaction").ToLocalChecked(), t->GetFunction());
+}
+
+NAN_METHOD(Transaction::New) {
+	Nan::HandleScope scope;
+
+	REQ_EXT_ARG(0, js_connection);
+	
+	Connection  *conn;
+	conn = static_cast<Connection *>(js_connection->Value());
+
+	Transaction *res = new Transaction(conn);
+	res->Wrap(info.This());
+
+	info.GetReturnValue().Set(info.This());
+}
+
+
 bool Transaction::commit_transaction()
 {
 	if (isc_commit_transaction(status, &trans))
@@ -116,6 +155,9 @@ void  Transaction::makeTrRequest(const Nan::FunctionCallbackInfo<v8::Value>& inf
 
 void Transaction::InstCommit(const Nan::FunctionCallbackInfo<v8::Value>& info)
 {
+	if (!trans) {
+		return Nan::ThrowError("Transaction not started");
+	}
 	makeTrRequest(info, rCommit);
 }
 
@@ -126,6 +168,9 @@ NAN_METHOD(Transaction::Commit)
 
 void Transaction::InstRollback(const Nan::FunctionCallbackInfo<v8::Value>& info)
 {
+	if (!trans) {
+		return Nan::ThrowError("Transaction not started");
+	}
 	makeTrRequest(info, rRollback);
 }
 
@@ -136,6 +181,9 @@ NAN_METHOD(Transaction::Rollback)
 
 void Transaction::InstStart(const Nan::FunctionCallbackInfo<v8::Value>& info)
 {
+	if (trans) {
+		return Nan::ThrowError("Transaction already started");
+	}
 	makeTrRequest(info, rStart);
 }
 
@@ -152,4 +200,57 @@ Transaction::~Transaction() {
 	if (trans) {
 		commit_transaction();
 	}
+}
+
+NAN_GETTER(Transaction::InTransactionGetter)
+{
+	Nan::HandleScope scope;
+	Transaction *transaction = Nan::ObjectWrap::Unwrap<Transaction>(info.This());
+	info.GetReturnValue().Set(Nan::New<Boolean>(transaction->trans));
+}
+
+
+NAN_METHOD(Transaction::CommitSync)
+{
+	Nan::HandleScope scope;
+	Transaction *transaction = Nan::ObjectWrap::Unwrap<Transaction>(info.This());
+	if (!transaction->trans) {
+		return Nan::ThrowError("Transaction not started");
+	}
+	bool r = transaction->commit_transaction();
+	if (!r) {
+		return Nan::ThrowError(
+			String::Concat(Nan::New("While commitSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
+	}
+}
+
+NAN_METHOD(Transaction::RollbackSync)
+{
+	Nan::HandleScope scope;
+	Transaction *transaction = Nan::ObjectWrap::Unwrap<Transaction>(info.This());
+	if (!transaction->trans) {
+		return Nan::ThrowError("Transaction not started");
+	}
+
+	bool r = transaction->rollback_transaction();
+	if (!r) {
+		return Nan::ThrowError(
+			String::Concat(Nan::New("While rollbackSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
+	}
+}
+
+NAN_METHOD(Transaction::StartSync)
+{
+	Nan::HandleScope scope;
+	Transaction *transaction = Nan::ObjectWrap::Unwrap<Transaction>(info.This());
+	if (transaction->trans) {
+		return Nan::ThrowError("Transaction already started");
+	}
+	bool r = transaction->start_transaction();
+	if (!r) {
+		return Nan::ThrowError(
+			String::Concat(Nan::New("While startSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
+	}
+
+	return;
 }

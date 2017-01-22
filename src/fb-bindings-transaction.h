@@ -15,6 +15,7 @@ public:
 
 	static Nan::Persistent<FunctionTemplate> constructor_template;
 	static void	Initialize(v8::Handle<v8::Object> target);
+	static NAN_METHOD(New);
 
 	bool commit_transaction();
 
@@ -46,11 +47,17 @@ public:
 
 	char err_message[MAX_ERR_MSG_LEN];
 
-	NAN_METHOD(Commit);
+	static NAN_GETTER(InTransactionGetter);
+
+	static NAN_METHOD(Commit);
 	void InstCommit(const Nan::FunctionCallbackInfo<v8::Value>& info);
-	NAN_METHOD(Rollback);
+	static NAN_METHOD(Rollback);
 	void InstRollback(const Nan::FunctionCallbackInfo<v8::Value>& info);
-	NAN_METHOD(Start);
+	static NAN_METHOD(Start);
 	void InstStart(const Nan::FunctionCallbackInfo<v8::Value>& info);
+
+	static NAN_METHOD(Transaction::CommitSync);
+	static NAN_METHOD(Transaction::RollbackSync);
+	static NAN_METHOD(Transaction::StartSync);
 };
 #endif
