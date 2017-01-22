@@ -59,5 +59,8 @@ public:
 	static NAN_METHOD(CommitSync);
 	static NAN_METHOD(RollbackSync);
 	static NAN_METHOD(StartSync);
+
+	static NAN_METHOD(QuerySync);
+	static NAN_METHOD(Query);
 };
 #endif

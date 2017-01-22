@@ -610,10 +610,15 @@ NAN_METHOD(Connection::Start)
 	  connection->def_trans->InstStart(info);
   } 
   
-NAN_METHOD(Connection::QuerySync)
+NAN_METHOD(Connection::QuerySync) {
+	Nan::HandleScope scope;
+	Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+	connection->InstQuerySync(info, NULL);
+  }
+
+void Connection::InstQuerySync(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction)
   {
     Nan::HandleScope scope;
-    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
     int statement_type;
     if (info.Length() < 1 || !info[0]->IsString()){
        return Nan::ThrowError("Expecting a string query argument.");
@@ -624,17 +629,17 @@ NAN_METHOD(Connection::QuerySync)
     
     XSQLDA *sqlda = NULL;
     isc_stmt_handle stmt = NULL;
-    bool r = connection->process_statement(&sqlda, **Query, &stmt, &statement_type, NULL);
+    bool r = process_statement(&sqlda, **Query, &stmt, &statement_type, transaction);
     if(!r) {
       return Nan::ThrowError(
-            String::Concat(Nan::New("In querySync - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
+            String::Concat(Nan::New("In querySync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
     }
     
     Local<Value> argv[3];
 
     argv[0] = Nan::New<External>(sqlda);
     argv[1] = Nan::New<External>(&stmt);
-    argv[2] = Nan::New<External>(connection);
+    argv[2] = Nan::New<External>(this);
     Local<Object> js_result(Nan::New(FBResult::constructor_template)->
                                      GetFunction()->NewInstance(Nan::GetCurrentContext(), 3, argv).ToLocalChecked());
     	
@@ -732,17 +737,21 @@ void Connection::EIO_Query(uv_work_t *req)
   {
     struct query_request *q_req = (struct query_request *)(req->data);
     
-    q_req->result = q_req->conn->process_statement(&q_req->sqlda, **(q_req->Query), &q_req->stmt, &(q_req->statement_type), NULL);
+    q_req->result = q_req->conn->process_statement(&q_req->sqlda, **(q_req->Query), &q_req->stmt, &(q_req->statement_type), q_req->transaction);
     
     delete q_req->Query;
     //return;
   }
-  
+
 NAN_METHOD(Connection::Query)
+{
+	Nan::HandleScope scope;
+	Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+	conn->InstQuery(info, NULL);
+}
+
+void Connection::InstQuery(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction)
   {
-    Nan::HandleScope scope;
-    Connection *conn = Nan::ObjectWrap::Unwrap<Connection>(info.This());
-    
     struct query_request *q_req =
          (struct query_request *)calloc(1, sizeof(struct query_request));
 
@@ -756,21 +765,20 @@ NAN_METHOD(Connection::Query)
       return Nan::ThrowError("Expecting 1 string argument and 1 Function");
     }
     
-    q_req->conn = conn;
+    q_req->conn = this;
     q_req->callback = new Nan::Callback(Local<Function>::Cast(info[1]));
     q_req->Query  = new String::Utf8Value(info[0]->ToString());
     q_req->sqlda = NULL;
     q_req->stmt = NULL;
+	q_req->transaction = transaction;
     
-    conn->start_async();
+    start_async();
 
 	uv_work_t* req = new uv_work_t();
     req->data = q_req;
     uv_queue_work(uv_default_loop(), req, EIO_Query,  (uv_after_work_cb)EIO_After_Query);
-    
-    
-   //uv_ref(uv_default_loop());
-    conn->Ref();
+   
+    Ref();
     return;
   }
   

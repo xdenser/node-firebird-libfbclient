@@ -17,12 +17,19 @@ void Transaction::Initialize(v8::Handle<v8::Object> target) {
 	Nan::SetPrototypeMethod(t, "commit", Commit);
 	Nan::SetPrototypeMethod(t, "rollback", Rollback);
 	Nan::SetPrototypeMethod(t, "start", Start);
+
+	Nan::SetPrototypeMethod(t, "commitSync", Commit);
+	Nan::SetPrototypeMethod(t, "rollbackSync", Rollback);
+	Nan::SetPrototypeMethod(t, "startSync", Start);
+
+	Nan::SetPrototypeMethod(t, "querySync", QuerySync);
+	Nan::SetPrototypeMethod(t, "query", Query);
 	
 	instance_template->SetInternalFieldCount(1);
 
 	Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
 	Nan::SetAccessor(instance_t, Nan::New("inAsyncCall").ToLocalChecked(), InAsyncGetter);
-	Nan::SetAccessor(instance_t, Nan::New("isTransaction").ToLocalChecked(), InTransactionGetter);
+	Nan::SetAccessor(instance_t, Nan::New("inTransaction").ToLocalChecked(), InTransactionGetter);
 
 	target->Set(Nan::New("Transaction").ToLocalChecked(), t->GetFunction());
 }
@@ -253,4 +260,19 @@ NAN_METHOD(Transaction::StartSync)
 	}
 
 	return;
+}
+
+
+NAN_METHOD(Transaction::QuerySync)
+{
+	Nan::HandleScope scope;
+	Transaction *transaction = Nan::ObjectWrap::Unwrap<Transaction>(info.This());
+	transaction->connection->InstQuerySync(info, transaction);
+}
+
+NAN_METHOD(Transaction::Query) {
+	Nan::HandleScope scope;
+	Transaction *transaction = Nan::ObjectWrap::Unwrap<Transaction>(info.This());
+	transaction->connection->InstQuery(info, transaction);
+
 }

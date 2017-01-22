@@ -48,7 +48,9 @@ class Connection : public FBEventEmitter {
   
   isc_db_handle get_DB_Handle();
   isc_tr_handle get_Def_Tr_Handle();
-  
+
+  void InstQuerySync(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction);
+  void InstQuery(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction);
  
  protected:
  
@@ -82,6 +84,8 @@ class Connection : public FBEventEmitter {
   static NAN_METHOD(Commit);
   static NAN_METHOD(Rollback);
   static NAN_METHOD(Start);
+
+  
   static NAN_METHOD(QuerySync);
 
   static NAN_METHOD(StartNewTransSync);
@@ -90,6 +94,7 @@ class Connection : public FBEventEmitter {
   struct query_request {
 	 Nan::Callback *callback;
      Connection *conn;
+	 Transaction* transaction;
      String::Utf8Value *Query;
      XSQLDA *sqlda;
      isc_stmt_handle stmt;
@@ -100,6 +105,7 @@ class Connection : public FBEventEmitter {
   static void EIO_After_Query(uv_work_t *req);
     
   static void EIO_Query(uv_work_t *req);
+  
   
   static NAN_METHOD(Query);
   
