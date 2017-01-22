@@ -56,8 +56,8 @@ public:
 	static NAN_METHOD(Start);
 	void InstStart(const Nan::FunctionCallbackInfo<v8::Value>& info);
 
-	static NAN_METHOD(Transaction::CommitSync);
-	static NAN_METHOD(Transaction::RollbackSync);
-	static NAN_METHOD(Transaction::StartSync);
+	static NAN_METHOD(CommitSync);
+	static NAN_METHOD(RollbackSync);
+	static NAN_METHOD(StartSync);
 };
 #endif
