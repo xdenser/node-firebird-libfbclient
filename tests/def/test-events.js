@@ -232,6 +232,32 @@ exports.AddAndDelete = function(test){
   
 }
 
+exports.AddAndDeleteMulti = function(test){
+
+  test.expect(2);
+  Init();
+  var conn = Connect();
+  test.ok(conn.connected,"Connected to database");
+  var called = false;
+  conn.on("fbevent", function(event,count){
+    //console.log("->"+event+" "+count);
+    called = true;
+  });
+  var eN = 'eventName';
+  conn.addFBevent(eN + 1);
+  conn.addFBevent(eN + 2);
+  conn.deleteFBevent(eN + 2);
+  GenEvent(eN + 1);
+
+  setTimeout(function(){
+       test.ok(!called,"Event not called");
+       conn.disconnect();
+       CleanUp();
+       test.done();
+  }, 1000);
+
+}
+
 
 exports.WaitForManyFire2 = function(test){
     
