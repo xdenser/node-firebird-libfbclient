@@ -305,7 +305,7 @@ void event_block::removeEvent(char *Event)
       while(idx)
       { 
         buf = buf + (*(buf)) + 4; buf++;
-        rb  = rb + (*(buf)) + 4; buf++;
+        rb  = rb + (*(buf)) + 4; rb++;
         idx--;
       }
       char sz = (*buf) + 5;
