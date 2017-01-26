@@ -270,15 +270,17 @@ exports.AddAndDeleteMultiComplex = function(test){
     called = true;
   });
   var eN = 'eventName';
-  conn.addFBevent(eN + 1);
-  conn.addFBevent(eN + 2);
-  conn.addFBevent(eN + 3);
-  conn.addFBevent(eN + 10);
-  conn.deleteFBevent(eN + 3);
-  conn.deleteFBevent(eN + 2);
-  conn.deleteFBevent(eN + 10);
-  conn.deleteFBevent(eN + 1);
-  GenEvent(eN + 1);
+  conn.addFBevent(eN);
+  var evs = [...Array(20).keys()];
+  for (i in evs) {
+    conn.addFBevent(eN+i);
+  }
+  for (i in evs) {
+    conn.deleteFBevent(eN+i);
+  }
+
+  conn.deleteFBevent(eN);
+  GenEvent(eN);
 
   setTimeout(function(){
        test.ok(!called,"Event not called");
