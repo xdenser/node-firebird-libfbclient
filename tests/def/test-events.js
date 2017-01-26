@@ -247,6 +247,7 @@ exports.AddAndDeleteMulti = function(test){
   conn.addFBevent(eN + 1);
   conn.addFBevent(eN + 2);
   conn.deleteFBevent(eN + 2);
+  conn.deleteFBevent(eN + 1);
   GenEvent(eN + 1);
 
   setTimeout(function(){
