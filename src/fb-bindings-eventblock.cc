@@ -312,8 +312,8 @@ void event_block::removeEvent(char *Event)
       size_t new_length = blength - sz;
       size_t tale_length = blength - (buf - (char*)event_buffer) - sz;    
       if(tale_length){
-        memcpy(buf, buf+sz, tale_length);
-        memcpy(rb, rb+sz, tale_length);
+        memmove(buf, buf+sz, tale_length);
+        memmove(rb, rb+sz, tale_length);
       }    
       if(new_length==1) new_length = 0;
       
