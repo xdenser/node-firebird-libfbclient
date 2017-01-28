@@ -18,9 +18,9 @@ void Transaction::Initialize(v8::Handle<v8::Object> target) {
 	Nan::SetPrototypeMethod(t, "rollback", Rollback);
 	Nan::SetPrototypeMethod(t, "start", Start);
 
-	Nan::SetPrototypeMethod(t, "commitSync", Commit);
-	Nan::SetPrototypeMethod(t, "rollbackSync", Rollback);
-	Nan::SetPrototypeMethod(t, "startSync", Start);
+	Nan::SetPrototypeMethod(t, "commitSync", CommitSync);
+	Nan::SetPrototypeMethod(t, "rollbackSync", RollbackSync);
+	Nan::SetPrototypeMethod(t, "startSync", StartSync);
 
 	Nan::SetPrototypeMethod(t, "querySync", QuerySync);
 	Nan::SetPrototypeMethod(t, "query", Query);
@@ -104,9 +104,7 @@ void Transaction::EIO_After_TransactionRequest(uv_work_t *req)
 	}
 
 	Nan::TryCatch try_catch;
-
 	tr_req->callback->Call(1, argv);
-
 	if (try_catch.HasCaught()) {
 		Nan::FatalException(try_catch);
 	}

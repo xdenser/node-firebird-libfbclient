@@ -10,7 +10,8 @@ var Connection  =  binding.Connection;
 var FBEventEmitter = binding.FBEventEmitter;
 var FBResult    =  binding.FBResult;
 var FBStatement =  binding.FBStatement;
-var FBblob =  binding.FBblob;
+var FBblob = binding.FBblob;
+var Transaction = binding.Transaction;
 
 // inherit FBEventEmitter (and all descendants ) from events.EventEmitter
 FBEventEmitter.prototype.__proto__ = events.EventEmitter.prototype;
@@ -35,11 +36,17 @@ function MakeSafe(obj,meth){
 
 MakeSafe(Connection,"query");
 MakeSafe(Connection,"commit");
-MakeSafe(Connection,"rollback");
+MakeSafe(Connection, "rollback");
+MakeSafe(Connection, "startTransaction");
+//MakeSafe(Connection, "startNewTransaction");
 MakeSafe(FBResult,"fetch");
 MakeSafe(FBStatement,"exec");
 MakeSafe(FBblob,"_read");
-MakeSafe(FBblob,"_write");
+MakeSafe(FBblob, "_write");
+MakeSafe(Transaction, "start");
+MakeSafe(Transaction, "query");
+MakeSafe(Transaction, "commit");
+MakeSafe(Transaction, "rollback");
 
 var superConnect = Connection.prototype.connect;
 Connection.prototype.connect = function(db,user,pass,role,cb){
@@ -61,6 +68,15 @@ Connection.prototype.query = function(sql,cb){
       if(cb) cb(err,res);
   });
 };
+
+var superStartNewTransaction = Connection.prototype.startNewTransaction;
+Connection.prototype.startNewTransaction = function (cb) {
+    var obj = this;
+    var tr = superStartNewTransaction.call(this, function (err) {
+        if (err && (!cb || obj.listeners('error').length)) obj.emit('error', err);
+        if (cb) cb(err, tr);
+    });
+}
 
 
 binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
