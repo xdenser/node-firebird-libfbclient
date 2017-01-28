@@ -305,7 +305,7 @@ void event_block::removeEvent(char *Event)
       while(idx)
       { 
         buf = buf + (*(buf)) + 4; buf++;
-        rb  = rb + (*(buf)) + 4; rb++;
+        rb  = rb + (*(rb)) + 4; rb++;
         idx--;
       }
       char sz = (*buf) + 5;
@@ -344,6 +344,7 @@ void
       // Have we found one ?
       if(!res){
         // Create new event block
+		//printf("create new event block\n");
         res = new event_block(aconn, db);
         if(!res){
         	Nan::LowMemoryNotification();
