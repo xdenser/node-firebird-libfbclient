@@ -4,3 +4,5 @@ issues
 tests
 tools
 node_modules
+.travis.yml
+appveyor.yml
