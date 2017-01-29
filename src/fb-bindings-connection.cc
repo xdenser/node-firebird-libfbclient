@@ -822,10 +822,9 @@ NAN_METHOD(Connection::deleteEvent)
 
   }
   
-NAN_METHOD(Connection::PrepareSync)
+void Connection::InstPrepareSync(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction)
   {
     Nan::HandleScope scope;
-    Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
         
     if (info.Length() < 1 || !info[0]->IsString()){
        return Nan::ThrowError("Expecting a string query argument.");
@@ -836,11 +835,11 @@ NAN_METHOD(Connection::PrepareSync)
     XSQLDA *insqlda = NULL;
     XSQLDA *outsqlda = NULL;
     isc_stmt_handle stmt = NULL;
-    bool r = connection->prepare_statement(&insqlda,&outsqlda,*Query, &stmt, NULL);
+    bool r = prepare_statement(&insqlda,&outsqlda,*Query, &stmt, transaction);
     
     if(!r) {
       return Nan::ThrowError(
-            String::Concat(Nan::New("In prepareSync - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
+            String::Concat(Nan::New("In prepareSync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
     }
     
     Local<Value> argv[4];
@@ -848,12 +847,18 @@ NAN_METHOD(Connection::PrepareSync)
     argv[0] = Nan::New<External>(insqlda);
     argv[1] = Nan::New<External>(outsqlda);
     argv[2] = Nan::New<External>(&stmt);
-    argv[3] = Nan::New<External>(connection);
+    argv[3] = Nan::New<External>(this);
     Local<Object> js_result(Nan::New(FBStatement::constructor_template)->
                                      GetFunction()->NewInstance(Nan::GetCurrentContext(), 4, argv).ToLocalChecked());
 
     info.GetReturnValue().Set(js_result);
   }
+
+NAN_METHOD(Connection::PrepareSync) {
+	Nan::HandleScope scope;
+	Connection *connection = Nan::ObjectWrap::Unwrap<Connection>(info.This());
+	connection->InstPrepareSync(info, NULL);
+}
 
 NAN_METHOD(Connection::NewBlobSync)
   {

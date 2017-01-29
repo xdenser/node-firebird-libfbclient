@@ -24,6 +24,8 @@ void Transaction::Initialize(v8::Handle<v8::Object> target) {
 
 	Nan::SetPrototypeMethod(t, "querySync", QuerySync);
 	Nan::SetPrototypeMethod(t, "query", Query);
+
+	Nan::SetPrototypeMethod(t, "prepareSync", PrepareSync);
 	
 	instance_template->SetInternalFieldCount(1);
 
@@ -273,4 +275,10 @@ NAN_METHOD(Transaction::Query) {
 	Transaction *transaction = Nan::ObjectWrap::Unwrap<Transaction>(info.This());
 	transaction->connection->InstQuery(info, transaction);
 
+}
+
+NAN_METHOD(Transaction::PrepareSync) {
+	Nan::HandleScope scope;
+	Transaction *transaction = Nan::ObjectWrap::Unwrap<Transaction>(info.This());
+	transaction->connection->InstPrepareSync(info, transaction);
 }

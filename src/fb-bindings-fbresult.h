@@ -33,7 +33,7 @@ public:
  static bool prepare_sqlda(XSQLDA *sqlda);
  static void clean_sqlda(XSQLDA *sqlda);
  static bool clone_sqlda(XSQLDA *src_sqlda,XSQLDA **dest_sqlda);
- static void set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info);
+ static void set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info, int firstArg);
  Local<Object> getCurrentRow(bool asObject);
    
 protected:  

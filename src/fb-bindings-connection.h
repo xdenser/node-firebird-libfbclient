@@ -51,6 +51,7 @@ class Connection : public FBEventEmitter {
 
   void InstQuerySync(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction);
   void InstQuery(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction);
+  void InstPrepareSync(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction);
  
  protected:
  

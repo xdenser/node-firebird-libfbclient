@@ -62,5 +62,7 @@ public:
 
 	static NAN_METHOD(QuerySync);
 	static NAN_METHOD(Query);
+
+	static NAN_METHOD(PrepareSync);
 };
 #endif

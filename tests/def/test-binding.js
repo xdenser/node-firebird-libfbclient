@@ -88,16 +88,18 @@ exports.FBblobBinding = function(test){
 }
 
 exports.FBstatementBinding = function(test){
- test.expect(2);
+ test.expect(4);
  var stmt = fb_binding.FBStatement.prototype;
  test.ok("execSync" in stmt, 'execSync');
  test.ok("exec" in stmt, 'exec');
+ test.ok("execInTransSync" in stmt, 'execInTransSync');
+ test.ok("execInTrans" in stmt, 'execInTrans');
 // test.ok("inAsyncCall" in stmt, "inAsyncCall");
  test.done();
 }
 
 exports.TransactionBinding = function (test) {
-  test.expect(10);
+  test.expect(11);
   var trans = fb_binding.Transaction.prototype;
   test.ok("start" in trans, "commit");
   test.ok("startSync" in trans, "startSync");
@@ -107,6 +109,7 @@ exports.TransactionBinding = function (test) {
   test.ok("rollbackSync" in trans, "rollbackSync");
   test.ok("querySync" in trans, "querySync");
   test.ok("query" in trans, "query");
+  test.ok("prepareSync" in trans, "prepareSync");
   var conn = new fb_binding.Connection;
   conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   var transInsts = conn.startNewTransactionSync();
