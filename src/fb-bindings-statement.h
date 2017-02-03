@@ -25,11 +25,14 @@ public:
 
 protected:
  static NAN_METHOD(New);
- 
+
+ void InstExecSync(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction, int firstArg);
  static NAN_METHOD(ExecSync);
+ static NAN_METHOD(ExecInTransSync);
  
  struct exec_request {
      FBStatement *statement;
+	 Transaction *trans;
 	 bool result;
  };
  
@@ -37,7 +40,9 @@ protected:
     
  static void EIO_Exec(uv_work_t *req);
  
+ void InstExec(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction, int firstArg);
  static NAN_METHOD(Exec);
+ static NAN_METHOD(ExecInTrans);
  
   
  FBStatement(XSQLDA *insqlda, XSQLDA *outsqlda, isc_stmt_handle *astmtp, Connection* aconn); 

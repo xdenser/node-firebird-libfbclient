@@ -191,7 +191,7 @@ void get_date(struct tm* times, Local<Object> js_date, int* msp)
 }
 
   
-void FBResult::set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info)
+void FBResult::set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info, int firstArg)
   {
     Nan::HandleScope scope;
     int i;
@@ -207,12 +207,12 @@ void FBResult::set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info)
     int16_t s_len;
     int64_t int_val;
 //    char *txt;
-    
-    if( sqlda->sqld >  info.Length() ) {
-    	 Nan::ThrowError(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld,(int)info.Length()));
+	int numArgs = info.Length() - firstArg;
+    if( sqlda->sqld >  numArgs) {
+    	 Nan::ThrowError(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld, numArgs));
     	 return ;
     }
-    for(i = 0, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
+    for(i = firstArg, var = sqlda->sqlvar; i < (firstArg + sqlda->sqld);i++,var++)
     {
       
       if(info[i]->IsNull() && (var->sqltype & 1)){

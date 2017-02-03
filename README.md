@@ -22,7 +22,6 @@ As for now in plans are:
 
 * connection pool support
 * prepared statements pool
-* transaction parameters support
 * continous refactoring
 * more tests
 * services api
@@ -164,8 +163,8 @@ Synchronously commits current transaction.
 Notes:
 There is only one transaction associated with connection. 
 Transacation is automatically started before any query if connection does not have active transaction (check `inTransaction` property).
-Use of mutliple transactions with same connection may be added in future.
 You also should note that DDL statements (altering database structure) are commited automatically.
+To run quieries in context of other transaction use Transaction object.
 
 * * *
     function commit(callback);
@@ -183,6 +182,17 @@ Synchronously rollbacks current transaction. Read notes in `commitSync();`.
 * `callback` - function(err), where err is error object in case of error.    
     
 Asynchronously rollbacks current transaction. Read notes in `commitSync();`.
+
+* * *
+    function startSync();
+    
+Synchronously starts new default transaction. The default transaction should be not in started state before call to this method. Read notes in `commitSync();`.
+
+* * *
+    function start(callback);
+* `callback` - function(err), where err is error object in case of error.    
+    
+Asynchronously starts new default transaction.. Read notes in `commitSync();`.
 
 * * *
     function prepareSync(sql);
@@ -203,6 +213,89 @@ Creates new FBblob object and opens it for write. After finishing write operatio
 one may insert it in database passing as parameter to exec, execSync methods of FBStatement object.
 
 * * *    
+
+    function startNewTransactionSync();
+
+Creates new Transaction object and starts new transaction. Returns created object.
+
+* * *    
+
+    function startNewTransaction(callback);
+ * `callback` - function(err, transaction), where err is error object in case of error, transaction - newly created transaction.
+
+Creates new Transaction object and starts new transaction. Returns created transaction object in callback.
+
+* * *    
+
+## Transaction object 
+
+Represents SQL transaction. To get instance of this object call `startNewTransactionSync` or `startNewTransaction` methods of Connection object. Transaction objects may be reused after commit or rollback.
+
+* * *
+    function querySync(sql);
+* `sql` - string, an SQL query to execute.
+
+Executes SQL query in context of this transaction.
+Returns FBResult object in case of success. Raises error otherwise.
+
+* * *
+    function query(sql, callback);
+
+* `sql` - string, an SQL query to execute;
+* `callback` - function(err,res), err - is error object or null, res - FBResult object.
+
+Asynchronously executes query in context of this transaction.
+Returns undefined. 
+
+* * *
+    function commitSync();
+    
+Synchronously commits this transaction. 
+
+Notes:
+Transacation is automatically started before any  query in context of this object if this object does not have active transaction (check `inTransaction` property).
+You also should note that DDL statements (altering database structure) are commited automatically.
+
+* * *
+    function commit(callback);
+* `callback` - function(err), where err is error object in case of error.    
+
+Asynchronous commit transaction.Read notes in `commitSync();`.
+
+* * *
+    function rollbackSync();
+    
+Synchronously rollbacks transaction. Read notes in `commitSync();`.
+
+* * *
+    function rollback(callback);
+* `callback` - function(err), where err is error object in case of error.    
+    
+Asynchronously rollbacks transaction. Read notes in `commitSync();`.
+
+* * *
+    function startSync();
+    
+Synchronously starts transaction. The transaction should be not in started state before call to this method. Read notes in `commitSync();`. See `inTransaction` property.
+
+* * *
+    function start(callback);
+* `callback` - function(err), where err is error object in case of error.    
+    
+Asynchronously starts new transaction. Read notes in `commitSync();`.
+
+* * *
+    function prepareSync(sql);
+* `sql` - string, an SQL query to prepare.
+
+Synchronously prepares SQL statement and returns FBStatement object in context of this transaction.
+    
+* * *
+    inTransaction;
+
+A boolean readonly property indicating if this transaction is in started state.
+    
+* * *
 ## FBResult object
 
 Represents results of SQL query if any. You should use this object to fetch rows from database.
@@ -264,6 +357,12 @@ FBStatement is derived form FBResult class. So it can fetch rows just like FBres
 * `param1, param2, ..., paramN` - parameters of prepared statement in the same order as in SQL and with appropriate types.
 
 Synchronously executes prepared statement with given parameters. You may fetch rows with methods inherited from FBResult.
+Statement is executed in context of default connection transaction.
+
+* * *
+    function execInTransSync(transaction, param1, param2, ..., paramN);
+
+Same as `execSync` but executes statement in context of given Transaction obejct.
 
 * * *
     function exec(param1, param2, ..., paramN);
@@ -271,8 +370,15 @@ Synchronously executes prepared statement with given parameters. You may fetch r
 
 Asynchronously executes prepared statement with given parameters. FBStatement emits 'result' or 'error' event. 
 You may fetch rows with methods inherited from FBResult after 'result' event emitted.
+Statement is executed in context of default connection transaction.
 
 * * *
+    function execInTrans(transaction, param1, param2, ..., paramN);
+
+Same as `exec` but executes statement in context of given Transaction obejct.
+
+* * *
+
 ## FBblob object
 
 Represents BLOB data type.
@@ -333,6 +439,7 @@ Returns number of bytes actually writen.
 Asynchronously writes BLOB segment (chunk) from buffer and calls callback function if any.
 
 * * *
+
 ## Stream object
 
 Represents BLOB stream. Create BLOB stream using `var strm = new fb.Stream(FBblob);`. 

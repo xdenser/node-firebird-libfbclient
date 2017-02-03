@@ -12,7 +12,7 @@ var
   fb_binding = safe_con.binding;
 
 exports.ConnectionBinding = function (test) {
-  test.expect(19);
+  test.expect(23);
   test.ok("Connection" in fb_binding, "Connection");
   var conn = new fb_binding.Connection;
   test.ok(conn, "Connection created");
@@ -33,11 +33,15 @@ exports.ConnectionBinding = function (test) {
   test.ok("inAsyncCall" in conn, "inAsyncCall");
   test.ok("startTransactionSync" in conn, "startTransactionSync");
   test.ok("newBlobSync" in conn, "newBlobSync");
+  test.ok("startNewTransactionSync" in conn, "startNewTransactionSync");
+  test.ok("startNewTransaction" in conn, "startNewTransaction");
+  test.ok("startTransactionSync" in conn, "startTransactionSync");
+  test.ok("startTransaction" in conn, "startTransaction");
   test.done();
 };
 
 exports.SafeConnectionBinding = function (test) {
-  test.expect(16);
+  test.expect(22);
   test.ok("createConnection" in safe_con, "createConnection");
   var conn = safe_con.createConnection();
   test.ok(conn, "Connection created");
@@ -55,6 +59,12 @@ exports.SafeConnectionBinding = function (test) {
   test.ok("rollback" in conn, "rollback");
   test.ok("rollbackSync" in conn, "rollbackSync");
   test.ok("inAsyncCall" in conn, "inAsyncCall");
+  test.ok("prepareSync" in conn, "prepareSync");
+  test.ok("newBlobSync" in conn, "newBlobSync");
+  test.ok("startTransactionSync" in conn, "startTransactionSync");
+  test.ok("startTransaction" in conn, "startTransaction");
+  test.ok("startNewTransactionSync" in conn, "startNewTransactionSync");
+  test.ok("startNewTransaction" in conn, "startNewTransaction");
   test.done();
 };
 
@@ -84,11 +94,33 @@ exports.FBblobBinding = function(test){
 }
 
 exports.FBstatementBinding = function(test){
- test.expect(2);
+ test.expect(4);
  var stmt = fb_binding.FBStatement.prototype;
  test.ok("execSync" in stmt, 'execSync');
  test.ok("exec" in stmt, 'exec');
+ test.ok("execInTransSync" in stmt, 'execInTransSync');
+ test.ok("execInTrans" in stmt, 'execInTrans');
 // test.ok("inAsyncCall" in stmt, "inAsyncCall");
  test.done();
+}
+
+exports.TransactionBinding = function (test) {
+  test.expect(11);
+  var trans = fb_binding.Transaction.prototype;
+  test.ok("start" in trans, "commit");
+  test.ok("startSync" in trans, "startSync");
+  test.ok("commit" in trans, "commit");
+  test.ok("commitSync" in trans, "commitSync");
+  test.ok("rollback" in trans, "rollback");
+  test.ok("rollbackSync" in trans, "rollbackSync");
+  test.ok("querySync" in trans, "querySync");
+  test.ok("query" in trans, "query");
+  test.ok("prepareSync" in trans, "prepareSync");
+  var conn = new fb_binding.Connection;
+  conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
+  var transInsts = conn.startNewTransactionSync();
+  test.ok("inTransaction" in transInsts, "inTransaction");
+  test.ok("inAsyncCall" in transInsts, "inAsyncCall");
+  test.done();
 }
 

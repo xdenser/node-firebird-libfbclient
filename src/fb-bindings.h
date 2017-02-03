@@ -29,6 +29,7 @@ Local<External> VAR = Local<External>::Cast(info[I]);
 char * ErrorMessage(const ISC_STATUS *pvector, char *err_msg, int max_len);
 
 class Connection;
+class Transaction;
 
 #endif
 

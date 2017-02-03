@@ -24,7 +24,9 @@ void
         t->InstanceTemplate();
         
     Nan::SetPrototypeMethod(t, "execSync", ExecSync);
+	Nan::SetPrototypeMethod(t, "execInTransSync", ExecInTransSync);
     Nan::SetPrototypeMethod(t, "exec", Exec);
+	Nan::SetPrototypeMethod(t, "execInTrans", ExecInTrans);
 
 
     instance_template->SetInternalFieldCount(1);
@@ -57,58 +59,91 @@ NAN_METHOD(FBStatement::New)
     info.GetReturnValue().Set(info.This());
   }
 
-NAN_METHOD(FBStatement::ExecSync)
+void FBStatement::InstExecSync(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction, int firstArg)
  { 
     Nan::HandleScope scope;
     
-    FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
-    
-    FBResult::set_params(fb_stmt->in_sqlda, info);
+    FBResult::set_params(in_sqlda, info, firstArg);
 
-    if(fb_stmt->retres) 
+    if(retres) 
     {
-      isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
-      if (fb_stmt->status[1])
+      isc_dsql_free_statement(status, &stmt, DSQL_close);
+      if (status[1])
       {
         return Nan::ThrowError(
-           String::Concat(Nan::New("In FBStatement::execSync, free_statement - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
+           String::Concat(Nan::New("In FBStatement::execSync, free_statement - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
       }
     }
+
+	Transaction *tr = transaction;
+
+	if (!connection->check_trans(&tr)) {
+		return Nan::ThrowError("Failed to get default transaction"); 
+	}
     
-    if(fb_stmt->statement_type == isc_info_sql_stmt_select)
+    if(statement_type == isc_info_sql_stmt_select)
     {    
-	if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+	if (isc_dsql_execute(status, &tr->trans, &stmt, SQL_DIALECT_V6, in_sqlda))
         {
 	      return Nan::ThrowError(
-	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
+	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
         }
         
     }
     else
     {
-	if (isc_dsql_execute2(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
+	if (isc_dsql_execute2(status, &tr->trans, &stmt, SQL_DIALECT_V6, in_sqlda,  sqldap))
         {
 	      return Nan::ThrowError(
-	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
+	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
         }
         
-        if(fb_stmt->sqldap->sqld){ 
+        if(sqldap->sqld){ 
            Local<Object> js_result_row;   
-           js_result_row = fb_stmt->getCurrentRow(true);
+           js_result_row = getCurrentRow(true);
            info.GetReturnValue().Set(js_result_row);
         }  
     
     }    
     
     
-    if(!fb_stmt->sqldap->sqld) 
+    if(!sqldap->sqld) 
           return;
 
-    fb_stmt->retres = true;
+    retres = true;
     
     return;
     
  }
+
+NAN_METHOD(FBStatement::ExecSync)
+{
+	Nan::HandleScope scope;
+
+	FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
+	fb_stmt->InstExecSync(info, NULL, 0);
+}
+
+NAN_METHOD(FBStatement::ExecInTransSync)
+{
+	Nan::HandleScope scope;
+
+	if (info.Length() < 1) {
+		Nan::ThrowError("At least 1 argument expected");
+		return;
+	}
+
+	Local<v8::Object> handle = Nan::To<v8::Object>(info[0]).ToLocalChecked();
+
+	if (!Nan::New(Transaction::constructor_template)->HasInstance(handle)) {
+		Nan::ThrowError("Tansaction expected as first argument");
+		return;
+	}
+	
+	FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
+	Transaction *tr = Nan::ObjectWrap::Unwrap<Transaction>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+	fb_stmt->InstExecSync(info, tr, 1);
+}
  
 void FBStatement::EIO_After_Exec(uv_work_t *req)
  {
@@ -159,17 +194,23 @@ void FBStatement::EIO_Exec(uv_work_t *req)
  {
     struct exec_request *e_req = (struct exec_request *)(req->data);
     FBStatement *fb_stmt = e_req->statement;
+
+	Transaction *tr = e_req->trans;
+
+	if (!fb_stmt->connection->check_trans(&tr)) {
+		return Nan::ThrowError("Failed to get default transaction");
+	}
     
     if(fb_stmt->statement_type == isc_info_sql_stmt_select)
     {
-        if (isc_dsql_execute(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+        if (isc_dsql_execute(fb_stmt->status, &tr->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
 	  e_req->result = false;
         else 
 	  e_req->result = true;
     }
     else
     {
-	if (isc_dsql_execute2(fb_stmt->status, &fb_stmt->connection->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
+	if (isc_dsql_execute2(fb_stmt->status, &tr->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
 	  e_req->result = false;
         else 
 	  e_req->result = true;
@@ -178,11 +219,10 @@ void FBStatement::EIO_Exec(uv_work_t *req)
     return ;
  }
  
-NAN_METHOD(FBStatement::Exec)
+void FBStatement::InstExec(const Nan::FunctionCallbackInfo<v8::Value>& info, Transaction* transaction, int firstArg)
  {
     Nan::HandleScope scope;
-    FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
-    
+  
     struct exec_request *e_req =
          (struct exec_request *)calloc(1, sizeof(struct exec_request));
 
@@ -191,32 +231,56 @@ NAN_METHOD(FBStatement::Exec)
       return Nan::ThrowError("Could not allocate memory.");
     }
     
-    FBResult::set_params(fb_stmt->in_sqlda, info);
-    if(fb_stmt->retres) 
+    FBResult::set_params(in_sqlda, info, firstArg);
+    if(retres) 
     {
-      isc_dsql_free_statement(fb_stmt->status, &fb_stmt->stmt, DSQL_close);
-      if (fb_stmt->status[1])
+      isc_dsql_free_statement(status, &stmt, DSQL_close);
+      if (status[1])
       {
         return Nan::ThrowError(
-           String::Concat(Nan::New("In FBStatement::exec, free_statement - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement)));
+           String::Concat(Nan::New("In FBStatement::exec, free_statement - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
       }
     }
     
-    e_req->statement = fb_stmt;
+    e_req->statement = this;
+	e_req->trans = transaction;
     
-    fb_stmt->start_async();
+    start_async();
 
 	uv_work_t* req = new uv_work_t();
     req->data = e_req;
     uv_queue_work(uv_default_loop(), req, EIO_Exec,  (uv_after_work_cb)EIO_After_Exec);
-
-    
-   // uv_ref(uv_default_loop());
-    fb_stmt->Ref();
-    
-    return;
- 
+    Ref();
  }
+
+NAN_METHOD(FBStatement::Exec)
+{
+	Nan::HandleScope scope;
+	FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
+	fb_stmt->InstExec(info, NULL, 0);
+}
+
+NAN_METHOD(FBStatement::ExecInTrans)
+{
+	Nan::HandleScope scope;
+
+	if (info.Length() < 1) {
+		Nan::ThrowError("At least 1 argument expected");
+		return;
+	}
+
+	Local<v8::Object> handle = Nan::To<v8::Object>(info[0]).ToLocalChecked();
+	if (!Nan::New(Transaction::constructor_template)->HasInstance(handle)) {
+		Nan::ThrowError("Tansaction expected as first argument");
+		return;
+	}
+
+	FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
+	Transaction *tr = Nan::ObjectWrap::Unwrap<Transaction>(handle);
+	fb_stmt->InstExec(info, tr, 1);
+}
+
+
   
  FBStatement::FBStatement(XSQLDA *insqlda, XSQLDA *outsqlda, isc_stmt_handle *astmtp, Connection* aconn) : 
               FBResult (outsqlda,astmtp,aconn)
@@ -246,11 +310,6 @@ NAN_METHOD(FBStatement::Exec)
      FBResult::clean_sqlda(in_sqlda);
      free(in_sqlda);
    }
-  // printf("fbstatement destructor !\n");
- /*  if(out_sqlda) {
-     FBResult::clean_sqlda(out_sqlda);
-     free(out_sqlda);
-   } */
  }
  
 

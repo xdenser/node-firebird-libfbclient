@@ -149,10 +149,54 @@ module.exports = testCase({
             var data = 'testAsync';
             stmt.exec(data);
             stmt.once('result',function(err,res){
-		test.ok(res,'have result');
-        	test.equal(res.OUTPUT,data,'returned data equal'); 
-        	test.done();               
+		      test.ok(res,'have result');
+        	  test.equal(res.OUTPUT,data,'returned data equal'); 
+        	  test.done();               
             });
-         }          
+         },
+         execInSeparateTransactionSync: function (test) {
+             test.expect(2);
+             var TR = this.conn.startNewTransactionSync();
+             var stmt = TR.prepareSync('execute procedure TEST_PROC(?)');
+             var data = 'testInTransaction';
+             var res = stmt.execInTransSync(TR, data);
+             TR.rollbackSync();
+             test.ok(res, 'have result');
+             test.equal(res.OUTPUT, data, 'returned data equal');
+             test.done();
+         },
+         execInSeparateTransactionAsync: function (test) {
+             test.expect(2);
+             var TR = this.conn.startNewTransactionSync();
+             var stmt = TR.prepareSync('execute procedure TEST_PROC(?)');
+             var data = 'testInTransactionAsync';
+             stmt.execInTrans(TR, data);
+             stmt.once('result', function (err, res) {
+                 TR.rollbackSync();
+                 test.ok(res, 'have result');
+                 test.equal(res.OUTPUT, data, 'returned data equal');
+                 test.done();
+             });
+         },
+         prepareInDefaultExecInSeparateTransactionSync: function (test) {
+             test.expect(2);
+             var TR = this.conn.startNewTransactionSync();
+             var stmt = this.conn.prepareSync('execute procedure TEST_PROC(?)');
+             var data = 'testInTransaction';
+             var res = stmt.execInTransSync(TR, data);
+             TR.rollbackSync();
+             test.ok(res, 'have result');
+             test.equal(res.OUTPUT, data, 'returned data equal');
+             test.done();
+         },
+         execInSeparateTransNoTransArgument: function (test) {
+             test.expect(2);
+             var stmt = this.conn.prepareSync('execute procedure TEST_PROC(?)');
+             test.ok(stmt, 'statement returned');
+             test.throws(function () {
+                 stmt.execInTransSync("someThing");
+             }, 'transaction expected as first argument');
+             test.done();
+         }
          
 });

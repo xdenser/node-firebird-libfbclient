@@ -13,6 +13,7 @@
 #include <node_buffer.h>
 
 #include "./fb-bindings-fbeventemitter.h"
+#include "./fb-bindings-transaction.h"
 
 
 
@@ -59,7 +60,7 @@ public:
   
   static NAN_GETTER(IsReadGetter);
       
-  FBblob(ISC_QUAD *id, Connection *conn, ISC_STATUS *status);
+  FBblob(ISC_QUAD *id, Transaction *trans, ISC_STATUS *status);
   ~FBblob();
   
   bool open(ISC_STATUS *status);
@@ -70,7 +71,7 @@ public:
   
  private: 
   ISC_QUAD blob_id; 
-  Connection *connection;
+  Transaction *trans;
   isc_blob_handle handle;
   bool is_read;
   static char err_message[MAX_ERR_MSG_LEN];
