@@ -22,7 +22,6 @@ As for now in plans are:
 
 * connection pool support
 * prepared statements pool
-* transaction parameters support
 * continous refactoring
 * more tests
 * services api
@@ -294,7 +293,7 @@ Synchronously prepares SQL statement and returns FBStatement object in context o
 * * *
     inTransaction;
 
-A boolean readonly property indicating if traansaction is in started state.
+A boolean readonly property indicating if this transaction is in started state.
     
 * * *
 ## FBResult object
