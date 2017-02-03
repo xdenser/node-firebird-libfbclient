@@ -41,7 +41,7 @@ exports.ConnectionBinding = function (test) {
 };
 
 exports.SafeConnectionBinding = function (test) {
-  test.expect(16);
+  test.expect(22);
   test.ok("createConnection" in safe_con, "createConnection");
   var conn = safe_con.createConnection();
   test.ok(conn, "Connection created");
@@ -59,6 +59,12 @@ exports.SafeConnectionBinding = function (test) {
   test.ok("rollback" in conn, "rollback");
   test.ok("rollbackSync" in conn, "rollbackSync");
   test.ok("inAsyncCall" in conn, "inAsyncCall");
+  test.ok("prepareSync" in conn, "prepareSync");
+  test.ok("newBlobSync" in conn, "newBlobSync");
+  test.ok("startTransactionSync" in conn, "startTransactionSync");
+  test.ok("startTransaction" in conn, "startTransaction");
+  test.ok("startNewTransactionSync" in conn, "startNewTransactionSync");
+  test.ok("startNewTransaction" in conn, "startNewTransaction");
   test.done();
 };
 

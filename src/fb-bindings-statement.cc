@@ -132,6 +132,13 @@ NAN_METHOD(FBStatement::ExecInTransSync)
 		Nan::ThrowError("At least 1 argument expected");
 		return;
 	}
+
+	Local<v8::Object> handle = Nan::To<v8::Object>(info[0]).ToLocalChecked();
+
+	if (!Nan::New(Transaction::constructor_template)->HasInstance(handle)) {
+		Nan::ThrowError("Tansaction expected as first argument");
+		return;
+	}
 	
 	FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
 	Transaction *tr = Nan::ObjectWrap::Unwrap<Transaction>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
@@ -262,8 +269,14 @@ NAN_METHOD(FBStatement::ExecInTrans)
 		return;
 	}
 
+	Local<v8::Object> handle = Nan::To<v8::Object>(info[0]).ToLocalChecked();
+	if (!Nan::New(Transaction::constructor_template)->HasInstance(handle)) {
+		Nan::ThrowError("Tansaction expected as first argument");
+		return;
+	}
+
 	FBStatement *fb_stmt = Nan::ObjectWrap::Unwrap<FBStatement>(info.This());
-	Transaction *tr = Nan::ObjectWrap::Unwrap<Transaction>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+	Transaction *tr = Nan::ObjectWrap::Unwrap<Transaction>(handle);
 	fb_stmt->InstExec(info, tr, 1);
 }
 

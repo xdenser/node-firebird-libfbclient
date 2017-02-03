@@ -212,7 +212,7 @@ void FBResult::set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info, int fir
     	 Nan::ThrowError(errmsg2f(errm,"Expecting %d arguments, but only %d provided.",(int)sqlda->sqld, numArgs));
     	 return ;
     }
-    for(i = firstArg, var= sqlda->sqlvar; i < sqlda->sqld;i++,var++)
+    for(i = firstArg, var = sqlda->sqlvar; i < (firstArg + sqlda->sqld);i++,var++)
     {
       
       if(info[i]->IsNull() && (var->sqltype & 1)){
