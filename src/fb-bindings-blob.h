@@ -64,7 +64,7 @@ public:
   ~FBblob();
   
   bool open(ISC_STATUS *status);
-  int read(ISC_STATUS *status,char *buf, unsigned short len);
+  int read(ISC_STATUS *status,char *buf, unsigned short len, unsigned short* alen);
   bool close(ISC_STATUS *status);
   
   

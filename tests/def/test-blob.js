@@ -60,11 +60,11 @@ module.exports = testCase({
            var res = util.getDataTypeResult.call(this,'BLOB SUB_TYPE 1',util.quote(Data));
            var buf = new Buffer(2048);
            res._openSync();
-           res._read(buf,function(err,b,len){
+           res._read(buf, function (err, b, isLast) {
         	 test.ifError(err);
-        	 
              res._closeSync();
-        	 test.equal(b.toString('utf8',0,len),Data,'blob ');
+             test.equal(b.toString('utf8'), Data, 'blob ');
+             
         	 test.done();	 
            });
          },

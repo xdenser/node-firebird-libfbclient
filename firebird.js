@@ -104,23 +104,23 @@ binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
   
   this._openSync();
   var self = this;
-  this._read(chunk,function receiver(err,b,len){
+  this._read(chunk, function receiver(err, b, isLast) {
          if(err)
          {
            self.emit('error',err);
          }
          else
-         if(len>0)
+         if(!isLast)
          { 
-           self.emit('data', chunk, len);
-           if(res.length<=(cPos+len))
+           self.emit('data', b);
+           if(res.length<=(cPos+b.length))
            {
-             var nr = new Buffer(cPos+len);
+               var nr = new Buffer(cPos + b.length);
              res.copy(nr);
              res = nr;
            }    
-           chunk.copy(res,cPos,0,len);
-           cPos = cPos + len;
+           b.copy(res,cPos);
+           cPos = cPos + b.length;
            self._read(chunk,receiver);
          } 
          else 
@@ -146,33 +146,6 @@ exports.binding = binding;
 
 function Stream(blob){
 
-var buf = null;
-function allocBuf(){
-  buf = new Buffer(SchunkSize);   
-}
-
-function ReadStream(strm) {
-  if(buf == null) allocBuf();
-  
-  strm._blob._read(buf,function s_rcv(err, b, len){
-  
-         if(err)
-         {
-           strm.emit('error',err);
-         }
-         else
-         if(len>0)
-         { 
-           strm.emit('data', b, len);
-           if(!strm._paused) strm._blob._read(buf,s_rcv);
-         }
-         else  
-         {
-           strm.emit('end');
-         }
-  });  
-};
-
 
  if(!(blob instanceof binding.FBblob )) {
     throw new Error('Expecting blob');
@@ -180,12 +153,13 @@ function ReadStream(strm) {
  }     
  stream.Stream.call(this);
  this._blob = blob;
+ this._pendingWrites = 0;
  this.readable = false;
  this.writeable = false;
- 
+      
  if(blob.isReadable)
  {
-   this._blob._openSync();         
+   this._blob._openSync();
    this.readable = true;
    this._paused = true;
  } 
@@ -196,6 +170,25 @@ function ReadStream(strm) {
 util.inherits(Stream, stream.Stream);
 exports.Stream = Stream;
 
+function ReadStream(strm) {
+
+    if (strm._buf == null) {
+        strm._buf = new Buffer(SchunkSize);
+    }
+
+    strm._blob._read(strm._buf, function s_rcv(err, b, isLast) {
+
+        if (err) {
+            return strm.emit('error', err);
+        }
+        strm.emit('data', b);
+        
+        if (!strm._paused && !isLast) strm._blob._read(strm._buf, s_rcv);
+
+        if (isLast) strm.emit('end');
+    });
+};
+
 Stream.prototype.pause = function(){
  this._paused = true;
 };
@@ -205,30 +198,42 @@ Stream.prototype.resume = function(){
  ReadStream(this);
 };
 
-Stream.prototype.destroy = function(){
- this._blob._closeSync();
- this.emit('close');
+Stream.prototype.destroy = function () {
+  this._destroyed = true;
+  this.check_destroyed();
 };
 
-Stream.prototype.write = function(data, encoding, fd) {
-  if (typeof data != 'string') {
-  };
+Stream.prototype.check_destroyed = function () {
+    if (this._destroyed && !this._pendingWrites) {
+        this._blob._closeSync();
+        this.emit('close');
+    }
+}
+
+Stream.prototype.write = function (data, encoding, fd) {
+  if (this._destroyed) {
+      throw new Error("Stream closed");
+  }
   var self = this;
-  //this._blob._writeSync(data);
-  this._blob._write(data,function(err){
-     if(err) self.emit('error',err);
-     //self.emit('drain');
+  this._pendingWrites++;
+  this._blob._write(data, function (err) {
+      self._pendingWrites--;
+      if (err) self.emit('error', err);
+      self.check_destroyed();
   }); 
 }
 
 Stream.prototype.end = function(data, encoding, fd) {
-  var self = this;
-  if(data) this._blob._write(data,function(err){
-     console.log('in blob write callback'); 
-     if(err) self.emit('error',err);
-     self.destroy();
-  })
-  else self.destroy();
+    var self = this;
+    if (data) {
+        this._pendingWrites++;
+        this._blob._write(data, function (err) {
+            self._pendingWrites--;
+            if (err) self.emit('error', err);
+            self.destroy();
+        })
+    }
+    else this.destroy();
    
 }
 

@@ -110,13 +110,14 @@ NAN_METHOD(FBblob::ReadSync)
 	if (buffer_length > USHRT_MAX) {
 		buffer_length = USHRT_MAX;
 	}
+	unsigned short actual;
     ISC_STATUS_ARRAY status;
-    int res = blob->read(status, buffer_data, (unsigned short) buffer_length);
+    int res = blob->read(status, buffer_data, (unsigned short) buffer_length, &actual);
     if(res==-1) {
        return Nan::ThrowError(String::Concat(Nan::New("In FBblob::New - ").ToLocalChecked(),ERR_MSG_STAT(status, FBblob)));
     }
     
-    info.GetReturnValue().Set(Nan::New<Integer>(res));
+	info.GetReturnValue().Set(Nan::New<Integer>(actual));
   }
   
 void FBblob::EIO_After_Read(uv_work_t *req)
@@ -133,7 +134,7 @@ void FBblob::EIO_After_Read(uv_work_t *req)
     {
       argv[0] = Nan::Null();
       argv[1] = Nan::CopyBuffer(r_req->buffer,(size_t) r_req->length).ToLocalChecked();
-      argv[2] = Nan::New<Integer>(r_req->res);
+      argv[2] = (r_req->res==-2) ? Nan::True() : Nan::False();
       argc = 3;
     }
     else
@@ -153,7 +154,9 @@ void FBblob::EIO_After_Read(uv_work_t *req)
 void FBblob::EIO_Read(uv_work_t *req)
   {
     struct rw_request *r_req = (struct rw_request *)(req->data);
-    r_req->res = r_req->blob->read(r_req->status,r_req->buffer,(unsigned short) r_req->length);
+	unsigned short actual = 0;
+    r_req->res = r_req->blob->read(r_req->status,r_req->buffer,(unsigned short) r_req->length, &actual);
+	r_req->length = actual;
     return;
   }
 
@@ -208,97 +211,113 @@ NAN_METHOD(FBblob::Read)
   
 NAN_METHOD(FBblob::OpenSync)
   {
-	Nan::HandleScope scope;
-    FBblob *blob = Nan::ObjectWrap::Unwrap<FBblob>(info.This());
-    
-    ISC_STATUS_ARRAY status;
-    if(!blob->open(status)){
-       return Nan::ThrowError(
-         String::Concat(Nan::New("In FBblob::_openSync - ").ToLocalChecked(),ERR_MSG_STAT(status, FBblob)));
-    } 
-    
-    return;
-  }
-  
-NAN_METHOD(FBblob::CloseSync)
-  { 
-	Nan::HandleScope scope;
-    FBblob *blob = Nan::ObjectWrap::Unwrap<FBblob>(info.This());
-    
-    ISC_STATUS_ARRAY status;
-    status[1] = 0;
-    blob->close(status);
-    if(status[1]){
-       return Nan::ThrowError(
-         String::Concat(Nan::New("In FBblob::_closeSync - ").ToLocalChecked(),ERR_MSG_STAT(status, FBblob)));
-    } 
-    
-    return;
-  }
-  
-NAN_METHOD(FBblob::WriteSync)
-  {
-	Nan::HandleScope scope;
-    FBblob *blob = Nan::ObjectWrap::Unwrap<FBblob>(info.This());  
-    ISC_STATUS_ARRAY status;     
-    
-    
-    if( (info.Length() > 0) && !Buffer::HasInstance(info[0])) {
-        return Nan::ThrowError("First argument needs to be a buffer");
-    }
-        
-    Local<Object> buffer_obj = info[0]->ToObject();
-    char *buf = Buffer::Data(buffer_obj);
-    size_t len = Buffer::Length(buffer_obj);
-	
-    if( (info.Length() > 1) && info[1]->IsInt32() )
-    {
-      size_t alen = (size_t) info[1]->IntegerValue();
-      if(alen < len) len = alen;
-    }
-	if (len > USHRT_MAX) {
-		len = USHRT_MAX;
-	}
+Nan::HandleScope scope;
+FBblob *blob = Nan::ObjectWrap::Unwrap<FBblob>(info.This());
 
-    if(isc_put_segment(status, &blob->handle, (unsigned short) len, buf))
-      return Nan::ThrowError(
-         String::Concat(Nan::New("In FBblob::_writeSync - ").ToLocalChecked(),ERR_MSG_STAT(status, FBblob)));
-         
-    info.GetReturnValue().Set(Nan::New<Integer>(uint32_t(len)));
-  }  
-  
-void FBblob::EIO_After_Write(uv_work_t *req)
-  {
-    //uv_unref(uv_default_loop());
-    Nan::HandleScope scope;
-    struct rw_request *w_req = (struct rw_request *)(req->data);
-	delete req;
-    Local<Value> argv[1];
-    
-    if(w_req->callback){
+ISC_STATUS_ARRAY status;
+if (!blob->open(status)) {
+	return Nan::ThrowError(
+		String::Concat(Nan::New("In FBblob::_openSync - ").ToLocalChecked(), ERR_MSG_STAT(status, FBblob)));
+}
 
-	if(w_req->status[1]){
-    	    argv[0] =  Nan::Error(*Nan::Utf8String(
-        	String::Concat(Nan::New("FBblob::EIO_After_Read - ").ToLocalChecked(),ERR_MSG_STAT(w_req->status, FBblob))));
-	}        
-	else
-    	    argv[0] = Nan::Null();
-    	    
-        w_req->callback->Call(1, argv);
-    };
-    
-    w_req->blob->stop_async();
-    w_req->blob->Unref();
-    free(w_req);
-
-    
+return;
   }
-  
-void FBblob::EIO_Write(uv_work_t *req)
+
+  NAN_METHOD(FBblob::CloseSync)
   {
-    struct rw_request *w_req = (struct rw_request *)(req->data);
-    isc_put_segment(w_req->status, &w_req->blob->handle, w_req->length, w_req->buffer);
-    return;
+	  Nan::HandleScope scope;
+	  FBblob *blob = Nan::ObjectWrap::Unwrap<FBblob>(info.This());
+
+	  ISC_STATUS_ARRAY status;
+	  status[1] = 0;
+	  blob->close(status);
+	  if (status[1]) {
+		  return Nan::ThrowError(
+			  String::Concat(Nan::New("In FBblob::_closeSync - ").ToLocalChecked(), ERR_MSG_STAT(status, FBblob)));
+	  }
+
+	  return;
+  }
+
+  NAN_METHOD(FBblob::WriteSync)
+  {
+	  Nan::HandleScope scope;
+	  FBblob *blob = Nan::ObjectWrap::Unwrap<FBblob>(info.This());
+	  ISC_STATUS_ARRAY status;
+
+
+	  if ((info.Length() > 0) && !Buffer::HasInstance(info[0])) {
+		  return Nan::ThrowError("First argument needs to be a buffer");
+	  }
+
+	  Local<Object> buffer_obj = info[0]->ToObject();
+	  char *buf = Buffer::Data(buffer_obj);
+	  size_t len = Buffer::Length(buffer_obj);
+
+	  if ((info.Length() > 1) && info[1]->IsInt32())
+	  {
+		  size_t alen = (size_t)info[1]->IntegerValue();
+		  if (alen < len) len = alen;
+	  }
+	  if (len > USHRT_MAX) {
+		  len = USHRT_MAX;
+	  }
+
+	  if (isc_put_segment(status, &blob->handle, (unsigned short)len, buf))
+		  return Nan::ThrowError(
+			  String::Concat(Nan::New("In FBblob::_writeSync - ").ToLocalChecked(), ERR_MSG_STAT(status, FBblob)));
+
+	  info.GetReturnValue().Set(Nan::New<Integer>(uint32_t(len)));
+  }
+
+  void FBblob::EIO_After_Write(uv_work_t *req)
+  {
+	  //uv_unref(uv_default_loop());
+	  Nan::HandleScope scope;
+	  struct rw_request *w_req = (struct rw_request *)(req->data);
+	  delete req;
+	  Local<Value> argv[1];
+
+	  if (w_req->callback) {
+
+		  if (w_req->status[1]) {
+			  argv[0] = Nan::Error(*Nan::Utf8String(
+				  String::Concat(Nan::New("FBblob::EIO_After_Read - ").ToLocalChecked(), ERR_MSG_STAT(w_req->status, FBblob))));
+		  }
+		  else
+			  argv[0] = Nan::Null();
+
+		  w_req->callback->Call(1, argv);
+	  };
+
+	  w_req->blob->stop_async();
+	  w_req->blob->Unref();
+	  free(w_req);
+
+
+  }
+
+  void FBblob::EIO_Write(uv_work_t *req)
+  {
+	  struct rw_request *w_req = (struct rw_request *)(req->data);
+
+	  uint32_t remains = w_req->length;
+	  char* buf = w_req->buffer;
+	  while (remains) {
+		  unsigned short len;
+		  if (remains > USHRT_MAX) {
+			  len = USHRT_MAX / 2;
+		  }
+		  else {
+			  len = remains;
+		  }
+		  if (isc_put_segment(w_req->status, &w_req->blob->handle, len, buf)) {
+		    break;
+		  }
+		 
+		  remains -= len;
+		  buf += len;
+	  }
   }
   
   
@@ -326,6 +345,7 @@ NAN_METHOD(FBblob::Write)
     
     w_req->blob = blob;
     w_req->buffer = buf;
+	w_req->length = (uint32_t) len;
 
     int cb_arg = 1;    
     if( (info.Length() > 1) && info[1]->IsInt32() )
@@ -367,13 +387,15 @@ NAN_GETTER(FBblob::IsReadGetter)
   
 FBblob::FBblob(ISC_QUAD *id, Transaction *atrans, ISC_STATUS *status): FBEventEmitter () 
   {
-    if(id) blob_id = *id; 
+    if(id) blob_id = *id;
+	
     trans = atrans;
     is_read = true;
     if((id == 0) && (trans != 0)) 
     {
       handle  = 0;
-      //blob_id = 0;
+      blob_id.gds_quad_high = 128;
+	  blob_id.gds_quad_low = 0;
       isc_create_blob2(status, &(trans->connection->db), &(trans->trans), &handle, &blob_id, 0, NULL); 
       is_read = false;
     }
@@ -395,19 +417,23 @@ bool FBblob::open(ISC_STATUS *status)
     return true; 
   }
   
-int FBblob::read(ISC_STATUS *status,char *buf, unsigned short len)
+int FBblob::read(ISC_STATUS *status, char *buf, unsigned short len, unsigned short* alen)
   {
-    unsigned short a_read;
-    ISC_STATUS res = isc_get_segment(status, &handle, &a_read, len, buf);
-    if(res == isc_segstr_eof) return 0;
+    
+    ISC_STATUS res = isc_get_segment(status, &handle, alen, len, buf);
+	
+	if(res == isc_segstr_eof) return -2;
     if(res != isc_segment && status[1] != 0) return -1;
-    return (int)a_read;
+	
+    return 0;
   }
   
 bool FBblob::close(ISC_STATUS *status)
   {
     if( handle == 0 ) return true;
-    isc_close_blob(status, &handle);
+	if (isc_close_blob(status, &handle)) {
+		return false;
+	};
     handle = 0;
     return true;
   }
