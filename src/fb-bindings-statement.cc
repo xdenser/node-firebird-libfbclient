@@ -164,25 +164,17 @@ void FBStatement::EIO_After_Exec(uv_work_t *req)
    }
    else
    {
-	if(!fb_stmt->sqldap->sqld) 
-	{
-    	    argc = 1; 
-    	    event = Nan::New("result").ToLocalChecked();     
-    	    argv[0] = Nan::Null();	
-        }
-        else
-        {
-	        argv[0] = Nan::Null();	
-	        argc = 1;      
-    		event = Nan::New("result").ToLocalChecked();                             
-     
-          if(fb_stmt->statement_type != isc_info_sql_stmt_select) 
-          {
-            argv[1] = fb_stmt->getCurrentRow(true);	
-            argc = 2;
-          }
-        }
-       
+	   argv[0] = Nan::Null();
+	   argc = 1;
+	   event = Nan::New("result").ToLocalChecked();
+	   if (fb_stmt->sqldap->sqld) {
+		   fb_stmt->retres = true;
+		   if (fb_stmt->statement_type != isc_info_sql_stmt_select)
+		   {
+			   argv[1] = fb_stmt->getCurrentRow(true);
+			   argc = 2;
+		   }
+	   }
    }
    ((FBEventEmitter*) fb_stmt)->Emit(event,argc,argv);           
     fb_stmt->stop_async();

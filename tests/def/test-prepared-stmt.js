@@ -197,6 +197,103 @@ module.exports = testCase({
                  stmt.execInTransSync("someThing");
              }, 'transaction expected as first argument');
              test.done();
-         }
-         
+         },
+		 reuseAsync: function(test) {
+			  var data = [
+            [1,'string 1'],
+            [2,'string 2'],
+            [3,'string 3'],
+            [4,null]
+           ];
+
+           test.expect(3+data.length*2);
+           var stmt = this.conn.prepareSync('insert into PREPARED_TEST_TABLE (test_field1, test_field2) values (?,?)');
+           test.ok(stmt, 'statement returned');
+           var i;
+           for(i=0;i<data.length;i++)
+           {
+            stmt.execSync.apply(stmt,data[i]);
+           }
+           this.conn.commitSync();
+		   
+		   if(!this.conn.inTransaction) this.conn.startTransactionSync();
+		   var stmt = this.conn.prepareSync('select test_field2 from PREPARED_TEST_TABLE where test_field1=?');
+		   stmt.on('error', function(err){ console.log('Error: ',e)});
+           
+           test.ok(stmt, 'statement returned');
+                      
+           test.ok(this.conn.inTransaction, 'inTransaction');
+		   
+		   function query(param, expected, cb) {
+			   //console.log('exec stmt', param, expected);
+			   try {
+					stmt.exec(param);
+			   }
+			   catch(e) {
+				   console.log('Error in exec ', e);
+			   }
+			   stmt.once('result', function(err) {
+				   //console.log('result ', err);
+				   try {
+				   var row = stmt.fetchSync("all",true);
+				   } catch(e) {
+					   console.log('Error in fetch sync ', e);
+				   }
+				  // console.log('row ', row);
+				   test.ok(row, 'row returned');
+				   test.equal(expected,row[0].TEST_FIELD2,'test_field2 equal');
+				   if(cb) {
+					   cb();
+				   }
+			   });
+			   
+		   }
+		   !function doCall(i) {
+			   if(!data[i]) {
+				   return test.done();
+			   }
+			   query(data[i][0], data[i][1], function() {
+				  doCall(i+1) ;
+			   });
+		   }(0);
+		   
+		   
+		 },
+		 test76: function(test) {
+			 		var data = [
+						[1,'string 1'],
+						[2,'string 2'],
+						[3,'string 3'],
+						[4,null]
+					];
+
+					test.expect(4);
+					var stmt = this.conn.prepareSync('insert into PREPARED_TEST_TABLE (test_field1, test_field2) values (?,?)');
+					test.ok(stmt, 'statement returned');
+					var i;
+					for(i=0;i<data.length;i++)
+					{
+						stmt.execSync.apply(stmt,data[i]);
+					}
+					this.conn.commitSync();
+
+					var statement = this.conn.prepareSync('select test_field2 from PREPARED_TEST_TABLE where test_field1=?');
+
+					var transaction = this.conn.startNewTransactionSync();
+					if (!transaction.inTransaction) { transaction.startSync(); }
+					statement.execInTransSync(transaction, 1);
+					var row = statement.fetchSync("all",true);
+					test.equal(row.length, 1, 'one row rturned');
+					transaction.rollbackSync();
+	
+					transaction = this.conn.startNewTransactionSync();
+					if (!transaction.inTransaction) { transaction.startSync(); }
+					statement.execInTransSync(transaction, 2);
+					row = statement.fetchSync("all",true);
+					test.equal(row.length, 1, 'one row rturned');
+					transaction.rollbackSync();
+					
+					test.ok(true);
+					test.done();
+		 }
 });
