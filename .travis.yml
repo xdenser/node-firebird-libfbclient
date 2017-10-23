@@ -32,5 +32,6 @@ before_script:
   - sudo isql-fb -input ../../tests/createTestDB.sql
   - sudo chmod 0777 TEST.FDB
   - sudo chmod a+x /home/travis/build/xdenser/node-firebird-libfbclient/build/test_db -R
+  - ls -l
   - cd ../..
 
