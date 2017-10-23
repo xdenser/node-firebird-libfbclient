@@ -31,5 +31,6 @@ before_script:
   - cd test_db
   - sudo isql-fb -input ../../tests/createTestDB.sql
   - sudo chmod 666 TEST.FDB
+  - lsattrib
   - cd ../..
 
