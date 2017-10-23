@@ -377,28 +377,40 @@ Local<Value>
     }
     else
     {
-        switch (dtype)
-        {
-            case SQL_TEXT:
-            	bpc = getCharsetSize(var);
-            	chars =  var->sqllen/(bpc != 0 ? bpc : 1);
-                js_field = Nan::New<String>(var->sqldata,var->sqllen ).ToLocalChecked();
-                if(Local<String>::Cast(js_field)->Length() > chars )
-                {
-                	js_obj = js_field->ToObject(); 
-                	argv[0] = Nan::New<Integer>(0);
-                	argv[1] = Nan::New<Integer>(chars);
-                	js_field = Nan::MakeCallback(js_obj,"slice",2,argv);
-                }
+		switch (dtype)
+		{
+		case SQL_TEXT:
+
+				if (!conn->isUTF8lctype) {
+					js_field = Nan::CopyBuffer(var->sqldata, var->sqllen).ToLocalChecked();
+				}
+				else {
+
+					bpc = getCharsetSize(var);
+					chars = var->sqllen / (bpc != 0 ? bpc : 1);
+					js_field = Nan::New<String>(var->sqldata, var->sqllen).ToLocalChecked();
+					if (Local<String>::Cast(js_field)->Length() > chars)
+					{
+						js_obj = js_field->ToObject();
+						argv[0] = Nan::New<Integer>(0);
+						argv[1] = Nan::New<Integer>(chars);
+						js_field = Nan::MakeCallback(js_obj, "slice", 2, argv);
+					}
+				}
                 
                //  printf(" char lengh %d/%d, %d, 1 %hx, 2 %hx, 3 %hx, 4 %hx \n",var->sqllen,Local<String>::Cast(js_field)->Length(), var->sqlsubtype, var->sqldata[0],var->sqldata[1],var->sqldata[2],var->sqldata[3]);
                 //  js_field = String::New(var->sqldata);
                 break;
 
             case SQL_VARYING:
-                vary2 = (PARAMVARY*) var->sqldata;
-                vary2->vary_string[vary2->vary_length] = '\0';
-                js_field = Nan::New<String>((const char*)(vary2->vary_string)).ToLocalChecked();
+				if (!conn->isUTF8lctype) {
+					js_field = Nan::CopyBuffer(var->sqldata, var->sqllen).ToLocalChecked();
+				}
+				else {
+					vary2 = (PARAMVARY*)var->sqldata;
+					vary2->vary_string[vary2->vary_length] = '\0';
+					js_field = Nan::New<String>((const char*)(vary2->vary_string)).ToLocalChecked();
+				}
                 break;
 
             case SQL_SHORT:

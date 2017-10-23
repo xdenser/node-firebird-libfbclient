@@ -52,7 +52,7 @@ bool Connection::Connect (const char* Database,const char* User,const char* Pass
     if (db) return false;
     short i = 0, len;
     char dpb[256];
-    char *lc_type = const_cast<char *>("UTF8");
+    
     
     dpb[i++] = isc_dpb_version1;
     

@@ -28,6 +28,8 @@ class Connection : public FBEventEmitter {
  public:
   isc_db_handle db;
   Transaction* def_trans;
+  char *lc_type = const_cast<char *>("UTF8");
+  bool isUTF8lctype = true;
    
   static void
   Initialize (v8::Handle<v8::Object> target);
