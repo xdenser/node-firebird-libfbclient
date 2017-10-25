@@ -34,6 +34,7 @@ before_script:
   - sudo chmod -c 0666 TEST.FDB
 #  - sudo chmod -Rc a+x /home/travis/build/xdenser/node-firebird-libfbclient/build/test_db
 #  - sudo cat /etc/firebird/2.5/firebird.conf
+  - pwd
   - ls -l
   - cd ../..
   - sleep 5
