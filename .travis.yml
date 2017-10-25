@@ -29,11 +29,9 @@ before_script:
   - cd build
   - mkdir test_db
   - cd test_db
-  - sudo chmod -Rc a+x /home/travis/build/xdenser/node-firebird-libfbclient/build/test_db
   - sudo isql-fb -input ../../tests/createTestDB.sql
   - sudo chmod -c 0666 TEST.FDB
-#  - sudo chmod -Rc a+x /home/travis/build/xdenser/node-firebird-libfbclient/build/test_db
-#  - sudo cat /etc/firebird/2.5/firebird.conf
+  - sudo chmod -Rv a+x /home/travis/build/xdenser/node-firebird-libfbclient/build/test_db
   - pwd
   - ls -l
   - cd ../..
