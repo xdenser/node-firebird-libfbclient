@@ -2,7 +2,7 @@
 
 # Test against these versions of Io.js and Node.js.
 environment:
-  fb_download: https://www.dropbox.com/s/i9h93c813nrvt26/fb25.7z?dl=1
+  fb_download: https://www.dropbox.com/s/3qghi5u6e652fn6/fb25.7z?dl=0
   fb_start: .\bin\fb_inet_server.exe -a -m
   matrix:
   # lts
