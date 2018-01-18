@@ -30,6 +30,16 @@ before_script:
   - mkdir test_db
   - cd test_db
   - sudo isql-fb -input ../../tests/createTestDB.sql
-  - sudo chmod 0666 TEST.FDB
+  - sudo chmod -c 0666 TEST.FDB
+  - sudo chmod -v a+x /home/travis/build/xdenser/node-firebird-libfbclient/build/test_db
+  - sudo chmod -v a+x /home/travis/build/xdenser/node-firebird-libfbclient/build
+  - sudo chmod -v a+x /home/travis/build/xdenser/node-firebird-libfbclient
+  - sudo chmod -v a+x /home/travis/build/xdenser
+  - sudo chmod -v a+x /home/travis/build
+  - sudo chmod -v a+x /home/travis
+  - sudo chmod -v a+x /home
+  - pwd
+  - ls -l
   - cd ../..
+  - sleep 5
 

@@ -12,9 +12,14 @@ var
  
 
 exports.AsyncConnection = function (test) {
-  test.expect(4);
+  test.expect(5);
   var conn = fb_binding.createConnection();
-  conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(err){
+  conn.connect(cfg.db, cfg.user, cfg.password, cfg.role, function(cerr){
+     test.ok(!cerr,"No Error");
+     if(cerr) {
+       console.error(cerr);
+       return;
+     }
      test.ok(conn.connected,"Connected to database");
      conn.query("select * from rdb$relations", function(err,res){
          test.ok(!err,"No Error");   

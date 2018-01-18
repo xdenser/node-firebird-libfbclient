@@ -9,7 +9,7 @@
 
 #define MAX_USERNAME_LENGTH 31
 #define MAX_ROLENAME_LENGTH 31
-#define MAX_PASSWORD_LENGTH 8 
+#define MAX_PASSWORD_LENGTH 20 
 
 #include <uv.h>
 #include "./fb-bindings.h"
