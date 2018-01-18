@@ -295,5 +295,15 @@ module.exports = testCase({
 					
 					test.ok(true);
 					test.done();
-		 }
+		 },
+		 selectFromProcSync:function(test){
+            test.expect(2);
+            var stmt = this.conn.prepareSync('select * from TEST_PROC(?)');
+            var data = 'test';
+			stmt.execSync(data);
+            var res = stmt.fetchSync("all",true);
+			test.ok(res,'have result');
+            test.equal(res[0].OUTPUT,data,'returned data equal'); 
+            test.done();
+         }
 });

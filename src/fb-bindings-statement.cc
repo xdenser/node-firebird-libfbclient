@@ -81,30 +81,18 @@ void FBStatement::InstExecSync(const Nan::FunctionCallbackInfo<v8::Value>& info,
 		return Nan::ThrowError("Failed to get default transaction"); 
 	}
     
-    if(statement_type == isc_info_sql_stmt_select)
-    {    
-	if (isc_dsql_execute(status, &tr->trans, &stmt, SQL_DIALECT_V6, in_sqlda))
+  
+	if (isc_dsql_execute2(status, &tr->trans, &stmt, SQL_DIALECT_V6, in_sqlda,  statement_type == isc_info_sql_stmt_select ? NULL:sqldap))
         {
 	      return Nan::ThrowError(
 	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
         }
         
-    }
-    else
-    {
-	if (isc_dsql_execute2(status, &tr->trans, &stmt, SQL_DIALECT_V6, in_sqlda,  sqldap))
-        {
-	      return Nan::ThrowError(
-	             String::Concat(Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
-        }
-        
-        if(sqldap->sqld){ 
+        if(sqldap->sqld && statement_type != isc_info_sql_stmt_select){ 
            Local<Object> js_result_row;   
            js_result_row = getCurrentRow(true);
            info.GetReturnValue().Set(js_result_row);
         }  
-    
-    }    
     
     
     if(!sqldap->sqld) 
@@ -193,20 +181,12 @@ void FBStatement::EIO_Exec(uv_work_t *req)
 		return Nan::ThrowError("Failed to get default transaction");
 	}
     
-    if(fb_stmt->statement_type == isc_info_sql_stmt_select)
-    {
-        if (isc_dsql_execute(fb_stmt->status, &tr->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda))
+ 
+	if (isc_dsql_execute2(fb_stmt->status, &tr->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda, fb_stmt->statement_type == isc_info_sql_stmt_select ? NULL:fb_stmt->sqldap))
 	  e_req->result = false;
         else 
 	  e_req->result = true;
-    }
-    else
-    {
-	if (isc_dsql_execute2(fb_stmt->status, &tr->trans, &fb_stmt->stmt, SQL_DIALECT_V6, fb_stmt->in_sqlda,  fb_stmt->sqldap))
-	  e_req->result = false;
-        else 
-	  e_req->result = true;
-    }	  
+ 
     
     return ;
  }

@@ -236,18 +236,9 @@ bool Connection::process_statement(XSQLDA **sqldap, char *query, isc_stmt_handle
       */
     if(!FBResult::prepare_sqlda(sqlda)) { return false; };
       
-     if(*statement_type == isc_info_sql_stmt_select){
-    	 if (isc_dsql_execute(status, &(tr->trans), stmtp, SQL_DIALECT_V6, NULL))
-    	 {
-    		 return false;
-    	 }
+    if (isc_dsql_execute2(status, &(tr->trans), stmtp, SQL_DIALECT_V6, NULL, NULL)){
+    	 return false;
      }
-     else {
-    	 if (isc_dsql_execute2(status, &(tr->trans), stmtp, SQL_DIALECT_V6, NULL, sqlda)){
-    		 return false;
-    	 }
-     }
-    	 
      
     return true;
 

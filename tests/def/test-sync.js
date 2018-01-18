@@ -28,6 +28,16 @@ function Connect(){
   var conn = fb_binding.createConnection();
   conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   conn.querySync("create table TEST_TRANS (ID INTEGER, NAME VARCHAR(20))");
+  var sql =  'create or alter procedure TEST_PROC(\n'+
+               '"INPUT" varchar(25))\n'+
+               'returns (\n'+
+               '"OUTPUT" varchar(25))\n'+
+               'as\n'+
+               'BEGIN\n'+
+               '  output = input;\n'+
+               '  suspend;\n'+
+               'END\n';
+  conn.querySync(sql);
   return conn;
 }
 function Close(conn){
@@ -35,6 +45,7 @@ function Close(conn){
   var con = fb_binding.createConnection();
   con.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
   con.querySync("drop table TEST_TRANS;");
+  con.querySync('drop procedure TEST_PROC');
   con.disconnect();
 }
 
@@ -93,6 +104,22 @@ exports.SyncTransRollback = function(test) {
   test.ok(res.length == 0, "Got zero result");
   
   Close(conn);
+  test.done();
+}
+
+
+
+exports.SyncQueryFromSP = function(test) {
+  test.expect(4);
+  var conn = Connect();
+  test.ok(conn.connected,"Connected to database");
+  var res;
+  test.doesNotThrow(function(){
+	res = conn.querySync("select * from TEST_PROC('TEST STRING')").fetchSync("all",true);
+  },"select from store proc");
+  test.ok(res.length == 1, "Got one result");
+  test.equal(res[0].OUTPUT, 'TEST STRING','returned data equal'); 
+  Close(conn);    
   test.done();
 }
 
