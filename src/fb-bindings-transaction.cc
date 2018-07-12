@@ -80,7 +80,6 @@ bool Transaction::start_transaction()
 		if (isc_start_transaction(status, &trans, 1, &connection->db, 0, NULL))
 		{
 			trans = 0;
-			ERR_MSG(this, Transaction);
 			return false;
 		}
 		return true;
