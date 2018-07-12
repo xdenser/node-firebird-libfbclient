@@ -9,25 +9,27 @@
       "name": "Denys Khanzhiyev",
       "email": "xdenser@gmail.com"
     }
-  ]
-, "bugs" : { "url" : "http://github.com/xdenser/node-firebird-libfbclient/issues" } 
-, "licenses" : [ {
-    "type" : "MIT",
-     "url" : "https://raw.githubusercontent.com/xdenser/node-firebird-libfbclient/master/LICENSE"
-   }] 
-, "engines": {
- "node": ">=0.10"
- }   
-, "repository" :
-    { "type" : "git"
-     , "url" : "http://github.com/xdenser/node-firebird-libfbclient"
+  ],
+  "bugs": {
+    "url": "http://github.com/xdenser/node-firebird-libfbclient/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://raw.githubusercontent.com/xdenser/node-firebird-libfbclient/master/LICENSE"
     }
-,
+  ],
+  "engines": {
+    "node": ">=0.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/xdenser/node-firebird-libfbclient"
+  },
   "dependencies": {
-    "nan": "^2.0.9"
-  }
-,
+    "nan": "^2.10.0"
+  },
   "scripts": {
-  "test": "nodeunit tests/def"
- }
+    "test": "nodeunit tests/def"
+  }
 }
