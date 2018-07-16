@@ -1,5 +1,5 @@
 // Load configuration
-var cfg = require("../config").cfg;
+var cfg = require("./config").cfg;
 
 // Require modules
 var
@@ -12,14 +12,18 @@ var
   if(conn.connected)  { 
     console.log("Connected to database");
   }
-  var trans =  conn.startNewTransactionSync();
-  var res = trans.querySync("select * from rdb$relations");
-  trans.rollbackSync();
-  console.log("Query result 1", res)
+//  var trans =  conn.startNewTransactionSync();
+//  var res = conn.querySync("select * from rdb$relations");
+//  trans.rollbackSync();
+  //console.log("Query result 1", res)
 
   
   setTimeout(function() {
          console.log("Try again")
+         var res = conn.query("select * from rdb$relations", function(err){
+              console.log("Error", err);
+	 });
+         /*
          conn.startNewTransaction(function(err, trans){
 	     if(err) {
 	         console.log("error", err);
@@ -30,7 +34,7 @@ var
              trans.rollbackSync();		
              console.log("Connection is ok", conn);
          });
-       
+         */
           
 
   }, 20000);

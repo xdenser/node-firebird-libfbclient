@@ -109,9 +109,10 @@ void Transaction::EIO_After_TransactionRequest(uv_work_t *req)
 	if (try_catch.HasCaught()) {
 		Nan::FatalException(try_catch);
 	}
-
-	tr_req->transaction->stop_async();
-	tr_req->transaction->Unref();
+        if(!tr_req->transaction->persistent().IsEmpty()) {
+		tr_req->transaction->stop_async();
+		tr_req->transaction->Unref();
+	}
 	free(tr_req);
 
 
@@ -134,7 +135,7 @@ void Transaction::EIO_TransactionRequest(uv_work_t *req)
 }
 
 void  Transaction::makeTrRequest(const Nan::FunctionCallbackInfo<v8::Value>& info, TransReqType type) {
-	struct transaction_request *tr_req =
+        struct transaction_request *tr_req =
 		(struct transaction_request *)calloc(1, sizeof(struct transaction_request));
 	if (!tr_req) {
 		Nan::LowMemoryNotification();
@@ -145,9 +146,12 @@ void  Transaction::makeTrRequest(const Nan::FunctionCallbackInfo<v8::Value>& inf
 	if (info.Length() < 1) {
 		return Nan::ThrowError("Expecting Callback Function argument");
 	}
+        
 	tr_req->transaction = this;
 	tr_req->callback = new Nan::Callback(Local<Function>::Cast(info[0]));
 	tr_req->type = type;
+
+        
 
 	tr_req->transaction->start_async();
 
@@ -155,7 +159,10 @@ void  Transaction::makeTrRequest(const Nan::FunctionCallbackInfo<v8::Value>& inf
 	req->data = tr_req;
 	uv_queue_work(uv_default_loop(), req, EIO_TransactionRequest, (uv_after_work_cb)EIO_After_TransactionRequest);
 	
-	tr_req->transaction->Ref();
+	if(!tr_req->transaction->persistent().IsEmpty()) {
+		tr_req->transaction->Ref();
+	}
+        
 	
 }
 
