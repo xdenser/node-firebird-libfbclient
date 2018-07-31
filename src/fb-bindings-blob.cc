@@ -82,16 +82,14 @@ NAN_METHOD(FBblob::New)
     status[1] = 0;
     FBblob *res = new FBblob(quad, conn->def_trans, status);
     if(status[1])  {
-        Nan::ThrowError(
-            String::Concat(
+        Nan::ThrowError(String::Concat(
                 Nan::New("In FBblob::New - ").ToLocalChecked(),
                 ERR_MSG_STAT(status, FBblob)
-            )
-        );
+          ));
     }
     res->Wrap(info.This());
-
     info.GetReturnValue().Set(info.This());
+	
   }
   
 NAN_METHOD(FBblob::ReadSync)

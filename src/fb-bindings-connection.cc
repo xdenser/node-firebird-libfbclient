@@ -859,9 +859,13 @@ NAN_METHOD(Connection::NewBlobSync)
     
     argv[0] = Nan::Null();
     argv[1] = Nan::New<External>(conn);
-    
-    Local<Object> js_blob(Nan::New(FBblob::constructor_template)->
-                                     GetFunction()->NewInstance(Nan::GetCurrentContext(), 2, argv).ToLocalChecked());
+
+    MaybeLocal<Object> maybe_blob(Nan::New(FBblob::constructor_template)->
+                                     GetFunction()->NewInstance(Nan::GetCurrentContext(), 2, argv));
+    if(maybe_blob.IsEmpty()) {
+	return ;
+    }	
+    Local<Object> js_blob(maybe_blob.ToLocalChecked());
     info.GetReturnValue().Set(js_blob);
   }
   
