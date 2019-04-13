@@ -1,6 +1,6 @@
 {
   "name": "firebird",
-  "version": "v0.1.3",
+  "version": "v0.1.4-snapshot",
   "description": "Firebird binding to node, uses libfbclient.",
   "author": "Denys Khanzhiyev",
   "main": "./firebird",
