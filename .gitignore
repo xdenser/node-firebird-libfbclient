@@ -1,5 +1,6 @@
 build/
 test.js
+package-lock.json 
 issue*
 .project
 /node_modules
