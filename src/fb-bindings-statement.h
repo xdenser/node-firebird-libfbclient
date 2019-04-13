@@ -53,6 +53,7 @@ private:
  int	statement_type;
  bool retres;
  
+ void finished() override {};
  char cursor[50];
 
 };

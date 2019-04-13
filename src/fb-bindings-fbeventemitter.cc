@@ -24,18 +24,18 @@ void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
   {
     if(!persistent().IsEmpty()) {
     	Nan::HandleScope scope;
-	Local<Value> argv1[11];
-	if(argc>10) Nan::ThrowError("Cant process more than 10 arguments");
-	argv1[0] = event;
-	for(int i=0;i<argc;i++) argv1[i+1] = argv[i];
-	Nan::MakeCallback(this->handle(),"emit",argc+1,argv1);
+	    Local<Value> argv1[11];
+	    if(argc>10) Nan::ThrowError("Cant process more than 10 arguments");
+	    argv1[0] = event;
+	    for(int i=0;i<argc;i++) argv1[i+1] = argv[i];
+	    Nan::MakeCallback(this->handle(),"emit",argc+1,argv1);
     }
   }  
 
 void FBEventEmitter::start_async()
   {
-	Nan::HandleScope scope;
-	in_async = true;
+	  Nan::HandleScope scope;
+	  in_async = true;
     Emit(Nan::New("fbStartAsync").ToLocalChecked(), 0, NULL);
   }
   

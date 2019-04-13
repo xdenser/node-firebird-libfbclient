@@ -73,7 +73,9 @@ protected:
   
 private:
   static const double dscales[19];
-
+  virtual void finished();
+  void releaseStatement(); 
+    
 };
 
 #endif

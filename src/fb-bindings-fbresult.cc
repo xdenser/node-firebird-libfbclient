@@ -30,6 +30,7 @@
         
     Nan::SetPrototypeMethod(t, "fetchSync", FetchSync);
     Nan::SetPrototypeMethod(t, "fetch", Fetch);
+    
 
 
     instance_template->SetInternalFieldCount(1);
@@ -674,7 +675,9 @@ NAN_METHOD(FBResult::FetchSync)
     js_result = res;
     
     info.GetReturnValue().Set(js_result);
-
+    if(rowCount==-1) {
+       fb_res->finished();
+    }
   }
 
 void FBResult::EIO_After_Fetch(uv_work_t *req)
@@ -760,6 +763,9 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
     f_req->res->stop_async();
     f_req->res->Unref();
     free(f_req);
+    if(f_req->rowCount==-1) {
+        f_req->res->finished();
+    }
 
 }
 
@@ -845,19 +851,11 @@ NAN_METHOD(FBResult::Fetch)
     connection = conn;
    // conn->doref();
   }
-  
- FBResult::~FBResult()
+
+  void FBResult::releaseStatement() 
   {
-   
-	//printf("Statement freed\n"); 
-   if(sqldap) {
-     FBResult::clean_sqlda(sqldap);
-     free(sqldap);
-     sqldap = NULL;
-   }
-   
-   long SQLCODE;
-   if(stmt){
+    if(stmt){
+     long SQLCODE;
 	   isc_dsql_free_statement(status,&stmt,DSQL_drop);
 	   if (status[1]){
 		    SQLCODE = isc_sqlcode(status);
@@ -870,6 +868,24 @@ NAN_METHOD(FBResult::Fetch)
 	   else stmt = NULL;
 	   
    }
+  }
+
+  void FBResult::finished() {
+    releaseStatement();
+  }
+  
+ FBResult::~FBResult()
+  {
+   
+	//printf("Statement freed\n"); 
+   if(sqldap) {
+     FBResult::clean_sqlda(sqldap);
+     free(sqldap);
+     sqldap = NULL;
+   }
+   releaseStatement(); 
+   
+   
    
 	   
   // printf("fbresult destructor !\n");
