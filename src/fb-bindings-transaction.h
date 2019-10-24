@@ -14,7 +14,7 @@ public:
 	ISC_STATUS_ARRAY status;
 
 	static Nan::Persistent<FunctionTemplate> constructor_template;
-	static void	Initialize(v8::Handle<v8::Object> target);
+	static void	Initialize(v8::Local<v8::Object> target);
 	static NAN_METHOD(New);
 
 	bool commit_transaction();

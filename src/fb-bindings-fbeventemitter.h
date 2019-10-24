@@ -15,9 +15,9 @@ using namespace v8;
 
 class FBEventEmitter: public Nan::ObjectWrap {
 public: 
-  static void Initialize(v8::Handle<v8::Object> target);
+  static void Initialize(v8::Local<v8::Object> target);
   static Nan::Persistent<v8::FunctionTemplate> constructor_template;
-  void Emit(Handle<String> event, int argc, Handle<Value> argv[]);
+  void Emit(Local<String> event, int argc, Local<Value> argv[]);
 
 protected:
   void start_async();
@@ -26,11 +26,13 @@ protected:
 
   FBEventEmitter ();
 
-  /*static Handle<Value>
+  /*static Local<Value>
   InAsyncGetter(Local<String> property,
                       const AccessorInfo &info);
   */
   static NAN_GETTER(InAsyncGetter);
+  
+  static Nan::AsyncResource asyncResource;
 
 private:
   bool in_async;

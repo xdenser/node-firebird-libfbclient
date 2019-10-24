@@ -26,7 +26,7 @@ public:
  static Nan::Persistent<FunctionTemplate> constructor_template;
  
  static void
-   Initialize (v8::Handle<v8::Object> target);
+   Initialize (v8::Local<v8::Object> target);
   
 // bool process_result(XSQLDA **sqldap, isc_stmt_handle *stmtp, Local<Array> res);
   
@@ -70,6 +70,7 @@ protected:
   XSQLDA *sqldap;
   isc_stmt_handle stmt;
   Connection *connection;
+  static Nan::AsyncResource asyncResource;
   
 private:
   static const double dscales[19];

@@ -12,6 +12,12 @@
 #include <node.h>
 #include <ibase.h>
 
+#if NODE_MODULE_VERSION < NODE_10_0_MODULE_VERSION
+#	define FB_MAYBE_NEED_ISOLATE
+#else
+#	define FB_MAYBE_NEED_ISOLATE Isolate::GetCurrent(),
+#endif
+
 #define MAX_ERR_MSG_LEN 1024
 #define ERR_MSG(obj,class) \
 Nan::New<String>(ErrorMessage(obj->status,obj->err_message,sizeof(obj->err_message))).ToLocalChecked()

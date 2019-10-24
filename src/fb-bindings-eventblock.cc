@@ -207,7 +207,7 @@ void event_block::event_notification _UV_NOTIFICATION_SIGNATURE {
 	// requeue events
 	if(!eb->queue()) {
             Nan::ThrowError(
-            String::Concat(Nan::New("While isc_que_events in event_notification - ").ToLocalChecked(),ERR_MSG(eb, event_block)));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While isc_que_events in event_notification - ").ToLocalChecked(),ERR_MSG(eb, event_block)));
         }			      
         
         // exit if block was marked as bad
@@ -233,7 +233,7 @@ void
       Nan::HandleScope scope;
       if(!eb->queue()) {
             Nan::ThrowError(
-            String::Concat(Nan::New("While isc_que_events - ").ToLocalChecked(),ERR_MSG(eb, event_block)));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While isc_que_events - ").ToLocalChecked(),ERR_MSG(eb, event_block)));
             return ;
       }
     }
@@ -367,7 +367,7 @@ void
       // Cancel old queue if any 
       if(!res->cancel()){
     	    Nan::ThrowError(
-        	String::Concat(Nan::New("While cancel_events - ").ToLocalChecked(),ERR_MSG(res, event_block)));
+        	String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While cancel_events - ").ToLocalChecked(),ERR_MSG(res, event_block)));
     	    return;
       }        
 
@@ -404,7 +404,7 @@ void
         // it was queued and should be canceled
         if(!eb->cancel()){
         	Nan::ThrowError(
-        	        	    String::Concat(Nan::New("While cancel_events - ").ToLocalChecked(),ERR_MSG(eb, event_block)));
+        	        	    String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While cancel_events - ").ToLocalChecked(),ERR_MSG(eb, event_block)));
     	    return ;
     	}        
     	// Remove it from event list

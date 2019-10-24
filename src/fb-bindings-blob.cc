@@ -12,7 +12,7 @@
 Nan::Persistent<v8::FunctionTemplate> FBblob::constructor_template;
 char FBblob::err_message[MAX_ERR_MSG_LEN];
 
-void FBblob::Initialize (v8::Handle<v8::Object> target)
+void FBblob::Initialize (v8::Local<v8::Object> target)
   {
   //  HandleScope scope;
     
@@ -38,14 +38,14 @@ void FBblob::Initialize (v8::Handle<v8::Object> target)
     Nan::SetAccessor(instance_t, Nan::New("inAsyncCall").ToLocalChecked(),InAsyncGetter);
     Nan::SetAccessor(instance_t, Nan::New("isReadable").ToLocalChecked(),IsReadGetter);
     
-    target->Set(Nan::New("FBblob").ToLocalChecked(), t->GetFunction());
+    Nan::Set(target, Nan::New("FBblob").ToLocalChecked(), Nan::GetFunction(t).ToLocalChecked());
 
   }
 
-bool FBblob::HasInstance(v8::Handle<v8::Value> val)
+bool FBblob::HasInstance(v8::Local<v8::Value> val)
    { 
        if (!val->IsObject()) return false;
-       v8::Local<v8::Object> obj = val->ToObject();
+       v8::Local<v8::Object> obj = Nan::To<v8::Object>(val).ToLocalChecked();
 /*
   if (obj->GetIndexedPropertiesExternalArrayDataType() == kExternalUnsignedByteArray)
     return true;
@@ -82,7 +82,7 @@ NAN_METHOD(FBblob::New)
     status[1] = 0;
     FBblob *res = new FBblob(quad, conn->def_trans, status);
     if(status[1])  {
-        Nan::ThrowError(String::Concat(
+        Nan::ThrowError(String::Concat(FB_MAYBE_NEED_ISOLATE
                 Nan::New("In FBblob::New - ").ToLocalChecked(),
                 ERR_MSG_STAT(status, FBblob)
           ));
@@ -102,7 +102,7 @@ NAN_METHOD(FBblob::ReadSync)
         return Nan::ThrowError("First argument needs to be a buffer");
     }
     
-    Local<Object> buffer_obj = info[0]->ToObject();
+    Local<Object> buffer_obj = Nan::To<Object>(info[0]).ToLocalChecked();
     char *buffer_data = Buffer::Data(buffer_obj);
     size_t buffer_length = Buffer::Length(buffer_obj);
 	if (buffer_length > USHRT_MAX) {
@@ -112,7 +112,7 @@ NAN_METHOD(FBblob::ReadSync)
     ISC_STATUS_ARRAY status;
     int res = blob->read(status, buffer_data, (unsigned short) buffer_length, &actual);
     if(res==-1) {
-       return Nan::ThrowError(String::Concat(Nan::New("In FBblob::New - ").ToLocalChecked(),ERR_MSG_STAT(status, FBblob)));
+       return Nan::ThrowError(String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In FBblob::New - ").ToLocalChecked(),ERR_MSG_STAT(status, FBblob)));
     }
     
 	info.GetReturnValue().Set(Nan::New<Integer>(actual));
@@ -138,11 +138,11 @@ void FBblob::EIO_After_Read(uv_work_t *req)
     else
     {
       argv[0] =  Nan::Error(*Nan::Utf8String(
-            String::Concat(Nan::New("FBblob::EIO_After_Read - ").ToLocalChecked(),ERR_MSG_STAT(r_req->status, FBblob))));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("FBblob::EIO_After_Read - ").ToLocalChecked(),ERR_MSG_STAT(r_req->status, FBblob))));
       argc = 1;        
     }  
     
-    r_req->callback->Call(argc, argv);
+    Nan::Call(*r_req->callback, argc, argv);
     r_req->blob->stop_async();
     r_req->blob->Unref();
     free(r_req);
@@ -172,7 +172,7 @@ NAN_METHOD(FBblob::Read)
         return Nan::ThrowError("First argument needs to be a buffer");
     }
     
-    Local<Object> buffer_obj = info[0]->ToObject();
+    Local<Object> buffer_obj = Nan::To<Object>(info[0]).ToLocalChecked();
     char *buffer_data = Buffer::Data(buffer_obj);
     size_t buffer_length = Buffer::Length(buffer_obj);
     
@@ -215,7 +215,7 @@ FBblob *blob = Nan::ObjectWrap::Unwrap<FBblob>(info.This());
 ISC_STATUS_ARRAY status;
 if (!blob->open(status)) {
 	return Nan::ThrowError(
-		String::Concat(Nan::New("In FBblob::_openSync - ").ToLocalChecked(), ERR_MSG_STAT(status, FBblob)));
+		String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In FBblob::_openSync - ").ToLocalChecked(), ERR_MSG_STAT(status, FBblob)));
 }
 
 return;
@@ -231,7 +231,7 @@ return;
 	  blob->close(status);
 	  if (status[1]) {
 		  return Nan::ThrowError(
-			  String::Concat(Nan::New("In FBblob::_closeSync - ").ToLocalChecked(), ERR_MSG_STAT(status, FBblob)));
+			  String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In FBblob::_closeSync - ").ToLocalChecked(), ERR_MSG_STAT(status, FBblob)));
 	  }
 
 	  return;
@@ -248,13 +248,13 @@ return;
 		  return Nan::ThrowError("First argument needs to be a buffer");
 	  }
 
-	  Local<Object> buffer_obj = info[0]->ToObject();
+	  Local<Object> buffer_obj = Nan::To<Object>(info[0]).ToLocalChecked();
 	  char *buf = Buffer::Data(buffer_obj);
 	  size_t len = Buffer::Length(buffer_obj);
 
 	  if ((info.Length() > 1) && info[1]->IsInt32())
 	  {
-		  size_t alen = (size_t)info[1]->IntegerValue();
+		  size_t alen = (size_t)Nan::To<int32_t>(info[1]).FromJust();
 		  if (alen < len) len = alen;
 	  }
 	  if (len > USHRT_MAX) {
@@ -263,7 +263,7 @@ return;
 
 	  if (isc_put_segment(status, &blob->handle, (unsigned short)len, buf))
 		  return Nan::ThrowError(
-			  String::Concat(Nan::New("In FBblob::_writeSync - ").ToLocalChecked(), ERR_MSG_STAT(status, FBblob)));
+			  String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In FBblob::_writeSync - ").ToLocalChecked(), ERR_MSG_STAT(status, FBblob)));
 
 	  info.GetReturnValue().Set(Nan::New<Integer>(uint32_t(len)));
   }
@@ -280,12 +280,12 @@ return;
 
 		  if (w_req->status[1]) {
 			  argv[0] = Nan::Error(*Nan::Utf8String(
-				  String::Concat(Nan::New("FBblob::EIO_After_Read - ").ToLocalChecked(), ERR_MSG_STAT(w_req->status, FBblob))));
+				  String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("FBblob::EIO_After_Read - ").ToLocalChecked(), ERR_MSG_STAT(w_req->status, FBblob))));
 		  }
 		  else
 			  argv[0] = Nan::Null();
 
-		  w_req->callback->Call(1, argv);
+		  Nan::Call(*w_req->callback, 1, argv);
 	  };
 
 	  w_req->blob->stop_async();
@@ -328,7 +328,7 @@ NAN_METHOD(FBblob::Write)
         return Nan::ThrowError("First argument needs to be a buffer");
     }
     
-    Local<Object> buffer_obj = info[0]->ToObject();
+    Local<Object> buffer_obj = Nan::To<Object>(info[0]).ToLocalChecked();
     char *buf = Buffer::Data(buffer_obj);
     size_t len = Buffer::Length(buffer_obj);
     
@@ -348,7 +348,7 @@ NAN_METHOD(FBblob::Write)
     int cb_arg = 1;    
     if( (info.Length() > 1) && info[1]->IsInt32() )
     {
-      size_t alen = (size_t) info[1]->IntegerValue();
+      size_t alen = (size_t) Nan::To<int32_t>(info[1]).FromJust();
       if(alen < len) len = alen;
       w_req->length = (uint32_t) len;
       cb_arg = 2;
@@ -397,7 +397,7 @@ FBblob::FBblob(ISC_QUAD *id, Transaction *atrans, ISC_STATUS *status): FBEventEm
       isc_create_blob2(status, &(trans->connection->db), &(trans->trans), &handle, &blob_id, 0, NULL); 
       is_read = false;
     }
-    else handle = NULL;
+    else handle = 0;
   }
 
 FBblob::~FBblob()

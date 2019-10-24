@@ -8,7 +8,9 @@
 
 Nan::Persistent<FunctionTemplate> FBEventEmitter::constructor_template;
 
-void FBEventEmitter::Initialize(v8::Handle<v8::Object> target)
+Nan::AsyncResource FBEventEmitter::asyncResource("FBEventEmitter");
+
+void FBEventEmitter::Initialize(v8::Local<v8::Object> target)
   {
     
     Local<FunctionTemplate> t = Nan::New<FunctionTemplate>();
@@ -16,11 +18,11 @@ void FBEventEmitter::Initialize(v8::Handle<v8::Object> target)
     constructor_template.Reset(t);
     t->SetClassName(Nan::New<String>("FBEventEmitter").ToLocalChecked());
            
-    target->Set(Nan::New<String>("FBEventEmitter").ToLocalChecked(),  t->GetFunction());
+    Nan::Set(target, Nan::New<String>("FBEventEmitter").ToLocalChecked(),  Nan::GetFunction(t).ToLocalChecked());
   }
  
  
-void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
+void FBEventEmitter::Emit(Local<String> event, int argc, Local<Value> argv[])
   {
     if(!persistent().IsEmpty()) {
     	Nan::HandleScope scope;
@@ -28,7 +30,7 @@ void FBEventEmitter::Emit(Handle<String> event, int argc, Handle<Value> argv[])
 	    if(argc>10) Nan::ThrowError("Cant process more than 10 arguments");
 	    argv1[0] = event;
 	    for(int i=0;i<argc;i++) argv1[i+1] = argv[i];
-	    Nan::MakeCallback(this->handle(),"emit",argc+1,argv1);
+		asyncResource.runInAsyncScope(this->handle(), Nan::New("emit").ToLocalChecked(), argc+1, argv1);
     }
   }  
 
@@ -46,7 +48,7 @@ void FBEventEmitter::stop_async()
     Emit(Nan::New("fbStopAsync").ToLocalChecked(), 0, NULL);
   }
 
-FBEventEmitter::FBEventEmitter () : Nan::ObjectWrap () 
+FBEventEmitter::FBEventEmitter () : Nan::ObjectWrap ()
   {
     in_async = false;
    // Handle<Value> argv[1];

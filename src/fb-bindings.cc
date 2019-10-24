@@ -41,7 +41,7 @@ char * ErrorMessage(const ISC_STATUS *pvector, char *err_msg, int max_len)
 }
 
 void
-init (Handle<Object> target)
+init (Local<Object> target)
 {
   Nan::HandleScope scope;
   
