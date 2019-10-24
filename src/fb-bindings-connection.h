@@ -32,7 +32,7 @@ class Connection : public FBEventEmitter {
   bool isUTF8lctype = true;
    
   static void
-  Initialize (v8::Handle<v8::Object> target);
+  Initialize (v8::Local<v8::Object> target);
  
   bool Connect (const char* Database,const char* User,const char* Password,const char* Role);
  
@@ -63,10 +63,10 @@ class Connection : public FBEventEmitter {
   struct connect_request {
      Nan::Callback *callback;
      Connection *conn;
-     String::Utf8Value *Database;
-     String::Utf8Value *User;
-     String::Utf8Value *Password;
-     String::Utf8Value *Role;
+     Nan::Utf8String *Database;
+     Nan::Utf8String *User;
+     Nan::Utf8String *Password;
+     Nan::Utf8String *Role;
      bool res;
   };
   
@@ -98,7 +98,7 @@ class Connection : public FBEventEmitter {
 	 Nan::Callback *callback;
      Connection *conn;
 	 Transaction* transaction;
-     String::Utf8Value *Query;
+     Nan::Utf8String *Query;
      XSQLDA *sqlda;
      isc_stmt_handle stmt;
      int statement_type;

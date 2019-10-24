@@ -8,7 +8,7 @@
 #include "./fb-bindings-statement.h"
 
 void
-  Connection::Initialize (v8::Handle<v8::Object> target)
+  Connection::Initialize (v8::Local<v8::Object> target)
   {
     // HandleScope scope;
     
@@ -44,7 +44,7 @@ void
     Nan::SetAccessor(instance_t, Nan::New("inAsyncCall").ToLocalChecked(),InAsyncGetter);
    
     
-    target->Set(Nan::New("Connection").ToLocalChecked(), t->GetFunction());
+    Nan::Set(target, Nan::New("Connection").ToLocalChecked(), Nan::GetFunction(t).ToLocalChecked());
   }
   
 bool Connection::Connect (const char* Database,const char* User,const char* Password,const char* Role)
@@ -390,17 +390,17 @@ NAN_METHOD(Connection::ConnectSync)
       return Nan::ThrowError("Expecting 4 string arguments");
     }
 
-    String::Utf8Value Database(info[0]->ToString());
-    String::Utf8Value User(info[1]->ToString());
-    String::Utf8Value Password(info[2]->ToString());
-    String::Utf8Value Role(info[3]->ToString());
+    Nan::Utf8String Database(info[0]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
+    Nan::Utf8String User(info[1]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
+    Nan::Utf8String Password(info[2]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
+    Nan::Utf8String Role(info[3]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     
 
     bool r = connection->Connect(*Database,*User,*Password,*Role);
 
     if (!r) {
       return Nan::ThrowError(
-            String::Concat(Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
+            String::Concat(Isolate::GetCurrent(), Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }
     
     return;
@@ -416,7 +416,7 @@ void Connection::EIO_After_Connect(uv_work_t *req)
     
     if (!conn_req->res) {
        argv[0] = Nan::Error(*Nan::Utf8String(
-            String::Concat(Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(conn_req->conn, Connection))));
+            String::Concat(Isolate::GetCurrent(), Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(conn_req->conn, Connection))));
     }
     else{
      argv[0] = Nan::Null();
@@ -424,7 +424,7 @@ void Connection::EIO_After_Connect(uv_work_t *req)
    
 	Nan::TryCatch try_catch;
 
-    conn_req->callback->Call( 1, argv);
+    Nan::Call(*conn_req->callback, 1, argv);
 
     if (try_catch.HasCaught()) {
 		Nan::FatalException(try_catch);
@@ -475,10 +475,10 @@ NAN_METHOD(Connection::Connect)
     
     conn_req->conn = conn;
     conn_req->callback =  new Nan::Callback(Local<Function>::Cast(info[4]));
-    conn_req->Database = new String::Utf8Value(info[0]->ToString());
-    conn_req->User     = new String::Utf8Value(info[1]->ToString());
-    conn_req->Password = new String::Utf8Value(info[2]->ToString());
-    conn_req->Role     = new String::Utf8Value(info[3]->ToString());
+    conn_req->Database = new Nan::Utf8String(info[0]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
+    conn_req->User     = new Nan::Utf8String(info[1]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
+    conn_req->Password = new Nan::Utf8String(info[2]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
+    conn_req->Role     = new Nan::Utf8String(info[3]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     
     conn->start_async();
     
@@ -500,7 +500,7 @@ NAN_METHOD(Connection::Disconnect)
     //printf("disconnect\n");
     if(!connection->Close()){
       return Nan::ThrowError(
-            String::Concat(Nan::New("While closing - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
+            String::Concat(Isolate::GetCurrent(), Nan::New("While closing - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }     
    
     return;
@@ -532,7 +532,7 @@ NAN_METHOD(Connection::CommitSync)
 
     if (!r) {
       return Nan::ThrowError(
-            String::Concat(Nan::New("While commitSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
+            String::Concat(Isolate::GetCurrent(), Nan::New("While commitSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
     }
     
     return;
@@ -551,7 +551,7 @@ NAN_METHOD(Connection::RollbackSync)
 
     if (!r) {
       return Nan::ThrowError(
-            String::Concat(Nan::New("While rollbackSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
+            String::Concat(Isolate::GetCurrent(), Nan::New("While rollbackSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
     }
     
     return;
@@ -616,14 +616,14 @@ void Connection::InstQuerySync(const Nan::FunctionCallbackInfo<v8::Value>& info,
     }
     
    
-    String::Utf8Value *Query = new String::Utf8Value(info[0]->ToString()); 
+    Nan::Utf8String *Query = new Nan::Utf8String(info[0]->ToString(Nan::GetCurrentContext()).ToLocalChecked()); 
     
     XSQLDA *sqlda = NULL;
     isc_stmt_handle stmt = NULL;
     bool r = process_statement(&sqlda, **Query, &stmt, &statement_type, transaction);
     if(!r) {
       return Nan::ThrowError(
-            String::Concat(Nan::New("In querySync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
+            String::Concat(Isolate::GetCurrent(), Nan::New("In querySync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
     }
     
     Local<Value> argv[3];
@@ -631,8 +631,7 @@ void Connection::InstQuerySync(const Nan::FunctionCallbackInfo<v8::Value>& info,
     argv[0] = Nan::New<External>(sqlda);
     argv[1] = Nan::New<External>(&stmt);
     argv[2] = Nan::New<External>(this);
-    Local<Object> js_result(Nan::New(FBResult::constructor_template)->
-                                     GetFunction()->NewInstance(Nan::GetCurrentContext(), 3, argv).ToLocalChecked());
+    Local<Object> js_result(Nan::NewInstance(Nan::GetFunction(Nan::New(FBResult::constructor_template)).ToLocalChecked(), 3, argv).ToLocalChecked());
     	
     if(statement_type==isc_info_sql_stmt_exec_procedure){
     	FBResult *fb_res = Nan::ObjectWrap::Unwrap<FBResult>(js_result);
@@ -652,8 +651,7 @@ NAN_METHOD(Connection::StartNewTransSync) {
 	Local<Value> argv[1];
 
 	argv[0] = Nan::New<External>(connection);
-	Local<Object> js_result(Nan::New(Transaction::constructor_template)->
-		GetFunction()->NewInstance(Nan::GetCurrentContext(), 1, argv).ToLocalChecked());
+	Local<Object> js_result(Nan::NewInstance(Nan::GetFunction(Nan::New(Transaction::constructor_template)).ToLocalChecked(), 1, argv).ToLocalChecked());
 
 	Transaction *tr = Nan::ObjectWrap::Unwrap<Transaction>(js_result);
 	tr->start_transaction();
@@ -667,8 +665,7 @@ NAN_METHOD(Connection::StartNewTrans) {
 	Local<Value> argv[1];
 
 	argv[0] = Nan::New<External>(connection);
-	Local<Object> js_result(Nan::New(Transaction::constructor_template)->
-		GetFunction()->NewInstance(Nan::GetCurrentContext(), 1, argv).ToLocalChecked());
+	Local<Object> js_result(Nan::NewInstance(Nan::GetFunction(Nan::New(Transaction::constructor_template)).ToLocalChecked(), 1, argv).ToLocalChecked());
 
 	Transaction *tr = Nan::ObjectWrap::Unwrap<Transaction>(js_result);
 	tr->InstStart(info);
@@ -688,7 +685,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
     Local<Value> argv[3];
     if (!q_req->result) {
        argv[0] = Nan::Error(*Nan::Utf8String(
-            String::Concat(Nan::New("While query - ").ToLocalChecked(),ERR_MSG(q_req->conn, Connection)))); 
+            String::Concat(Isolate::GetCurrent(), Nan::New("While query - ").ToLocalChecked(),ERR_MSG(q_req->conn, Connection)))); 
        argv[1] = Nan::Null();        
     }
     else{
@@ -696,7 +693,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
      argv[1] = Nan::New<External>(&q_req->stmt);
      argv[2] = Nan::New<External>(q_req->conn);
      
-     Local<Object> js_result = Nan::New(FBResult::constructor_template)->GetFunction()->NewInstance(Nan::GetCurrentContext(), 3, argv).ToLocalChecked();
+     Local<Object> js_result = Nan::NewInstance(Nan::GetFunction(Nan::New(FBResult::constructor_template)).ToLocalChecked(), 3, argv).ToLocalChecked();
      
      if(q_req->statement_type==isc_info_sql_stmt_exec_procedure ){
     	 FBResult *fb_res = Nan::ObjectWrap::Unwrap<FBResult>(js_result);
@@ -709,7 +706,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
       
     Nan::TryCatch try_catch;
     
-    q_req->callback->Call(2, argv);
+    Nan::Call(*q_req->callback, 2, argv);
     
     if (try_catch.HasCaught()) {
         Nan::FatalException(try_catch);
@@ -758,7 +755,7 @@ void Connection::InstQuery(const Nan::FunctionCallbackInfo<v8::Value>& info, Tra
     
     q_req->conn = this;
     q_req->callback = new Nan::Callback(Local<Function>::Cast(info[1]));
-    q_req->Query  = new String::Utf8Value(info[0]->ToString());
+    q_req->Query  = new Nan::Utf8String(info[0]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     q_req->sqlda = NULL;
     q_req->stmt = NULL;
 	q_req->transaction = transaction;
@@ -782,7 +779,7 @@ NAN_METHOD(Connection::addEvent)
       return Nan::ThrowError("Expecting 1 string argument");
     }
     
-    String::Utf8Value Event(info[0]->ToString());
+    Nan::Utf8String Event(info[0]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     
     if(!event_block::FindBlock(conn->fb_events, *Event)){
         
@@ -805,7 +802,7 @@ NAN_METHOD(Connection::deleteEvent)
       return Nan::ThrowError("Expecting 1 string argument");
     }
     
-    String::Utf8Value Event(info[0]->ToString());
+    Nan::Utf8String Event(info[0]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     
     event_block::RemoveEvent(&(conn->fb_events), *Event);
     
@@ -821,7 +818,7 @@ void Connection::InstPrepareSync(const Nan::FunctionCallbackInfo<v8::Value>& inf
        return Nan::ThrowError("Expecting a string query argument.");
     }
     
-    String::Utf8Value Query(info[0]->ToString());
+    Nan::Utf8String Query(info[0]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     
     XSQLDA *insqlda = NULL;
     XSQLDA *outsqlda = NULL;
@@ -830,7 +827,7 @@ void Connection::InstPrepareSync(const Nan::FunctionCallbackInfo<v8::Value>& inf
     
     if(!r) {
       return Nan::ThrowError(
-            String::Concat(Nan::New("In prepareSync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
+            String::Concat(Isolate::GetCurrent(), Nan::New("In prepareSync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
     }
     
     Local<Value> argv[4];
@@ -839,8 +836,7 @@ void Connection::InstPrepareSync(const Nan::FunctionCallbackInfo<v8::Value>& inf
     argv[1] = Nan::New<External>(outsqlda);
     argv[2] = Nan::New<External>(&stmt);
     argv[3] = Nan::New<External>(this);
-    Local<Object> js_result(Nan::New(FBStatement::constructor_template)->
-                                     GetFunction()->NewInstance(Nan::GetCurrentContext(), 4, argv).ToLocalChecked());
+    Local<Object> js_result(Nan::NewInstance(Nan::GetFunction(Nan::New(FBStatement::constructor_template)).ToLocalChecked(), 4, argv).ToLocalChecked());
 
     info.GetReturnValue().Set(js_result);
   }
@@ -860,8 +856,7 @@ NAN_METHOD(Connection::NewBlobSync)
     argv[0] = Nan::Null();
     argv[1] = Nan::New<External>(conn);
 
-    MaybeLocal<Object> maybe_blob(Nan::New(FBblob::constructor_template)->
-                                     GetFunction()->NewInstance(Nan::GetCurrentContext(), 2, argv));
+    MaybeLocal<Object> maybe_blob(Nan::NewInstance(Nan::GetFunction(Nan::New(FBblob::constructor_template)).ToLocalChecked(), 2, argv));
     if(maybe_blob.IsEmpty()) {
 	return ;
     }	

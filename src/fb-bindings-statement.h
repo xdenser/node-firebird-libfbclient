@@ -21,7 +21,7 @@ public:
  static Nan::Persistent<FunctionTemplate> constructor_template; 
 
  static void
- Initialize (v8::Handle<v8::Object> target);
+ Initialize (v8::Local<v8::Object> target);
 
 protected:
  static NAN_METHOD(New);

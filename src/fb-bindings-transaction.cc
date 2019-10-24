@@ -5,7 +5,7 @@
 
 Nan::Persistent<FunctionTemplate> Transaction::constructor_template;
 
-void Transaction::Initialize(v8::Handle<v8::Object> target) {
+void Transaction::Initialize(v8::Local<v8::Object> target) {
 	Local<FunctionTemplate> t = Nan::New<FunctionTemplate>(Transaction::New);
 	constructor_template.Reset(t);
 
@@ -33,7 +33,7 @@ void Transaction::Initialize(v8::Handle<v8::Object> target) {
 	Nan::SetAccessor(instance_t, Nan::New("inAsyncCall").ToLocalChecked(), InAsyncGetter);
 	Nan::SetAccessor(instance_t, Nan::New("inTransaction").ToLocalChecked(), InTransactionGetter);
 
-	target->Set(Nan::New("Transaction").ToLocalChecked(), t->GetFunction());
+	Nan::Set(target, Nan::New("Transaction").ToLocalChecked(), Nan::GetFunction(t).ToLocalChecked());
 }
 
 NAN_METHOD(Transaction::New) {
@@ -105,7 +105,7 @@ void Transaction::EIO_After_TransactionRequest(uv_work_t *req)
 	}
 
 	Nan::TryCatch try_catch;
-	tr_req->callback->Call(1, argv);
+	Nan::Call(*tr_req->callback, 1, argv);
 	if (try_catch.HasCaught()) {
 		Nan::FatalException(try_catch);
 	}
@@ -233,7 +233,7 @@ NAN_METHOD(Transaction::CommitSync)
 	bool r = transaction->commit_transaction();
 	if (!r) {
 		return Nan::ThrowError(
-			String::Concat(Nan::New("While commitSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
+			String::Concat(Isolate::GetCurrent(), Nan::New("While commitSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
 	}
 }
 
@@ -248,7 +248,7 @@ NAN_METHOD(Transaction::RollbackSync)
 	bool r = transaction->rollback_transaction();
 	if (!r) {
 		return Nan::ThrowError(
-			String::Concat(Nan::New("While rollbackSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
+			String::Concat(Isolate::GetCurrent(), Nan::New("While rollbackSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
 	}
 }
 
@@ -262,7 +262,7 @@ NAN_METHOD(Transaction::StartSync)
 	bool r = transaction->start_transaction();
 	if (!r) {
 		return Nan::ThrowError(
-			String::Concat(Nan::New("While startSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
+			String::Concat(Isolate::GetCurrent(), Nan::New("While startSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
 	}
 
 	return;

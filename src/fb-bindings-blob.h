@@ -24,9 +24,9 @@ public:
   static Nan::Persistent<FunctionTemplate> constructor_template;
   
   static void
-  Initialize (v8::Handle<v8::Object> target);
+  Initialize (v8::Local<v8::Object> target);
   
-  static bool HasInstance(v8::Handle<v8::Value> val);
+  static bool HasInstance(v8::Local<v8::Value> val);
   void getId(ISC_QUAD* Idp);
   
 
