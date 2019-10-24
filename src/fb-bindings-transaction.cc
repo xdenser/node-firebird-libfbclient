@@ -233,7 +233,7 @@ NAN_METHOD(Transaction::CommitSync)
 	bool r = transaction->commit_transaction();
 	if (!r) {
 		return Nan::ThrowError(
-			String::Concat(Isolate::GetCurrent(), Nan::New("While commitSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
+			String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While commitSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
 	}
 }
 
@@ -248,7 +248,7 @@ NAN_METHOD(Transaction::RollbackSync)
 	bool r = transaction->rollback_transaction();
 	if (!r) {
 		return Nan::ThrowError(
-			String::Concat(Isolate::GetCurrent(), Nan::New("While rollbackSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
+			String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While rollbackSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
 	}
 }
 
@@ -262,7 +262,7 @@ NAN_METHOD(Transaction::StartSync)
 	bool r = transaction->start_transaction();
 	if (!r) {
 		return Nan::ThrowError(
-			String::Concat(Isolate::GetCurrent(), Nan::New("While startSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
+			String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While startSync - ").ToLocalChecked(), ERR_MSG(transaction, Transaction)));
 	}
 
 	return;

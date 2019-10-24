@@ -71,7 +71,7 @@ void FBStatement::InstExecSync(const Nan::FunctionCallbackInfo<v8::Value>& info,
       if (status[1])
       {
         return Nan::ThrowError(
-           String::Concat(Isolate::GetCurrent(), Nan::New("In FBStatement::execSync, free_statement - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
+           String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In FBStatement::execSync, free_statement - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
       }
     }
 
@@ -85,7 +85,7 @@ void FBStatement::InstExecSync(const Nan::FunctionCallbackInfo<v8::Value>& info,
 	if (isc_dsql_execute2(status, &tr->trans, &stmt, SQL_DIALECT_V6, in_sqlda,  statement_type == isc_info_sql_stmt_select ? NULL:sqldap))
         {
 	      return Nan::ThrowError(
-	             String::Concat(Isolate::GetCurrent(), Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
+	             String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In FBStatement::execSync - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
         }
         
         if(sqldap->sqld && statement_type != isc_info_sql_stmt_select){ 
@@ -146,7 +146,7 @@ void FBStatement::EIO_After_Exec(uv_work_t *req)
    if(!e_req->result)
    {
      argv[0] = Nan::Error(*Nan::Utf8String(
-         String::Concat(Isolate::GetCurrent(), Nan::New("In FBStatement::EIO_After_Exec - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement))));
+         String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In FBStatement::EIO_After_Exec - ").ToLocalChecked(),ERR_MSG(fb_stmt, FBStatement))));
      argc = 0;
      event = Nan::New("error").ToLocalChecked();     
    }
@@ -210,7 +210,7 @@ void FBStatement::InstExec(const Nan::FunctionCallbackInfo<v8::Value>& info, Tra
       if (status[1])
       {
         return Nan::ThrowError(
-           String::Concat(Isolate::GetCurrent(), Nan::New("In FBStatement::exec, free_statement - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
+           String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In FBStatement::exec, free_statement - ").ToLocalChecked(),ERR_MSG(this, FBStatement)));
       }
     }
     

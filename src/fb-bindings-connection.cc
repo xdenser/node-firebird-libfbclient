@@ -400,7 +400,7 @@ NAN_METHOD(Connection::ConnectSync)
 
     if (!r) {
       return Nan::ThrowError(
-            String::Concat(Isolate::GetCurrent(), Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }
     
     return;
@@ -416,7 +416,7 @@ void Connection::EIO_After_Connect(uv_work_t *req)
     
     if (!conn_req->res) {
        argv[0] = Nan::Error(*Nan::Utf8String(
-            String::Concat(Isolate::GetCurrent(), Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(conn_req->conn, Connection))));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While connecting - ").ToLocalChecked(),ERR_MSG(conn_req->conn, Connection))));
     }
     else{
      argv[0] = Nan::Null();
@@ -500,7 +500,7 @@ NAN_METHOD(Connection::Disconnect)
     //printf("disconnect\n");
     if(!connection->Close()){
       return Nan::ThrowError(
-            String::Concat(Isolate::GetCurrent(), Nan::New("While closing - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While closing - ").ToLocalChecked(),ERR_MSG(connection, Connection)));
     }     
    
     return;
@@ -532,7 +532,7 @@ NAN_METHOD(Connection::CommitSync)
 
     if (!r) {
       return Nan::ThrowError(
-            String::Concat(Isolate::GetCurrent(), Nan::New("While commitSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While commitSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
     }
     
     return;
@@ -551,7 +551,7 @@ NAN_METHOD(Connection::RollbackSync)
 
     if (!r) {
       return Nan::ThrowError(
-            String::Concat(Isolate::GetCurrent(), Nan::New("While rollbackSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While rollbackSync - ").ToLocalChecked(),ERR_MSG(connection->def_trans, Transaction)));
     }
     
     return;
@@ -623,7 +623,7 @@ void Connection::InstQuerySync(const Nan::FunctionCallbackInfo<v8::Value>& info,
     bool r = process_statement(&sqlda, **Query, &stmt, &statement_type, transaction);
     if(!r) {
       return Nan::ThrowError(
-            String::Concat(Isolate::GetCurrent(), Nan::New("In querySync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In querySync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
     }
     
     Local<Value> argv[3];
@@ -685,7 +685,7 @@ void Connection::EIO_After_Query(uv_work_t *req)
     Local<Value> argv[3];
     if (!q_req->result) {
        argv[0] = Nan::Error(*Nan::Utf8String(
-            String::Concat(Isolate::GetCurrent(), Nan::New("While query - ").ToLocalChecked(),ERR_MSG(q_req->conn, Connection)))); 
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While query - ").ToLocalChecked(),ERR_MSG(q_req->conn, Connection)))); 
        argv[1] = Nan::Null();        
     }
     else{
@@ -827,7 +827,7 @@ void Connection::InstPrepareSync(const Nan::FunctionCallbackInfo<v8::Value>& inf
     
     if(!r) {
       return Nan::ThrowError(
-            String::Concat(Isolate::GetCurrent(), Nan::New("In prepareSync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("In prepareSync - ").ToLocalChecked(),ERR_MSG(this, Connection)));
     }
     
     Local<Value> argv[4];

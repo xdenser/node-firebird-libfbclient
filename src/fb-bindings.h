@@ -13,11 +13,9 @@
 #include <ibase.h>
 
 #if NODE_MODULE_VERSION < NODE_10_0_MODULE_VERSION
-#	define FB_NAN_BOOLEANVALUE(info) info->BooleanValue()
-#elif NODE_MODULE_VERSION == NODE_10_0_MODULE_VERSION
-#	define FB_NAN_BOOLEANVALUE(info) info->BooleanValue(Nan::GetCurrentContext()).FromMaybe(false)
+#	define FB_MAYBE_NEED_ISOLATE
 #else
-#	define FB_NAN_BOOLEANVALUE(info) info->BooleanValue(Isolate::GetCurrent())
+#	define FB_MAYBE_NEED_ISOLATE Isolate::GetCurrent(),
 #endif
 
 #define MAX_ERR_MSG_LEN 1024

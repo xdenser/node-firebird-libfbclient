@@ -172,25 +172,25 @@ void get_date(struct tm* times, Local<Object> js_date, int* msp)
   Local<Value> val;
   
   val = Nan::Call(Local<Function>::Cast(Nan::Get( js_date, Nan::New("getFullYear").ToLocalChecked() ).ToLocalChecked()), js_date,0,NULL).ToLocalChecked();
-  times->tm_year = (int) (val->Int32Value(Nan::GetCurrentContext()).FromJust()) - 1900;
+  times->tm_year = (int) (Nan::To<int32_t>(val).FromJust()) - 1900;
   
   val = Nan::Call(Local<Function>::Cast(Nan::Get( js_date, Nan::New("getMonth").ToLocalChecked() ).ToLocalChecked()), js_date,0,NULL).ToLocalChecked();
-  times->tm_mon = val->Int32Value(Nan::GetCurrentContext()).FromJust();
+  times->tm_mon = Nan::To<int32_t>(val).FromJust();
 
   val = Nan::Call(Local<Function>::Cast(Nan::Get( js_date, Nan::New("getDate").ToLocalChecked() ).ToLocalChecked()), js_date,0,NULL).ToLocalChecked();
-  times->tm_mday = val->Int32Value(Nan::GetCurrentContext()).FromJust();
+  times->tm_mday = Nan::To<int32_t>(val).FromJust();
 
   val = Nan::Call(Local<Function>::Cast(Nan::Get( js_date, Nan::New("getHours").ToLocalChecked() ).ToLocalChecked()), js_date,0,NULL).ToLocalChecked();
-  times->tm_hour = val->Int32Value(Nan::GetCurrentContext()).FromJust();
+  times->tm_hour = Nan::To<int32_t>(val).FromJust();
   
   val = Nan::Call(Local<Function>::Cast(Nan::Get( js_date, Nan::New("getMinutes").ToLocalChecked() ).ToLocalChecked()), js_date,0,NULL).ToLocalChecked();
-  times->tm_min = val->Int32Value(Nan::GetCurrentContext()).FromJust();
+  times->tm_min = Nan::To<int32_t>(val).FromJust();
 
   val = Nan::Call(Local<Function>::Cast(Nan::Get( js_date, Nan::New("getSeconds").ToLocalChecked() ).ToLocalChecked()), js_date,0,NULL).ToLocalChecked();
-  times->tm_sec = val->Int32Value(Nan::GetCurrentContext()).FromJust();
+  times->tm_sec = Nan::To<int32_t>(val).FromJust();
   
   val = Nan::Call(Local<Function>::Cast(Nan::Get( js_date, Nan::New("getMilliseconds").ToLocalChecked() ).ToLocalChecked()), js_date,0,NULL).ToLocalChecked();
-  *msp = val->Int32Value(Nan::GetCurrentContext()).FromJust();
+  *msp = Nan::To<int32_t>(val).FromJust();
   
 }
 
@@ -298,32 +298,32 @@ void FBResult::set_params(XSQLDA *sqlda, Nan::NAN_METHOD_ARGS_TYPE info, int fir
                             }
 			    break;
         case SQL_SHORT:	
-                            int_val = info[i]->Int32Value(Nan::GetCurrentContext()).FromJust();
+                            int_val = Nan::To<int32_t>(info[i]).FromJust();
                             *(int16_t *) var->sqldata = (int16_t) int_val;
                             break;
         case SQL_LONG:      
-                            int_val = info[i]->Int32Value(Nan::GetCurrentContext()).FromJust();
+                            int_val = Nan::To<int32_t>(info[i]).FromJust();
                             *(int32_t *) var->sqldata = (int32_t) int_val;
                             break;                     
         case SQL_INT64:                        
                             if(info[i]->IsNumber())
                             {
                               double multiplier = FBResult::dscales[-var->sqlscale];
-                              double_val = info[i]->NumberValue(Nan::GetCurrentContext()).FromMaybe(0.0);
+                              double_val = Nan::To<double>(info[i]).FromMaybe(0.0);
                               *(int64_t *) var->sqldata = (int64_t) floor(double_val * multiplier + 0.5);
                             }
                             else 
                             {
-                              int_val = info[i]->Int32Value(Nan::GetCurrentContext()).FromJust();
+                              int_val = Nan::To<int32_t>(info[i]).FromJust();
                               *(int64_t *) var->sqldata = int_val;
                             }  
                             break;                      
         case SQL_FLOAT:     
-                            double_val = info[i]->NumberValue(Nan::GetCurrentContext()).FromMaybe(0.0);
+                            double_val = Nan::To<double>(info[i]).FromMaybe(0.0);
                             *(float *) var->sqldata = (float) double_val;
                             break;
         case SQL_DOUBLE:                    
-                            double_val = info[i]->NumberValue(Nan::GetCurrentContext()).FromMaybe(0.0);  
+                            double_val = Nan::To<double>(info[i]).FromMaybe(0.0);  
                             if( var->sqlscale != 0 )
                             {
                               double multiplier = FBResult::dscales[-var->sqlscale];
@@ -626,17 +626,17 @@ NAN_METHOD(FBResult::FetchSync)
     if(info[0]->IsInt32()){
        rowCount = (int32_t) info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
     }
-    else if(! (info[0]->IsString() && info[0]->Equals(Nan::GetCurrentContext(), Nan::New("all").ToLocalChecked()).ToChecked())){
+    else if(! (info[0]->IsString() && info[0]->Equals(Nan::GetCurrentContext(), Nan::New("all").ToLocalChecked()).FromMaybe(false))){
        return Nan::ThrowError("Expecting integer or string as first argument");
     };
     if(rowCount<=0) rowCount = -1;
     
     bool rowAsObject = false;
     if(info[1]->IsBoolean()){
-         rowAsObject = FB_NAN_BOOLEANVALUE(info[1]);
-    }else if(info[1]->IsString() && info[1]->Equals(Nan::GetCurrentContext(), Nan::New("array").ToLocalChecked()).ToChecked()){
+         rowAsObject = Nan::To<bool>(info[1]).FromMaybe(false);
+    }else if(info[1]->IsString() && info[1]->Equals(Nan::GetCurrentContext(), Nan::New("array").ToLocalChecked()).FromMaybe(false)){
          rowAsObject = false;
-    }else if(info[1]->IsString() && info[1]->Equals(Nan::GetCurrentContext(), Nan::New("object").ToLocalChecked()).ToChecked()){
+    }else if(info[1]->IsString() && info[1]->Equals(Nan::GetCurrentContext(), Nan::New("object").ToLocalChecked()).FromMaybe(false)){
          rowAsObject = true;
     } else{
      return Nan::ThrowError("Expecting bool or string('array'|'object') as second argument");
@@ -670,7 +670,7 @@ NAN_METHOD(FBResult::FetchSync)
     
     if ((fetch_stat != 100L) && fetch_stat) 
           return Nan::ThrowError(
-            String::Concat(Isolate::GetCurrent(), Nan::New("While FetchSync - ").ToLocalChecked(),ERR_MSG(fb_res,FBResult)));
+            String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While FetchSync - ").ToLocalChecked(),ERR_MSG(fb_res,FBResult)));
 
     
 //    if(j==1) js_result = res->Get(0);
@@ -728,7 +728,7 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
 
 	        if (try_catch.HasCaught()) {
 				Nan::FatalException(try_catch);
-    	    } else if ((!ret->IsBoolean() || FB_NAN_BOOLEANVALUE(ret))&&f_req->rowCount!=0) {
+    	    } else if ((!ret->IsBoolean() || Nan::To<bool>(ret).FromMaybe(false))&&f_req->rowCount!=0) {
 	    		uv_work_t* req = new uv_work_t();
                 req->data = f_req;
                 uv_queue_work(uv_default_loop(), req, EIO_Fetch,  (uv_after_work_cb)EIO_After_Fetch);
@@ -749,7 +749,7 @@ void FBResult::EIO_After_Fetch(uv_work_t *req)
     } else if (f_req->fetchStat!=100L) {
         argc = 1;
         argv[0] = Nan::Error(*Nan::Utf8String(
-        String::Concat(Isolate::GetCurrent(), Nan::New("While fetching - ").ToLocalChecked(),ERR_MSG(f_req->res,FBResult))));
+        String::Concat(FB_MAYBE_NEED_ISOLATE Nan::New("While fetching - ").ToLocalChecked(),ERR_MSG(f_req->res,FBResult))));
     } else {
         argc = 2;
         argv[0] = Nan::Null();
@@ -811,7 +811,7 @@ NAN_METHOD(FBResult::Fetch)
     
     f_req->rowAsObject = false;
     if(info[1]->IsBoolean()){
-         f_req->rowAsObject = FB_NAN_BOOLEANVALUE(info[1]);
+         f_req->rowAsObject = Nan::To<bool>(info[1]).FromMaybe(false);
     }else if(info[1]->IsString() && info[1]->Equals(Nan::GetCurrentContext(), Nan::New("array").ToLocalChecked()).FromJust()){
          f_req->rowAsObject = false;
     }else if(info[1]->IsString() && info[1]->Equals(Nan::GetCurrentContext(), Nan::New("object").ToLocalChecked()).FromJust()){
@@ -865,7 +865,7 @@ NAN_METHOD(FBResult::Fetch)
 		    if(SQLCODE!=-901) // print error message if error is not 'Invalid Statement Handle', wich is normal when connection closed before FBresult is freed
 		      printf("Error in free statement %s, %d, %ld\n",ErrorMessage(status,err_message,sizeof(this->err_message)),(int) status[1],SQLCODE);
 		   /*ThrowException(Exception::Error(
-		              String::Concat(Isolate::GetCurrent(), String::New("In FBResult::~FBResult, isc_dsql_free_statement - "),ERR_MSG(this, FBStatement))));
+		              String::Concat(FB_MAYBE_NEED_ISOLATE String::New("In FBResult::~FBResult, isc_dsql_free_statement - "),ERR_MSG(this, FBStatement))));
 		   */           
 	   }
 	   else stmt = NULL;
