@@ -82,12 +82,23 @@ bool Connection::Connect (const char* Database,const char* User,const char* Pass
     dpb[i++] = (char) len;
     strncpy(&(dpb[i]), Role, len);
     i += len;
-    
-    dpb[i++] = isc_dpb_lc_ctype;
-    len = (short) strlen (lc_type);
-    dpb[i++] = (char) len;
-    strncpy(&(dpb[i]), lc_type, len);
-    i += len;
+	
+	if (Nan::HasPrivate(handle(), Nan::New("lc_type").ToLocalChecked()).FromMaybe(false)) {
+		Nan::Utf8String _lc_type(Nan::GetPrivate(handle(), Nan::New("lc_type").ToLocalChecked()).ToLocalChecked()->ToString(Nan::GetCurrentContext()).ToLocalChecked());
+		
+		dpb[i++] = isc_dpb_lc_ctype;
+		len = (short) strlen (*_lc_type);
+		dpb[i++] = (char) len;
+		strncpy(&(dpb[i]), *_lc_type, len);
+		i += len;
+		isUTF8lctype = !strncmp(*_lc_type, "UTF8", len) || !strncmp(*_lc_type, "utf8", len);
+	} else {
+		dpb[i++] = isc_dpb_lc_ctype;
+		len = (short) strlen (lc_type);
+		dpb[i++] = (char) len;
+		strncpy(&(dpb[i]), lc_type, len);
+		i += len;	
+	}
     
     connected = false;
     if(isc_attach_database(status, 0, Database, &(db), i, dpb)) return false;
@@ -374,6 +385,18 @@ NAN_METHOD(Connection::New)
 
     Connection *connection = new Connection();
     connection->Wrap(info.This());
+	
+	if (info.Length() >= 1 && info[0]->IsObject() ) {
+		Local<Object> options = info[0]->ToObject(Nan::GetCurrentContext()).ToLocalChecked();
+		
+		if (Nan::Has(options, Nan::New("lc_type").ToLocalChecked()).FromMaybe(false)) {
+			Nan::SetPrivate(info.This(), Nan::New("lc_type").ToLocalChecked(), Nan::Get(options, Nan::New("lc_type").ToLocalChecked()).ToLocalChecked());
+		}
+		
+		if (Nan::Has(options, Nan::New("lc_decode").ToLocalChecked()).FromMaybe(false)) {
+			Nan::SetPrivate(info.This(), Nan::New("lc_decode").ToLocalChecked(), Nan::Get( options, Nan::New("lc_decode").ToLocalChecked() ).ToLocalChecked());
+		}
+	}
 
     info.GetReturnValue().Set(info.This());
   }
