@@ -34,7 +34,7 @@ class Connection : public FBEventEmitter {
   static void
   Initialize (v8::Local<v8::Object> target);
  
-  bool Connect (const char* Database,const char* User,const char* Password,const char* Role);
+  bool Connect (const char* Database,const char* User,const char* Password,const char* Role, const char* lc_type);
  
   bool Close();
   
@@ -67,6 +67,7 @@ class Connection : public FBEventEmitter {
      Nan::Utf8String *User;
      Nan::Utf8String *Password;
      Nan::Utf8String *Role;
+	 Nan::Utf8String *lc_type;
      bool res;
   };
   

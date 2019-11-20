@@ -47,7 +47,7 @@ void
     Nan::Set(target, Nan::New("Connection").ToLocalChecked(), Nan::GetFunction(t).ToLocalChecked());
   }
   
-bool Connection::Connect (const char* Database,const char* User,const char* Password,const char* Role)
+bool Connection::Connect (const char* Database,const char* User,const char* Password,const char* Role, const char* lc_type)
   {
     if (db) return false;
     short i = 0, len;
@@ -82,12 +82,13 @@ bool Connection::Connect (const char* Database,const char* User,const char* Pass
     dpb[i++] = (char) len;
     strncpy(&(dpb[i]), Role, len);
     i += len;
-    
-    dpb[i++] = isc_dpb_lc_ctype;
-    len = (short) strlen (lc_type);
-    dpb[i++] = (char) len;
-    strncpy(&(dpb[i]), lc_type, len);
-    i += len;
+	
+	dpb[i++] = isc_dpb_lc_ctype;
+	len = (short) strlen (lc_type);
+	dpb[i++] = (char) len;
+	strncpy(&(dpb[i]), lc_type, len);
+	i += len;
+	isUTF8lctype = !strncmp(lc_type, "UTF8", len) || !strncmp(lc_type, "utf8", len);
     
     connected = false;
     if(isc_attach_database(status, 0, Database, &(db), i, dpb)) return false;
@@ -374,6 +375,18 @@ NAN_METHOD(Connection::New)
 
     Connection *connection = new Connection();
     connection->Wrap(info.This());
+	
+	if (info.Length() >= 1 && info[0]->IsObject() ) {
+		Local<Object> options = info[0]->ToObject(Nan::GetCurrentContext()).ToLocalChecked();
+		
+		if (Nan::Has(options, Nan::New("lc_type").ToLocalChecked()).FromMaybe(false)) {
+			Nan::SetPrivate(info.This(), Nan::New("lc_type").ToLocalChecked(), Nan::Get(options, Nan::New("lc_type").ToLocalChecked()).ToLocalChecked());
+		}
+		
+		if (Nan::Has(options, Nan::New("lc_decode").ToLocalChecked()).FromMaybe(false)) {
+			Nan::SetPrivate(info.This(), Nan::New("lc_decode").ToLocalChecked(), Nan::Get( options, Nan::New("lc_decode").ToLocalChecked() ).ToLocalChecked());
+		}
+	}
 
     info.GetReturnValue().Set(info.This());
   }
@@ -394,9 +407,13 @@ NAN_METHOD(Connection::ConnectSync)
     Nan::Utf8String User(info[1]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     Nan::Utf8String Password(info[2]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     Nan::Utf8String Role(info[3]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
-    
+	Local<String> _lc_type = Nan::New<String>(connection->lc_type).ToLocalChecked();
+	
+	if (Nan::HasPrivate(info.This(), Nan::New("lc_type").ToLocalChecked()).FromMaybe(false)) {
+		_lc_type = Nan::GetPrivate(info.This(), Nan::New("lc_type").ToLocalChecked()).ToLocalChecked()->ToString(Nan::GetCurrentContext()).ToLocalChecked();
+	}
 
-    bool r = connection->Connect(*Database,*User,*Password,*Role);
+    bool r = connection->Connect(*Database,*User,*Password,*Role,*Nan::Utf8String(_lc_type));
 
     if (!r) {
       return Nan::ThrowError(
@@ -443,11 +460,13 @@ void Connection::EIO_Connect(uv_work_t *req)
                      **(conn_req->Database),
                      **(conn_req->User), 
                      **(conn_req->Password),
-                     **(conn_req->Role));
+                     **(conn_req->Role),
+					 **(conn_req->lc_type));
     delete conn_req->Database;
     delete conn_req->User;
     delete conn_req->Password;
     delete conn_req->Role;
+	delete conn_req->lc_type;
     
     return ;
    
@@ -479,6 +498,13 @@ NAN_METHOD(Connection::Connect)
     conn_req->User     = new Nan::Utf8String(info[1]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     conn_req->Password = new Nan::Utf8String(info[2]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
     conn_req->Role     = new Nan::Utf8String(info[3]->ToString(Nan::GetCurrentContext()).ToLocalChecked());
+	
+	if (Nan::HasPrivate(info.This(), Nan::New("lc_type").ToLocalChecked()).FromMaybe(false)) {
+		
+		conn_req->lc_type = new Nan::Utf8String(Nan::GetPrivate(info.This(), Nan::New("lc_type").ToLocalChecked()).ToLocalChecked()->ToString(Nan::GetCurrentContext()).ToLocalChecked());
+	} else {
+		conn_req->lc_type = new Nan::Utf8String(Nan::New(conn->lc_type).ToLocalChecked());
+	}
     
     conn->start_async();
     

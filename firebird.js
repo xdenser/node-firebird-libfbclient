@@ -135,8 +135,8 @@ binding.FBblob.prototype._readAll = function(initialSize, chunkSize, callback){
 }
 
 
-exports.createConnection = function () {
-  var c = new Connection();
+exports.createConnection = function (options) {
+  var c = new Connection(options);
   return c;
 };
 

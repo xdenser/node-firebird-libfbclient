@@ -387,6 +387,11 @@ Local<Value>
 
 				if (!conn->isUTF8lctype) {
 					js_field = Nan::CopyBuffer(var->sqldata, var->sqllen).ToLocalChecked();
+					
+					if (Nan::HasPrivate(conn->handle(), Nan::New("lc_decode").ToLocalChecked()).FromMaybe(false)) {
+						argv[0] = js_field;
+						js_field = Nan::Call(Local<Function>::Cast(Nan::GetPrivate(conn->handle(), Nan::New("lc_decode").ToLocalChecked()).ToLocalChecked()), conn->handle(), 1, argv).ToLocalChecked();
+					}
 				}
 				else {
 
@@ -407,14 +412,21 @@ Local<Value>
                 break;
 
             case SQL_VARYING:
+			{
+				vary2 = (PARAMVARY*)var->sqldata;
+				vary2->vary_string[vary2->vary_length] = '\0';
 				if (!conn->isUTF8lctype) {
-					js_field = Nan::CopyBuffer(var->sqldata, var->sqllen).ToLocalChecked();
+					js_field = Nan::CopyBuffer((const char*)(vary2->vary_string), vary2->vary_length).ToLocalChecked();
+					
+					if (Nan::HasPrivate(conn->handle(), Nan::New("lc_decode").ToLocalChecked()).FromMaybe(false)) {
+						argv[0] = js_field;
+						js_field = Nan::Call(Local<Function>::Cast(Nan::GetPrivate(conn->handle(), Nan::New("lc_decode").ToLocalChecked()).ToLocalChecked()), conn->handle(), 1, argv).ToLocalChecked();
+					}
 				}
 				else {
-					vary2 = (PARAMVARY*)var->sqldata;
-					vary2->vary_string[vary2->vary_length] = '\0';
 					js_field = Nan::New<String>((const char*)(vary2->vary_string)).ToLocalChecked();
 				}
+			}
                 break;
 
             case SQL_SHORT:
