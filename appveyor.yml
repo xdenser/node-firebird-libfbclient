@@ -6,9 +6,11 @@ environment:
   fb_start: .\bin\fb_inet_server.exe -a -m
   matrix:
   # lts
-    - nodejs_version: "6"
-  # stable
+    - nodejs_version: "8"
     - nodejs_version: "10"
+    - nodejs_version: "12"
+  # stable
+    - nodejs_version: "13"
 
 # Install scripts. (runs after repo cloning)
 install:
