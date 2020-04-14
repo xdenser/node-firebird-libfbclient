@@ -34,7 +34,7 @@ You will need:
  NodeJS (tested with v8.x or more)
  Firebird (tested with v2.5.x and v3.x)
  
- On Windows you need the [same requirements](https://github.com/atom/atom/blob/master/docs/build-instructions/windows.md) like Atom editor for building native C++ extensions 
+ On Windows you need the [same requirements](https://flight-manual.atom.io/hacking-atom/sections/hacking-on-atom-core/#building) like Atom editor for building native C++ extensions 
 
 Get Firebird.
 
