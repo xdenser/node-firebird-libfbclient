@@ -5,13 +5,7 @@ node_js:
   - v10
   - v8
 env:
-  - CXX=g++-4.8
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-4.8
+  - CXX=g++-5
 notifications:
   email:
   - xdenser@gmail.com  
