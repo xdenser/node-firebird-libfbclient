@@ -483,7 +483,7 @@ Local<Value>
 
             case SQL_TIMESTAMP: 
 	            isc_decode_timestamp((ISC_TIMESTAMP *)var->sqldata, &times);
-	            js_date = Nan::New<Date>(0).ToLocalChecked();
+	            js_date = Nan::New<Date>((times.tm_year - 70) * 365 * 86400000).ToLocalChecked();
 	            argv[0] = Nan::New<Integer>(times.tm_year+1900);
 				asyncResource.runInAsyncScope(js_date, Nan::New("setFullYear").ToLocalChecked(), 1, argv);
 	            argv[0] = Nan::New<Integer>(times.tm_mon);
@@ -511,15 +511,16 @@ Local<Value>
 	            
 	            
 	            //time_val = (static_cast<double>(days) - 40587) * 86400 * 1000;
-	            js_date = Nan::New<Date>(0).ToLocalChecked();
+	            js_date = Nan::New<Date>((times.tm_year - 70) * 365 * 86400000).ToLocalChecked();
 	           
 	            
 	            argv[0] = Nan::New<Integer>(times.tm_year+1900);
 				asyncResource.runInAsyncScope(js_date, Nan::New("setFullYear").ToLocalChecked(), 1, argv);
-	            argv[0] = Nan::New<Integer>(times.tm_mon);
+		    argv[0] = Nan::New<Integer>(times.tm_mon);
 				asyncResource.runInAsyncScope(js_date, Nan::New("setMonth").ToLocalChecked(), 1, argv);
 	            argv[0] = Nan::New<Integer>(times.tm_mday);
 				asyncResource.runInAsyncScope(js_date, Nan::New("setDate").ToLocalChecked(), 1, argv);
+		   
 	            argv[0] = Nan::New<Integer>(0);
 				asyncResource.runInAsyncScope(js_date, Nan::New("setHours").ToLocalChecked(), 1, argv);
 				asyncResource.runInAsyncScope(js_date, Nan::New("setMinutes").ToLocalChecked(), 1, argv);
@@ -544,7 +545,7 @@ Local<Value>
            case SQL_TYPE_TIME:    
 	            isc_decode_sql_time((ISC_TIME *)var->sqldata, &times);
 	            
-	            js_date = Nan::New<Date>(0).ToLocalChecked();
+	            js_date = Nan::New<Date>((times.tm_year - 70) * 365 * 86400000).ToLocalChecked();
 	      	    argv[0] = Nan::New<Integer>(times.tm_year+1900);
 				asyncResource.runInAsyncScope(js_date, Nan::New("setFullYear").ToLocalChecked(), 1, argv);
 	      	    argv[0] = Nan::New<Integer>(times.tm_mon);
