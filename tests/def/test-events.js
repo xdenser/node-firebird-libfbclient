@@ -200,11 +200,11 @@ exports.TensOfEvents = function(test){
 
   WaitForFinish(function(){ return (evcount == expected_count); },
   function(){
-       test.ok(evcount == expected_count, "We have "+ expected_count + " events");
+       test.ok(evcount == expected_count, "We have "+ evcount + " events. Expected: " + expected_count);
        conn.disconnect();
        CleanUp();
        test.done();    
-  }, expected_count*250);
+  }, expected_count*500);
 }
 
 exports.AddAndDelete = function(test){
