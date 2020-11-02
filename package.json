@@ -27,8 +27,10 @@
     "url": "http://github.com/xdenser/node-firebird-libfbclient"
   },
   "dependencies": {
-    "nan": "^2.10.0",
-    "nodeunit": "^0.11.3"
+    "nan": "^2.10.0"
+  },
+  "devDependencies" : {
+	"nodeunit": "^0.11.3"
   },
   "scripts": {
     "test": "nodeunit tests/def"
