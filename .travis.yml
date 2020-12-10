@@ -1,9 +1,9 @@
 language: node_js
 node_js:
   - "stable" 
+  - v14
   - v12
-  - v10
-  - v8
+  - v10  
 env:
   - CXX=g++-5
 notifications:
