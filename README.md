@@ -289,6 +289,8 @@ Asynchronously starts new transaction. Read notes in `commitSync();`.
 * `sql` - string, an SQL query to prepare.
 
 Synchronously prepares SQL statement and returns FBStatement object in context of this transaction.
+
+_Note_: only prepare operation runs in context of the transaction. To execute result statement in context of this or other transaction use methods execInTrans/execInTransSync of returned statement object and pass started transaction object as argument.
     
 * * *
     inTransaction;
