@@ -1,6 +1,6 @@
 C++ NodeJS module to work with Firebird SQL Server. Uses fbclient library and with a few tweaks it can use libfbembedded
 
-![Firebird Logo](https://www.totaljs.com/exports/firebird-logo.png)
+![Firebird Logo](https://firebirdsql.org/file/about/firebird-logo-90.png)
 
 [![NPM version][npm-version-image]][npm-url] [![NPM downloads][npm-downloads-image]][npm-url] [![Mozilla License][license-image]][license-url]
 [![Build Status](https://travis-ci.org/xdenser/node-firebird-libfbclient.svg?branch=master)](https://travis-ci.org/xdenser/node-firebird-libfbclient)
@@ -289,6 +289,8 @@ Asynchronously starts new transaction. Read notes in `commitSync();`.
 * `sql` - string, an SQL query to prepare.
 
 Synchronously prepares SQL statement and returns FBStatement object in context of this transaction.
+
+_Note_: only prepare operation runs in context of the transaction. To execute result statement in context of this or other transaction use methods execInTrans/execInTransSync of returned statement object and pass started transaction object as argument.
     
 * * *
     inTransaction;
