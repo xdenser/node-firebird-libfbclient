@@ -122,6 +122,12 @@ Asynchronously connects you to Database.
 Returns udefined.
 
 * * *
+    function disconnect();
+
+Dconnects from database.
+Returns udefined.
+
+* * *
     connected;
 A boolean readonly property indicating if Connection object is connected to database
 
