@@ -91,7 +91,16 @@ Check also samples directory and [this sample application](https://github.com/xd
  
 # Reference
 
- createConnection() method will create Firebird Connection object for you
+ createConnection(\[options\]) method will create Firebird Connection object for you.
+ 
+ Optional `options` object may contain charset setting and conversion function
+ 
+    options = {
+       lc_ctype: string // alternative connection charset - default is "UTF8", see FB/IB documentation for possible values
+       lc_decode: (Buffer) => string // conversion function for text/varchar fields - this allows only to read fields, if not provided and lc_ctype is not UTF8 text fields will be returned as Buffer from FBResult
+    }
+ 
+
  
 ## Connection object
 
