@@ -10,6 +10,8 @@
 #define MAX_USERNAME_LENGTH 31
 #define MAX_ROLENAME_LENGTH 31
 #define MAX_PASSWORD_LENGTH 20 
+#define PROP_LC_CTYPE "lc_ctype"
+#define PROP_LC_CTYPE_DECODE "lc_ctype_decode"
 
 #include <uv.h>
 #include "./fb-bindings.h"

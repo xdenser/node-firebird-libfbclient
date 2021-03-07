@@ -124,3 +124,20 @@ exports.TransactionBinding = function (test) {
   test.done();
 }
 
+exports.Lc_ctype = function(test) {
+  test.expect(3);
+  var conn = safe_con.createConnection({
+    lc_ctype  : "ASCII",
+    lc_ctype_decode: function (buffer) {
+      // test buffer
+      test.ok(buffer instanceof Buffer, "buffer expected");
+      return buffer;
+    }
+  });
+  conn.connectSync(cfg.db, cfg.user, cfg.password, cfg.role);
+  var res = conn.querySync("select first 1 RDB$RELATION_NAME from rdb$relations").fetchSync("all",true);
+  test.ok(res,"Query");
+  test.ok(res[0]["RDB$RELATION_NAME"] instanceof Buffer,"Buffer returned"); 
+  test.done();
+}
+

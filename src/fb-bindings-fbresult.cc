@@ -388,9 +388,9 @@ Local<Value>
 				if (!conn->isUTF8lctype) {
 					js_field = Nan::CopyBuffer(var->sqldata, var->sqllen).ToLocalChecked();
 					
-					if (Nan::HasPrivate(conn->handle(), Nan::New("lc_decode").ToLocalChecked()).FromMaybe(false)) {
+					if (Nan::HasPrivate(conn->handle(), Nan::New(PROP_LC_CTYPE_DECODE).ToLocalChecked()).FromMaybe(false)) {
 						argv[0] = js_field;
-						js_field = Nan::Call(Local<Function>::Cast(Nan::GetPrivate(conn->handle(), Nan::New("lc_decode").ToLocalChecked()).ToLocalChecked()), conn->handle(), 1, argv).ToLocalChecked();
+						js_field = Nan::Call(Local<Function>::Cast(Nan::GetPrivate(conn->handle(), Nan::New(PROP_LC_CTYPE_DECODE).ToLocalChecked()).ToLocalChecked()), conn->handle(), 1, argv).ToLocalChecked();
 					}
 				}
 				else {
@@ -418,9 +418,9 @@ Local<Value>
 				if (!conn->isUTF8lctype) {
 					js_field = Nan::CopyBuffer((const char*)(vary2->vary_string), vary2->vary_length).ToLocalChecked();
 					
-					if (Nan::HasPrivate(conn->handle(), Nan::New("lc_decode").ToLocalChecked()).FromMaybe(false)) {
+					if (Nan::HasPrivate(conn->handle(), Nan::New(PROP_LC_CTYPE_DECODE).ToLocalChecked()).FromMaybe(false)) {
 						argv[0] = js_field;
-						js_field = Nan::Call(Local<Function>::Cast(Nan::GetPrivate(conn->handle(), Nan::New("lc_decode").ToLocalChecked()).ToLocalChecked()), conn->handle(), 1, argv).ToLocalChecked();
+						js_field = Nan::Call(Local<Function>::Cast(Nan::GetPrivate(conn->handle(), Nan::New(PROP_LC_CTYPE_DECODE).ToLocalChecked()).ToLocalChecked()), conn->handle(), 1, argv).ToLocalChecked();
 					}
 				}
 				else {
