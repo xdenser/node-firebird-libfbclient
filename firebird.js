@@ -201,6 +201,7 @@ Stream.prototype.resume = function(){
 Stream.prototype.destroy = function () {
   this._destroyed = true;
   this.check_destroyed();
+  return this;
 };
 
 Stream.prototype.check_destroyed = function () {
@@ -234,6 +235,6 @@ Stream.prototype.end = function(data, encoding, fd) {
         })
     }
     else this.destroy();
-   
+    return this;
 }
 
