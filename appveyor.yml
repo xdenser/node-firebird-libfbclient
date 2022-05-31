@@ -5,12 +5,11 @@ environment:
   fb_download: https://github.com/xdenser/files/blob/master/fb25.7z?raw=true
   fb_start: .\bin\fb_inet_server.exe -a -m
   matrix:
-  # lts    
-    - nodejs_version: "10"
-    - nodejs_version: "12"
+  # lts
     - nodejs_version: "14"
+    - nodejs_version: "16"    
   # stable
-    - nodejs_version: "15"
+    - nodejs_version: "17"
 
 # Install scripts. (runs after repo cloning)
 install:
